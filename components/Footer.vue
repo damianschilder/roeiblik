@@ -3,18 +3,18 @@
   .element-wrapper
     .element-body 
       .footer-content
-        span.title Aminoprofile
+        NuxtLink Roeiblik
         .source 
-          span Source: U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. 
-          a(href="https://fdc.nal.usda.gov/") fdc.nal.usda.gov
-          span .
+          //- span Source: U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. 
+          //- a(href="https://fdc.nal.usda.gov/") fdc.nal.usda.gov
+          //- span .
 </template>
 
 <style lang="scss" scoped>
 .footer-wrapper {
   grid-area: 'footer';
   height: 7rem;
-  background-color: $primary10;
+  background-color: white;
 }
 
 .footer-content {
@@ -23,18 +23,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: white;
-  > .title {
-    font-family: "Young Serif";
-    font-size: 18px;
+  color: rgba(230, 0, 0, 1);
+  font-family: "Racing Sans One";
+  font-size: 32px;
+  a {
+    color: rgba(230, 0, 0, 1);
+    text-decoration: none;
   }
   > .source {
-    margin-top: 1rem;
-    color: $primary99;
-    font-size: 13px;
-    > a {
-      color: $primary99;
-    }
+  margin-top: 1rem;
+  color: $seed;
+  font-size: 13px;
+  > a {
+    color: $seed;
   }
+}
 }
 </style>

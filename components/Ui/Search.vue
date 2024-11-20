@@ -1,78 +1,119 @@
 <template lang="pug">
-.component-wrapper 
-  .element-wrapper
-    .element-body
-      h1 Search for rowers
-      //- UiInfo( @mouseenter="hover(true)" @mouseleave="hover(false)" )
-      .search( :class="{ 'searchable': searchQuery && searchQuery.length > 0 }" )
-        input(placeholder="Name..." v-model="searchQuery" @keyup.enter="searchRowers()")
-        UiLoader.loading( v-if="loading")
-        nuxt-icon( v-else name="search"   @click="searchRowers()")
-      .error( v-if="rowerStore.error") Can't connect to databank. Please try again later.
-      .results( v-if="rowerStore && !rowerStore.error && rowerStore.results.length > 0" )
-        .headers
-          span Name
-          span Id
-        .result( v-for="rower in rowerStore.results" @click="getRower(rower.id)")
-          span {{ rower.displayname}}
-          span {{rower.id}}
-  </template>
+  .component-wrapper 
+    .element-wrapper
+      .element-body
+        h1 Search for rowers, coxes, coaches
+        .search( :class="{ 'searchable': searchQuery && searchQuery.length > 0 }" )
+          input(placeholder="Name..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
+          UiLoader.loading( v-if="loading")
+          nuxt-icon( v-else name="search" @click="searchRowers()")
+        .error( v-if="rowerStore.error") Can't connect to databank. Please try again later.
+        .results( :class="{ 'loading-results': loading }" v-if="rowerStore && !rowerStore.error && paginatedResults.length > 0" )
+          .headers
+            span Name
+            span Id
+          .result( v-for="rower, index in paginatedResults" :key="rower.id" @click="selectRower(rower.id, index)")
+            span {{ rower.displayname }}
+            span {{ rower.id }}
+          .pagination(v-if="rowerStore.results.length > resultsPerPage")
+            button(@click="prevPage" :disabled="currentPage === 1") Previous
+            span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, rowerStore.results.length) }} of {{ rowerStore.results.length }} {{ rowerStore.results.length === 1 ? 'result' : 'results' }}
+            button(@click="nextPage" :disabled="currentPage === totalPages") Next
+</template>
 
 <script setup lang="ts">
 const rowerStore = useRowersStore();
 const runtimeConfig = useRuntimeConfig()
+const router = useRouter();
 
 const searchQuery = ref<string>('');
-
 const loading = ref<Boolean>(false);
-
 const hover = ref<Boolean>(false);
+
+// Pagination state
+const currentPage = ref<number>(1);
+const resultsPerPage = 10;
+
+function sanitizeInput() {
+  searchQuery.value = searchQuery.value.replace(/[^a-zA-Z0-9 \-]/g, "");
+}
 
 async function searchRowers() {
   loading.value = true;
-  if (searchQuery) await rowerStore.searchRowers(searchQuery.value);
-  loading.value = false;
-}
-async function getRower(id) {
-  loading.value = true;
-  await rowerStore.getRower(id);
+  if (searchQuery.value) await rowerStore.searchRowers(searchQuery.value);
+  currentPage.value = 1;
   loading.value = false;
 }
 
+function selectRower(id: Person['id'], index: number) {
+  rowerStore.getRower(id, index);
+  if (rowerStore.results && rowerStore.results[index] && rowerStore.results[index].id) {
+    router.push({ name: 'person-id', params: { id: rowerStore.results[index].id } });
+  }
+}
 
+// Computed properties for pagination
+const totalPages = computed(() => Math.ceil(rowerStore.results.length / resultsPerPage));
+const paginatedResults = computed(() => {
+  const start = (currentPage.value - 1) * resultsPerPage;
+  const end = start + resultsPerPage;
+  return rowerStore.results.slice(start, end);
+});
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+}
+
+function prevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+}
 </script>
 
 <style lang="scss" scoped>
+.component-wrapper {
+  min-height: 50%;
+}
+
 .element-body {
   display: flex;
+  align-self: center;
   flex-direction: column;
   align-items: center;
-}
-.search {
-  position: relative;
-  margin: 1rem;
-  > input {
-    border-bottom: 1px solid $colors--primary;
-    width: 30rem;
-    margin-bottom: 1rem;
-    &:focus {
-      border-bottom: 2px solid $colors--primary;
-      margin-bottom: 15px;
+  h1 {
+    margin-bottom: 4rem;
+  }
+  .search {
+    position: relative;
+    margin-bottom: 2rem;
+    > input {
+      border-bottom: 1px solid $seed;
+      width: 30rem;
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 1px;
+      &:focus {
+        border-bottom: 2px solid $seed;
+        margin-bottom: initial;
+      }
     }
-  }
-  >:deep(.nuxt-icon svg) {
-    position: absolute;
-    height: fit-content;
-    margin-bottom: 0;
-    width: 1.8rem;
-    right: 0;
-    color: $neutral-variant50;
-    top: 0;
-  }
-  > .loading {
-    position: absolute;
-    top: 3px;
-    right: 6px;
+    >:deep(.nuxt-icon svg) {
+      position: absolute;
+      height: fit-content;
+      margin-bottom: 0;
+      width: 1.8rem;
+      right: 0;
+      color: $neutral-variant50;
+      top: 0;
+    }
+    > .loading {
+      position: absolute;
+      top: 3px;
+      right: 6px;
+    }
   }
 }
 
@@ -86,36 +127,57 @@ async function getRower(id) {
 .results {
   display: flex;
   flex-direction: column;
-  width: 60%;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  width: 62%;
+  &.loading-results {
+    opacity: 0.5;
+    pointer-events: none;
+  }
   .headers {
-    display: grid;
+    display: flex;
+    justify-content: space-between;
     font-size: 14px;
+    font-weight: bold;
     padding: 0 0.5rem;
-    color: $neutral-variant30;
-    grid-template-columns: 50% 50%;
-    margin-bottom: 0.5rem;
+    color: $neutral-variant50;
   }
   .result {
-    display: grid;
-    grid-template-columns: 50% 50%;
+    font-size: 1.1rem;
+    display: flex;
+    justify-content: space-between;
     padding: 0.3rem 0.5rem;
-    border-radius: 5px;
-
+    border-radius: 10px;
+    column-gap: 6rem;
     color: $neutral-variant20;
     cursor: pointer;
+    white-space: nowrap;
     &:hover {
-      background-color: $surfaces--light--surface2;
+      background-color: rgba(230, 0, 0, 0.03);
+      border-radius: 0.25rem;
+    }
+  }
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+    button {
+      font-family: "Lato";
+      background: rgba(230, 0, 0, 0.03);
+      border: none;
+      border-radius: 5px;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+    span {
+      opacity: 0.5;
+      font-size: 0.9rem;
     }
   }
 }
-
-
-.total {
-  width: 80%;
-  padding-left: 1rem;
-  font-size: 13px;
-  > span {
-    color: $neutral-variant10;
-  }
-}
-</style>~/types/FoodBankTypes
+</style>

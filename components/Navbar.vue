@@ -3,7 +3,7 @@
   .element-wrapper
       .element-body 
         .navbar-content
-          span Timebeter
+          NuxtLink( to="/") Roeiblik
 </template>
 
 <style lang="scss">
@@ -22,8 +22,12 @@
   height: 100%;
   display: flex;
   align-items: center;
-  font-family: "Young Serif";
-  font-size: 24px;
-  color: $primary20;
+  font-family: "Racing Sans One";
+  font-size: 32px;
+  color: $seed;
+  a {
+  color: $seed;
+  text-decoration: none;
+  }
 }
 </style>
