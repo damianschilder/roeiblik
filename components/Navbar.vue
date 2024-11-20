@@ -25,6 +25,9 @@
   font-family: "Racing Sans One";
   font-size: 32px;
   color: $seed;
+  @include mobile {
+    justify-content: center;
+  }
   a {
   color: $seed;
   text-decoration: none;

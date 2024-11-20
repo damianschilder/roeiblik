@@ -14,21 +14,21 @@
 <style lang="scss" scoped>
 .layout-wrapper {
   display: grid;
-  height: 100%;
-
+  min-height: 100vh; // Ensure the wrapper spans the full viewport height
   grid-template-columns: 100%;
   grid-template-areas:
     'navbar'
     'nuxt'
     'footer';
-  grid-template-rows: 75px auto 112px;
-  > .slot-wrapper {
-    grid-area: nuxt;
-    margin-bottom: 5rem;
-    height: 100%;
-    > .table {
-      margin-top: 5rem;
-    }
+  grid-template-rows: 75px 1fr 112px; // Use 1fr to let the content area grow
+}
+
+.slot-wrapper {
+  grid-area: nuxt;
+  padding-bottom: 5rem; // Optional spacing before footer
+  height: 100%; // Ensure it takes up the available space
+  > .table {
+    margin-top: 5rem;
   }
 }
 
@@ -40,19 +40,10 @@
   height: 100%;
   justify-content: center;
   align-items: center;
-  // background-color: $primary10;
   color: white;
   > h2 {
     font-family: "Young Serif";
   }
 }
 
-// @include tablet-medium {
-//   .slot-wrapper {
-//     display: none;
-//   }
-//   .noMobile {
-//     display: flex;
-//   }
-// }
 </style>

@@ -11,10 +11,10 @@
         .results( :class="{ 'loading-results': loading }" v-if="rowerStore && !rowerStore.error && paginatedResults.length > 0" )
           .headers
             span Name
-            span Id
+            span.id Id
           .result( v-for="rower, index in paginatedResults" :key="rower.id" @click="selectRower(rower.id, index)")
             span {{ rower.displayname }}
-            span {{ rower.id }}
+            span.id {{ rower.id }}
           .pagination(v-if="rowerStore.results.length > resultsPerPage")
             button(@click="prevPage" :disabled="currentPage === 1") Previous
             span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, rowerStore.results.length) }} of {{ rowerStore.results.length }} {{ rowerStore.results.length === 1 ? 'result' : 'results' }}
@@ -83,6 +83,7 @@ function prevPage() {
   align-self: center;
   flex-direction: column;
   align-items: center;
+  text-align: center;
   h1 {
     margin-bottom: 4rem;
   }
@@ -95,6 +96,9 @@ function prevPage() {
       font-size: 1.5rem;
       text-align: center;
       margin-bottom: 1px;
+      @include mobile {
+        width: 100%;
+      }
       &:focus {
         border-bottom: 2px solid $seed;
         margin-bottom: initial;
@@ -127,9 +131,21 @@ function prevPage() {
 .results {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   opacity: 1;
   transition: opacity 0.3s ease;
   width: 62%;
+  @include tablet-small {
+    width: 100%;
+    .id {
+    }
+  }
+  @include mobile {
+    width: 100%;
+    .id {
+      // display: none;
+    }
+  }
   &.loading-results {
     opacity: 0.5;
     pointer-events: none;
@@ -141,6 +157,11 @@ function prevPage() {
     font-weight: bold;
     padding: 0 0.5rem;
     color: $neutral-variant50;
+    @include tablet-small {
+      .id {
+        display: none;
+      }
+    }
   }
   .result {
     font-size: 1.1rem;
@@ -152,6 +173,18 @@ function prevPage() {
     color: $neutral-variant20;
     cursor: pointer;
     white-space: nowrap;
+    .id {
+      font-size: 0.95rem;
+      color: $neutral50
+    }
+    @include tablet-small {
+      flex-direction: column;
+      text-align: left;
+      .id {
+        font-size: 0.8rem;
+        color: $neutral50
+      }
+    }
     &:hover {
       background-color: rgba(230, 0, 0, 0.03);
       border-radius: 0.25rem;

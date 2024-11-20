@@ -2,7 +2,10 @@
 .component-wrapper 
   .element-wrapper
     .element-body
+              
+
       .races
+        span {{formatDate(rowerStore.rower.firstEntryDate)}} - {{formatDate(rowerStore.rower.lastEntryDate)}}
         .race(v-for="(race, index) in rowerStore.rower.allRaceCrewInfo" :key="index")
           .top-label
             span {{ formatDate(race.date) }}
@@ -102,11 +105,15 @@ function formatDate(dateInput: string | string[]): string {
   display: flex;
   flex: 1;
   flex-direction: column;
-  row-gap: 2rem;
+  /* row-gap: 2rem; */
   max-width: 70%;
   @include mobile {
     max-width: initial;
-
+  } 
+  > span {
+    color: $neutral50;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
   }
   .race {
     width: 100%;

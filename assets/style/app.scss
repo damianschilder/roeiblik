@@ -28,20 +28,22 @@
 }
 
 html, body, #__nuxt {
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
-  background-color: rgba(230, 0, 0, 0.007);
-
-}
-
-html, body {
-  margin: 0;
-  height: 100%;
-  font-size: 1rem;
   font-family: "Lato";
-  font-weight: 400;
-
-  color: $light--on-surface;
+  margin: 0;
+  background-color: rgba(230, 0, 0, 0.003);
 }
+
+#__nuxt {
+  flex: 1; // Ensure the main content takes up available space
+}
+
+main {
+  flex: 1; // Allow main content to grow and push the footer to the bottom
+}
+
 
 h1, h2 , h3, h4, h5, h6, p {
   margin: initial;
@@ -98,7 +100,7 @@ input {
   > .element-body {
     width: 100%;
     max-width: 1128px;
-    padding: 0 0.5rem;
+    padding: 0 1rem;
   }
 }
 

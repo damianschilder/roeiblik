@@ -18,6 +18,31 @@
   <script setup lang="ts">
   const rowerStore = useRowersStore();
   const runtimeConfig = useRuntimeConfig();
+
+  // Function to format the date to "5 June 2022"
+function formatDate(dateInput: string | string[]): string {
+  let dateString: string;
+
+  // Handle if dateInput is an array
+  if (Array.isArray(dateInput) && dateInput.length > 0) {
+    dateString = dateInput[0]; // Use the first date in the array
+  } else if (typeof dateInput === 'string') {
+    dateString = dateInput;
+  } else {
+    return 'Invalid Date';
+  }
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return 'Invalid Date'; // Handle cases where the date cannot be parsed
+  }
+
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
   </script>
   
   <style lang="scss" scoped>
@@ -49,6 +74,7 @@
                 display: flex;
                 align-items: center;
                 column-gap: 0.5rem;
+                margin-bottom: 0.1rem;
                 img {
                   width: 2.7rem;
                   @include tablet-small {
