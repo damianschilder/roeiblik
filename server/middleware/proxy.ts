@@ -1,12 +1,20 @@
 export default defineEventHandler(async (event) => {
   const url = event.node.req.url || '';
-  
-  // Check if the request is for /api/proxy and dynamically handle different paths
-  if (url.startsWith('/api/proxy')) {
+
+  // Only handle requests explicitly starting with `/api/proxy/` and a valid path
+  if (url.startsWith('/api/proxy/')) {
     const query = getQuery(event);
     const proxyPath = url.replace('/api/proxy', ''); // Strip '/api/proxy' from the URL
 
-    // Construct the target URL based on the dynamic path
+    // Validate if the path is allowed
+    if (!proxyPath || proxyPath === '/') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid proxy path',
+      });
+    }
+
+    // Construct the target URL
     const targetUrl = `https://api.beta.regatta.time-team.nl/api/1${proxyPath}`;
 
     try {
@@ -26,5 +34,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // If not targeting /api/proxy, let other routes proceed
+  // Let other routes proceed if the URL doesn't start with `/api/proxy`
+  return null;
 });
