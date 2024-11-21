@@ -142,8 +142,10 @@
         margin: 0.07rem 0 0.35rem;
         font-size: 1.5rem;
         font-weight: bold;
+        .title {
+        }
         .result {
-          white-space: nowrap;
+          text-align: right;
         }
       }
       .bottom-label {
