@@ -5,9 +5,9 @@
       .footer-content
         NuxtLink Roeiblik
         .source 
-          //- span Source: U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. 
-          //- a(href="https://fdc.nal.usda.gov/") fdc.nal.usda.gov
-          //- span .
+          span Source: Time-Team Regatta Systems 
+          a(href="https://time-team.nl/") https://time-team.nl/
+          span .
 </template>
 
 <style lang="scss" scoped>
@@ -32,10 +32,10 @@
   }
   > .source {
   margin-top: 1rem;
-  color: $seed;
+  color: black;
   font-size: 13px;
   > a {
-    color: $seed;
+    color: black;
   }
 }
 }

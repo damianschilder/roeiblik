@@ -3,6 +3,7 @@
   UiRowerIntro(v-if="rowerStore && rowerStore.rower.displayname")
   .loader-container(v-if="!rowerStore || rowerStore.loading")
     UiLoader
+    span Voor veel resultaten kan dit een paar seconden duren.
   UiTimeteam(v-if="rowerStore && rowerStore.rower?.allRaceCrewInfo")
 </template>
 
@@ -34,10 +35,11 @@ async function getRower(id: Person['id']) {
 }
 
 onMounted(async () => {
-  console.log("tset")
-  const id = route.params.id;
-  if (id) {
-    await getRower(id as Person['id']);
+  if (!rowerStore.rower.allRaceCrewInfo) {
+    const id = route.params.id;
+    if (id) {
+      await getRower(id as Person['id']);
+    }
   }
 });
 </script>
@@ -52,7 +54,9 @@ onMounted(async () => {
 .loader-container {
   display: flex;
   justify-content: center;
+  flex-direction: column;
   height: 100%;
+  text-align: center;
   &:deep(.component-wrapper) {
     display: flex;
     justify-content: center;
@@ -63,6 +67,10 @@ onMounted(async () => {
     height: 2rem;
     border: 4px solid rgba(230, 0, 0, 0.03); /* Light grey */
     border-top: 4px solid $seed;; /* Blue */
+  }
+  span {
+    margin-top: 0.5rem;
+    font-weight: bold;
   }
 }
 

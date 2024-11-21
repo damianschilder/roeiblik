@@ -39,6 +39,16 @@ export const useRowersStore = defineStore("rowers", () => {
       });
       const { person, race_crew, entry, event, round } = response;
 
+      // Validate that all necessary data is available
+      if (!person || !race_crew || !entry || !event || !round) {
+        throw new Error("Incomplete response data.");
+      }
+
+      const personDetails = Object.values(person || {})[0];
+      if (!personDetails) {
+        throw new Error("Person details not found.");
+      }
+
       let allRaceCrewInfo: { [key: string]: any } = {};
       let roleCounts = { Rower: 0, Coach: 0, Cox: 0, Unknown: 0 };
       let totalWins = { Rower: 0, Coach: 0, Cox: 0 };
@@ -49,31 +59,39 @@ export const useRowersStore = defineStore("rowers", () => {
         const roundId = raceCrewEntry.round_id;
         const roundEntry = round?.[roundId];
 
-        if (roundEntry) {
-          allRaceCrewInfo[raceCrewId] = getLocationAndDetailsByRaceCrewId(
-            raceCrewId,
-            response
-          );
+        if (!roundId || !roundEntry) {
+          console.warn("Skipping race crew due to missing round:", raceCrewId);
+          continue;
+        }
 
-          // Determine the role of the person in the race
-          const personDetails = Object.values(person)[0];
-          const entryId = raceCrewEntry.entry_id;
-          const entryData = entryId ? response.entry?.[entryId] : null;
+        allRaceCrewInfo[raceCrewId] = getLocationAndDetailsByRaceCrewId(
+          raceCrewId,
+          response
+        );
 
-          if (entryData) {
-            const role = determineRole(personDetails, entryData);
+        // Determine the role of the person in the race
+        const entryId = raceCrewEntry.entry_id;
+        const entryData = entryId ? response.entry?.[entryId] : null;
+
+        if (entryData) {
+          const role = determineRole(personDetails, entryData);
+          allRaceCrewInfo[raceCrewId].role = role;
+
+          // Only count roles for races that do not have round_type_code = "E"
+          if (roundEntry.round_type_code !== "E") {
             roleCounts[role]++;
-            allRaceCrewInfo[raceCrewId].role = role;
+          }
 
-            // Check if the race was won
-            if (
-              allRaceCrewInfo[raceCrewId].adjusted_position === 1 &&
-              isFinalRound(roundEntry.round_type_code)
-            ) {
-              totalWins[role]++;
-            }
-          } else {
-            allRaceCrewInfo[raceCrewId].role = "Unknown";
+          // Check if the race was won
+          if (
+            allRaceCrewInfo[raceCrewId].adjusted_position === 1 &&
+            isFinalRound(roundEntry.round_type_code)
+          ) {
+            totalWins[role]++;
+          }
+        } else {
+          allRaceCrewInfo[raceCrewId].role = "Unknown";
+          if (roundEntry.round_type_code !== "E") {
             roleCounts.Unknown++;
           }
         }
@@ -82,19 +100,26 @@ export const useRowersStore = defineStore("rowers", () => {
       // Sort allRaceCrewInfo by date in reverse chronological order (most recent first)
       allRaceCrewInfo = Object.entries(allRaceCrewInfo)
         .sort(([, a], [, b]) => {
-          const dateA = new Date(a.date[0]);
-          const dateB = new Date(b.date[0]);
-          return dateB.getTime() - dateA.getTime();
+          const dateA = new Date(a.date?.[0]);
+          const dateB = new Date(b.date?.[0]);
+          if (dateB.getTime() !== dateA.getTime()) {
+            return dateB.getTime() - dateA.getTime();
+          }
+          const roundPriority = ["FA", "FB", "FC", "FD", "FE", "EF", "EG"];
+          const roundA = roundPriority.indexOf(a.round_type_code);
+          const roundB = roundPriority.indexOf(b.round_type_code);
+          return (roundB !== -1 ? roundB : Infinity) - (roundA !== -1 ? roundA : Infinity);
         })
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
       // Extract the date of the first and last entry
-      const dates = Object.values(allRaceCrewInfo).map((info: any) => new Date(info.date[0]));
+      const dates = Object.values(allRaceCrewInfo)
+        .map((info: any) => new Date(info.date?.[0]))
+        .filter((date) => !isNaN(date.getTime()));
       const firstEntryDate = dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : "Date not found";
       const lastEntryDate = dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : "Date not found";
 
       // Prepare consolidated object
-      const personDetails = Object.values(person)[0];
       rower.value = {
         id: personDetails.id,
         displayname: personDetails.displayname,
@@ -115,15 +140,15 @@ export const useRowersStore = defineStore("rowers", () => {
 
   function determineRole(personDetails: any, entryData: any): string {
     const displayName = personDetails.displayname;
-    if (entryData.rowers.some((r: any) => `${r.firstname} ${r.lastname}` === displayName)) {
+    if (Array.isArray(entryData.rowers) && entryData.rowers.some((r: any) => `${r.firstname} ${r.lastname}` === displayName)) {
       return "Rower";
     }
-    if (entryData.coaches.some((c: any) => `${c.firstname} ${c.lastname}` === displayName)) {
+    if (Array.isArray(entryData.coaches) && entryData.coaches.some((c: any) => `${c.firstname} ${c.lastname}` === displayName)) {
       return "Coach";
     }
-    if (entryData.coxes.some((c: any) => `${c.firstname} ${c.lastname}` === displayName)) {
-      return "Cox";
-    }
+    if (entryData?.coxes && Array.isArray(entryData.coxes) && entryData.coxes.some((c: any) => c && `${c.firstname} ${c.lastname}` === displayName)) {
+    return "Cox";
+  }
     return "Unknown";
   }
 
@@ -182,9 +207,9 @@ export const useRowersStore = defineStore("rowers", () => {
       ? entryData.coaches.map((coach: any) => `${coach.firstname} ${coach.lastname}`)
       : "Coaches not found";
 
-    const coxes = entryData?.coxes
-      ? entryData.coxes.map((cox: any) => `${cox.firstname} ${cox.lastname}`)
-      : "Coxes not found";
+    const coxes = entryData?.coxes && Array.isArray(entryData.coxes)
+  ? entryData.coxes.map((cox: any) => cox && `${cox.firstname} ${cox.lastname}`)
+  : "Coxes not found";
 
     const boatName =
       entryData?.boats && entryData.boats.length > 0

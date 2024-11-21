@@ -1,25 +1,49 @@
+// @font-face {
+//   font-family: 'Lato';
+//   font-style: normal;
+//   font-weight: 400;
+//   font-display: swap;
+//   src: url('~/assets/fonts/Lato/Lato-Regular.ttf') format('truetype');
+// }
+
+// @font-face {
+//   font-family: 'Lato';
+//   font-style: bold;
+//   font-weight: 700;
+//   font-display: swap;
+//   src: url('~/assets/fonts/Lato/Lato-Bold.ttf') format('truetype');
+// }
+
+// @font-face {
+//   font-family: 'Lato';
+//   font-style: light;
+//   font-weight: 200;
+//   font-display: swap;
+//   src: url('~/assets/fonts/Lato/Lato-Light.ttf') format('truetype');
+// }
+
 @font-face {
-  font-family: 'Lato';
+  font-family: 'Mulish';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('~/assets/fonts/Lato/Lato-Regular.ttf') format('truetype');
+  src: url('~/assets/fonts/Mulish/Mulish-VariableFont.ttf') format('truetype');
 }
 
 @font-face {
-  font-family: 'Lato';
+  font-family: 'Mulish';
   font-style: bold;
   font-weight: 700;
   font-display: swap;
-  src: url('~/assets/fonts/Lato/Lato-Bold.ttf') format('truetype');
+  src: url('~/assets/fonts/Mulish/Mulish-VariableFont.ttf') format('truetype');
 }
 
 @font-face {
-  font-family: 'Lato';
+  font-family: 'Mulish';
   font-style: light;
   font-weight: 200;
   font-display: swap;
-  src: url('~/assets/fonts/Lato/Lato-Light.ttf') format('truetype');
+  src: url('~/assets/fonts/Mulish/Mulish-VariableFont.ttf') format('truetype');
 }
 
 @font-face {
@@ -31,7 +55,7 @@ html, body, #__nuxt {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  font-family: "Lato";
+  font-family: "Mulish";
   margin: 0;
   background-color: rgba(230, 0, 0, 0.003);
 }
