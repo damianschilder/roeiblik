@@ -34,7 +34,7 @@ export const useRowersStore = defineStore("rowers", () => {
     }
 
     try {
-      const response: PersonResponse = await $fetch('/api/proxy/person/${id}', {
+      const response: PersonResponse = await $fetch(`/api/proxy/person/${id}`, {
         method: "GET",
       });
       const { person, race_crew, entry, event, round } = response;
