@@ -108,7 +108,7 @@ export const useRowersStore = defineStore("rowers", () => {
           const roundPriority = ["FA", "FB", "FC", "FD", "FE", "EF", "EG"];
           const roundA = roundPriority.indexOf(a.round_type_code);
           const roundB = roundPriority.indexOf(b.round_type_code);
-          return (roundB !== -1 ? roundB : Infinity) - (roundA !== -1 ? roundA : Infinity);
+          return (roundA !== -1 ? roundA : Infinity) - (roundB !== -1 ? roundB : Infinity);
         })
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
