@@ -3,7 +3,7 @@
   .element-wrapper
       .element-body 
         .navbar-content
-          NuxtLink( to="/") Roeibliks
+          NuxtLink( to="/") Roeiblik
 </template>
 
 <style lang="scss">
