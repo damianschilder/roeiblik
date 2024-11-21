@@ -8,6 +8,7 @@
           UiLoader.loading( v-if="loading")
           nuxt-icon( v-else name="search" @click="searchRowers()")
         .error( v-if="rowerStore.error") Can't connect to databank. Please try again later.
+        .empty( v-if="empty") Helaas, geen resultaten.
         .results( :class="{ 'loading-results': loading }" v-if="rowerStore && !rowerStore.error && paginatedResults.length > 0" )
           .headers
             span Name
@@ -28,6 +29,7 @@ const router = useRouter();
 
 const searchQuery = ref<string>('');
 const loading = ref<Boolean>(false);
+const empty = ref<Boolean>(false);
 const hover = ref<Boolean>(false);
 
 // Pagination state
@@ -41,6 +43,11 @@ function sanitizeInput() {
 async function searchRowers() {
   loading.value = true;
   if (searchQuery.value) await rowerStore.searchRowers(searchQuery.value);
+  if (rowerStore.results.length === 0) {
+    empty.value = true;
+  } else {
+    empty.value = false;
+  }
   currentPage.value = 1;
   loading.value = false;
 }
