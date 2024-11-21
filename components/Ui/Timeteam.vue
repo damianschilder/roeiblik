@@ -197,6 +197,9 @@
     }
     .boot {
       grid-area: boot;
+      @include mobile {
+        margin-top: 1rem;
+    }
     }
   }
   
