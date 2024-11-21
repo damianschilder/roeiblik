@@ -91,7 +91,6 @@ function formatDate(dateInput: string | string[]): string {
         margin-top: initial;
         &:deep(.loader) {
           width: 2rem;
-          height: 2rem;
         }
       }
       &:deep(.nuxt-icon svg) {
