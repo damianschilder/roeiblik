@@ -11,7 +11,7 @@ export const useRowersStore = defineStore("rowers", () => {
   async function searchRowers(query: string) {
     loading.value = true;
     try {
-      const response: SearchResponse = await $fetch("/api/search", {
+      const response: SearchResponse = await $fetch('/api/proxy/search', {
         method: "GET",
         params: { query },
       });
@@ -34,7 +34,7 @@ export const useRowersStore = defineStore("rowers", () => {
     }
 
     try {
-      const response: PersonResponse = await $fetch("/api/person/${id}", {
+      const response: PersonResponse = await $fetch('/api/proxy/person/${id}', {
         method: "GET",
       });
       const { person, race_crew, entry, event, round } = response;
