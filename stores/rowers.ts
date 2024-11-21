@@ -11,7 +11,7 @@ export const useRowersStore = defineStore("rowers", () => {
   async function searchRowers(query: string) {
     loading.value = true;
     try {
-      const response: SearchResponse = await $fetch("/api/proxy/search", {
+      const response: SearchResponse = await $fetch("https://api.beta.regatta.time-team.nl/api/1/search", {
         method: "GET",
         params: { query },
       });
