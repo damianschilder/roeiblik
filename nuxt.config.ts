@@ -1,7 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   pages: true,
-
+  ssr: true, // Enable Server-Side Rendering
+  nitro: {
+    preset: 'cloudflare' // Targets Cloudflare Workers
+  },
   runtimeConfig: {
     public: {
       foodDataKey: process.env.NUXT_PUBLIC_FOODCENTRAL_API_KEY,
