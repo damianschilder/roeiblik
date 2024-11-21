@@ -153,7 +153,7 @@ export const useRowersStore = defineStore("rowers", () => {
   }
 
   function isFinalRound(roundTypeCode: string): boolean {
-    return roundTypeCode === "FA" || roundTypeCode === "TT" || /^[0-9]/.test(roundTypeCode);
+    return roundTypeCode === "FA" || roundTypeCode === "2000m" || /^[0-9]/.test(roundTypeCode);
   }
 
   function getLocationAndDetailsByRaceCrewId(raceCrewId: string, data: any): any {
