@@ -86,8 +86,10 @@ function formatDate(dateInput: string | string[]): string {
                 }
                 .club-group {
                   @include mobile {
+                    justify-content: center;
                     margin-right: 0.5rem;
                     display: flex;
+                    flex-wrap: wrap;
                     column-gap: 1rem;
                   }
                 }
