@@ -6,11 +6,16 @@
           .content
             .left
               h2 {{ rowerStore.rower.displayname }}
-              transition-group(name="fade" tag="div" class="club-group")
-                .club(v-if="rowerStore.rower.unique_clubs" v-for="club in rowerStore.rower.unique_clubs" :key="club.id")
-                  img(:src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`")
-                  span {{ club.name }}
-
+              .clubs
+                transition-group(name="fade" tag="div" class="club-group")
+                  .club(v-if="rowerStore.rower.unique_clubs" v-for="club in rowerStore.rower.unique_clubs" :key="club.id")
+                    img(:src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`")
+                    span {{ club.name }}
+                UiInfo
+                  slot 
+                    .help
+                      span Waarom zie ik meerdere verenigingen?
+                      span De bron bevat geen informatie over bij welke vereniging je zit, alleen onder welke vereniging je voor wedstrijden bent ingeschreven in het verleden.
             .right
               transition(name="fade")
                 UiOverviewTable(v-if="rowerStore && rowerStore.rower.roleCounts")
@@ -71,25 +76,28 @@ function formatDate(dateInput: string | string[]): string {
               h1 {
                 margin-bottom: 1rem;
               }
-              .club {
+              .clubs {
                 display: flex;
-                align-items: center;
-                column-gap: 0.5rem;
-                margin-bottom: 0.1rem;
-                img {
-                  width: 2.7rem;
-                  @include tablet-small {
-                    width: 2rem;
+                .club {
+                  display: flex;
+                  align-items: center;
+                  column-gap: 0.5rem;
+                  margin-bottom: 0.1rem;
+                  img {
+                    width: 2.7rem;
+                    @include tablet-small {
+                      width: 2rem;
+                    }
                   }
-                }
-                span {
-                  font-size: 1.3rem;
-                  text-transform: uppercase;
-                  font-weight: bold;
-                  letter-spacing: .2rem;
-                  color: $neutral-variant40;
-                  @include tablet-small {
-                    font-size: 1rem;
+                  span {
+                    font-size: 1.3rem;
+                    text-transform: uppercase;
+                    font-weight: bold;
+                    letter-spacing: .2rem;
+                    color: $neutral-variant40;
+                    @include tablet-small {
+                      font-size: 1rem;
+                    }
                   }
                 }
               }
@@ -100,6 +108,27 @@ function formatDate(dateInput: string | string[]): string {
     }
   }
   
+
+.help {
+  text-align: left;
+  display: flex;
+  width: 30rem;
+  row-gap: 0.25rem;
+  font-weight: normal;
+  color: black;
+  flex-direction: column;
+  @include tablet-small {
+    width: 20rem;
+  }
+  @include mobile {
+    width: 13rem;
+  }
+  >:first-child {
+    font-weight: bold;
+    color: $neutral50;
+  }
+}
+
   .title {
     display: flex;
     align-items: center;

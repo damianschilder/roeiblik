@@ -14,7 +14,7 @@
 .footer-wrapper {
   grid-area: 'footer';
   height: 7rem;
-  background-color: white;
+  background-color: #332B2B;
 }
 
 .footer-content {
@@ -24,18 +24,17 @@
   align-items: center;
   justify-content: center;
   color: rgba(230, 0, 0, 1);
+  color: white;
   font-family: "Racing Sans One";
   font-size: 32px;
   a {
-    color: rgba(230, 0, 0, 1);
     text-decoration: none;
   }
   > .source {
   margin-top: 1rem;
-  color: black;
   font-size: 13px;
   > a {
-    color: black;
+    color: white;
   }
 }
 }
