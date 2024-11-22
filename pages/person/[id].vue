@@ -35,7 +35,7 @@ async function getRower(id: Person['id']) {
 }
 
 onMounted(async () => {
-  if (!rowerStore.rower.allRaceCrewInfo) {
+  if (rowerStore.results.length === 0) {
     const id = route.params.id;
     if (id) {
       await getRower(id as Person['id']);
@@ -56,6 +56,7 @@ onMounted(async () => {
   justify-content: center;
   flex-direction: column;
   height: 100%;
+  max-width: 95%;
   text-align: center;
   &:deep(.component-wrapper) {
     display: flex;

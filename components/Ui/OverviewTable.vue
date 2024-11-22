@@ -35,6 +35,10 @@ table {
   text-align: center;
 }
 .element-body {
+  @include mobile {
+    display: flex;
+    justify-content: center;
+  }
   padding: 0;
 }
 </style>

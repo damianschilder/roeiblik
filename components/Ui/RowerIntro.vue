@@ -11,11 +11,8 @@
                   .club(v-if="rowerStore.rower.unique_clubs" v-for="club in rowerStore.rower.unique_clubs" :key="club.id")
                     img(:src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`")
                     span {{ club.name }}
-                UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
-                  slot 
-                    .help
-                      span Waarom zie ik meerdere verenigingen?
-                      span De bron bevat geen informatie over bij welke vereniging je zit, alleen onder welke vereniging je voor wedstrijden bent ingeschreven in het verleden.
+                NuxtLink( to="/faq")
+                  UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
             .right
               transition(name="fade")
                 UiOverviewTable(v-if="rowerStore && rowerStore.rower.roleCounts")
@@ -68,16 +65,32 @@ function formatDate(dateInput: string | string[]): string {
             justify-content: space-between;
             column-gap: 1rem;
             @include mobile {
-              max-width: initial
+              max-width: initial;
+              flex-direction: column;
             }
             .left {
               display: flex;
               flex-direction: column;
-              h1 {
-                margin-bottom: 1rem;
+              h2 {
+                @include mobile {
+                  text-align: center;
+                  margin-bottom: 0.2rem;
+                }
               }
               .clubs {
                 display: flex;
+                margin-bottom: 1rem;
+                @include mobile {
+                  justify-content: center;
+
+                }
+                .club-group {
+                  @include mobile {
+                    margin-right: 0.5rem;
+                    display: flex;
+                    column-gap: 1rem;
+                  }
+                }
                 .club {
                   display: flex;
                   align-items: center;
@@ -127,6 +140,10 @@ function formatDate(dateInput: string | string[]): string {
     font-weight: bold;
     color: $neutral50;
   }
+}
+
+.info {
+  right: 0;
 }
 
   .title {

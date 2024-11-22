@@ -30,7 +30,6 @@ export const useRowersStore = defineStore("rowers", () => {
   async function getRower(id, index) {
     loading.value = true;
   
-    // Use cached result if available
     if (results.value && results.value[index]) {
       rower.value = results.value[index];
     }
@@ -39,6 +38,7 @@ export const useRowersStore = defineStore("rowers", () => {
       const response = await $fetch(`/api/proxy/person/${id}`, {
         method: "GET",
       });
+  
       const { person, race_crew, entry, event, round } = response;
   
       if (!person || !race_crew || !entry || !event || !round) {
@@ -53,7 +53,9 @@ export const useRowersStore = defineStore("rowers", () => {
       let allRaceCrewInfo = {};
       let roleCounts = { Rower: 0, Coach: 0, Cox: 0, Unknown: 0 };
       let totalWins = { Rower: 0, Coach: 0, Cox: 0 };
-      const uniqueClubs = new Map(); // Map to track unique clubs
+      const uniqueClubs = new Map();
+  
+      const roundTypePriority = ["FA", "FB", "FC", "FD", "FE", "FF", "FG", "HF", "KF", "E", "TT", "Unknown"];
   
       for (const raceCrewId in race_crew) {
         const raceCrewEntry = race_crew[raceCrewId];
@@ -65,61 +67,102 @@ export const useRowersStore = defineStore("rowers", () => {
           continue;
         }
   
-        allRaceCrewInfo[raceCrewId] = getLocationAndDetailsByRaceCrewId(
-          raceCrewId,
-          response
-        );
-  
+        const raceDetails = getLocationAndDetailsByRaceCrewId(raceCrewId, response);
         const entryId = raceCrewEntry.entry_id;
         const entryData = entryId ? response.entry?.[entryId] : null;
   
         if (entryData) {
           const role = determineRole(personDetails, entryData);
-          allRaceCrewInfo[raceCrewId].role = role;
+          raceDetails.role = role;
   
           if (roundEntry.round_type_code !== "E") {
             roleCounts[role]++;
           }
   
           if (
-            allRaceCrewInfo[raceCrewId].adjusted_position === 1 &&
+            raceDetails.adjusted_position === 1 &&
             isFinalRound(roundEntry.round_type_code)
           ) {
             totalWins[role]++;
           }
   
-          // Track unique clubs
-          const club = entryData.club || { id: "unknown", name: "Unknown" }; // Ensure club is an object
+          const club = entryData.club || { id: "unknown", name: "Unknown" };
           if (!uniqueClubs.has(club.id)) {
             uniqueClubs.set(club.id, club);
           }
-        } else {
-          allRaceCrewInfo[raceCrewId].role = "Unknown";
-          if (roundEntry.round_type_code !== "E") {
-            roleCounts.Unknown++;
+  
+          raceDetails.event_id = entryData.event_id || "Unknown";
+          raceDetails.entry_name = entryData.name || "Unknown";
+  
+          const eventEntry = event?.[raceDetails.event_id];
+          if (eventEntry) {
+            raceDetails.event_code = eventEntry.code || "Unknown";
+            raceDetails.event_remarks = eventEntry.remarks || "No remarks";
           }
+  
+          raceDetails.round_type_name = roundEntry.round_type_name || "Unknown";
+          raceDetails.timetrial = roundEntry.timetrial || false;
+          raceDetails.is_final = roundEntry.is_final || false;
+          raceDetails.rules = roundEntry.rules || {};
+          raceDetails.timing_layout = roundEntry.timing_layout || {};
+        }
+  
+        allRaceCrewInfo[raceCrewId] = raceDetails;
+      }
+  
+      allRaceCrewInfo = Object.entries(allRaceCrewInfo).reduce((acc, [key, value]) => {
+        const eventId = value.event_id || "Unknown";
+        const entryName = value.entry_name || "Unknown";
+  
+        if (!acc[eventId]) {
+          acc[eventId] = {};
+        }
+        if (!acc[eventId][entryName]) {
+          acc[eventId][entryName] = [];
+        }
+  
+        acc[eventId][entryName].push({ id: key, ...value });
+        return acc;
+      }, {});
+  
+      for (const eventId in allRaceCrewInfo) {
+        for (const entryName in allRaceCrewInfo[eventId]) {
+          allRaceCrewInfo[eventId][entryName].sort((a, b) => {
+            const roundA = roundTypePriority.indexOf(a.round_type_code) !== -1 
+              ? roundTypePriority.indexOf(a.round_type_code)
+              : roundTypePriority.length; 
+            const roundB = roundTypePriority.indexOf(b.round_type_code) !== -1 
+              ? roundTypePriority.indexOf(b.round_type_code)
+              : roundTypePriority.length;
+  
+            return roundA - roundB;
+          });
         }
       }
   
-      allRaceCrewInfo = Object.entries(allRaceCrewInfo)
-        .sort(([, a], [, b]) => {
-          const dateA = new Date(a.date?.[0]);
-          const dateB = new Date(b.date?.[0]);
-          if (dateB.getTime() !== dateA.getTime()) {
-            return dateB.getTime() - dateA.getTime();
-          }
-          const roundPriority = ["FA", "FB", "FC", "FD", "FE", "EF", "EG"];
-          const roundA = roundPriority.indexOf(a.round_type_code);
-          const roundB = roundPriority.indexOf(b.round_type_code);
-          return (roundA !== -1 ? roundA : Infinity) - (roundB !== -1 ? roundB : Infinity);
+      allRaceCrewInfo = Object.keys(allRaceCrewInfo)
+        .sort((a, b) => {
+          const firstRaceDateA = getFirstRaceDate(allRaceCrewInfo[a]);
+          const firstRaceDateB = getFirstRaceDate(allRaceCrewInfo[b]);
+          return new Date(firstRaceDateB).getTime() - new Date(firstRaceDateA).getTime();
         })
-        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+        .reduce((acc, key) => {
+          acc[key] = allRaceCrewInfo[key];
+          return acc;
+        }, {});
   
-      const dates = Object.values(allRaceCrewInfo)
-        .map(info => new Date(info.date?.[0]))
-        .filter(date => !isNaN(date.getTime()));
-      const firstEntryDate = dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : "Date not found";
-      const lastEntryDate = dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : "Date not found";
+      const firstEntryDate = Object.values(allRaceCrewInfo)
+        .flatMap(event => Object.values(event).flatMap(entry => entry))
+        .map(race => new Date(race.date?.[0]))
+        .filter(date => !isNaN(date.getTime()))
+        .sort()[0]?.toISOString() || "Date not found";
+  
+      const lastEntryDate = Object.values(allRaceCrewInfo)
+        .flatMap(event => Object.values(event).flatMap(entry => entry))
+        .map(race => new Date(race.date?.[0]))
+        .filter(date => !isNaN(date.getTime()))
+        .sort()
+        .reverse()[0]?.toISOString() || "Date not found";
   
       rower.value = {
         id: personDetails.id,
@@ -129,7 +172,7 @@ export const useRowersStore = defineStore("rowers", () => {
         totalWins,
         firstEntryDate,
         lastEntryDate,
-        unique_clubs: Array.from(uniqueClubs.values()), // Array of all unique clubs
+        unique_clubs: Array.from(uniqueClubs.values()),
       };
       error.value = false;
     } catch (e) {
@@ -139,9 +182,14 @@ export const useRowersStore = defineStore("rowers", () => {
       loading.value = false;
     }
   }
-  
-  
-  
+
+  function getFirstRaceDate(eventData) {
+    return Object.values(eventData)
+      .flatMap(entry => entry)
+      .map(race => race.date?.[0])
+      .filter(date => date !== "Date not found")
+      .sort()[0] || "Date not found";
+  }
 
   function determineRole(personDetails: any, entryData: any): string {
     const displayName = personDetails.displayname;

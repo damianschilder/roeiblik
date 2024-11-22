@@ -2,18 +2,7 @@
   .component-wrapper 
     .element-wrapper
       .element-body
-        .title
-          h1 Zoek naar roeiers, stuurtjes, coaches
-          UiInfo
-            .help
-              span Hoe is dit anders dan Knrbeter?
-            .link
-              span Knrbeter gebruikte de KNRB als bron die alleen resultaten van klasserende wedstrijden bevat. Klasserende resultaten vind je tegenwoordig niet meer op Knrbeter, maar op de website van de 
-              a(href="https://roeievenementen.knrb.nl/person-search") KNRB
-              span .
-              br
-              br
-              span Roeiblik gebruikt Time-team als bron en toont alle vermeldingen van een persoon binnen Time-team.
+        h1 Zoek naar roeiers, stuurtjes, coaches
         .search(:class="{ 'searchable': searchQuery && searchQuery.length > 0 }")
           input(placeholder="Naam..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
           UiLoader.loading(v-if="loading")
@@ -24,10 +13,6 @@
           .headers
             .name
               span Naam
-              UiInfo(v-if="rowerStore.results.length > 1")
-                .help
-                  span Waarom sta ik er meerdere keren tussen?
-                  span Wanneer je wordt ingeschreven voor een wedstrijd kan je als nieuwe of bestaande roeier worden ingeschreven.
             span.id ID
           .result(v-for="rower, index in paginatedResults" :key="rower.id" @click="selectRower(rower.id, index)")
             span {{ rower.displayname }}
@@ -99,6 +84,10 @@ function prevPage() {
 <style lang="scss" scoped>
 .component-wrapper {
   min-height: 50%;
+  align-self: center;
+  @include mobile {
+    margin-top: 5rem;
+  }
 }
 
 .element-body {
@@ -106,18 +95,9 @@ function prevPage() {
   align-self: center;
   flex-direction: column;
   align-items: center;
-  .title {
-    display: flex;
-    h1 {
-      margin-bottom: 4rem;
-    }
-    &:deep(.info) {
-      right: 1.2rem;
-      top: 1rem;
-      left: initial;
-      width: 40rem;
-      z-index: 999;
-    }
+  h1 {
+    text-align: center;
+    margin-bottom: 4rem;
   }
   .search {
     position: relative;

@@ -26,6 +26,7 @@
   color: rgba(230, 0, 0, 1);
   color: white;
   font-family: "Racing Sans One";
+  text-align: center;
   font-size: 32px;
   a {
     text-decoration: none;
