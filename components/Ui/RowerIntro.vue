@@ -6,10 +6,11 @@
           .content
             .left
               h2 {{ rowerStore.rower.displayname }}
-              transition(name="fade")
-                .club(v-if="rowerStore.rower.allRaceCrewInfo")
-                  img(:src="Object.values(rowerStore.rower.allRaceCrewInfo)[0].blades.crop")
-                  span {{ Object.values(rowerStore.rower.allRaceCrewInfo)[0].club.name }}
+              transition-group(name="fade" tag="div" class="club-group")
+                .club(v-if="rowerStore.rower.unique_clubs" v-for="club in rowerStore.rower.unique_clubs" :key="club.id")
+                  img(:src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`")
+                  span {{ club.name }}
+
             .right
               transition(name="fade")
                 UiOverviewTable(v-if="rowerStore && rowerStore.rower.roleCounts")

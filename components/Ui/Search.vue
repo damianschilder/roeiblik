@@ -7,7 +7,7 @@
           input(placeholder="Name..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
           UiLoader.loading( v-if="loading")
           nuxt-icon( v-else name="search" @click="searchRowers()")
-        .error( v-if="rowerStore.error") Can't connect to databank. Please try again later.
+        .error( v-if="rowerStore.error") Te veel verzoeken achter elkaar of time-team is niet beschikbaar.
         .empty( v-if="empty") Helaas, geen resultaten.
         .results( :class="{ 'loading-results': loading }" v-if="rowerStore && !rowerStore.error && paginatedResults.length > 0" )
           .headers

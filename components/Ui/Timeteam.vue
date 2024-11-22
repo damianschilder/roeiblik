@@ -13,6 +13,9 @@
             .top-label
               span {{ formatDate(race.date) }}
               span {{ race.location }}
+            .entry
+              img(:src="race.blades.crop")
+              span {{race.entry_name}}
             .title
               span {{ race.field_name }}
               span.result {{ race.adjusted_position }} in {{ race.round_type_code }}
@@ -133,6 +136,16 @@
         color: $neutral50;
         font-size: 0.9rem;
       }
+      .entry {
+        position: relative;
+        bottom: -0.3rem;
+        display: flex;
+        column-gap: 0.25rem;
+        align-items: center;
+        img {
+          height: 0.8rem;
+        }
+      }
       .title {
         /* text-transform: capitalize; */
         display: flex;
@@ -199,7 +212,7 @@
     }
     .boot {
       grid-area: boot;
-      @include mobile {
+      @include tablet-small {
         margin-top: 1rem;
     }
     }
