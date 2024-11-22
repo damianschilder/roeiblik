@@ -37,11 +37,10 @@
                     .rowers
                       h4 Roeiers
                       span(v-for="(rower, idx) in race.rowers") {{ idx + 1 }} {{ rower.name }}
-                      span (c) {{race.coxes[0]}}
+                      span(v-if="race.coxes[0]") (c) {{race.coxes[0]}}
                     .coaches
                       h4 Coaches
                       span(v-for="coach in race.coaches") {{ coach }}
-  
                     .boat
                       h4 Boot
                       span {{ race.boat_name }}
