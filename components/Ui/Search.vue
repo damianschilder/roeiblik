@@ -13,7 +13,7 @@
           .headers
             .name
               span Naam
-              UiInfo(v-if="rowerStore.results.length > 1")
+              UiInfo
                 .help
                   .question
                     span Waarom sta ik er meerdere keren tussen?
