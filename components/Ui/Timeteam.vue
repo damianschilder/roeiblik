@@ -182,7 +182,7 @@ function formatDate(dateInput: string | string[]): string {
       flex-direction: column;
       row-gap: 2rem;
       width: 100%;
-      padding: 3rem 0 3rem;
+      padding: 3rem 0 1.5rem;
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       &:last-child {
         border: initial;
@@ -216,6 +216,7 @@ function formatDate(dateInput: string | string[]): string {
         .title {
         }
         .result {
+          text-transform: initial;
           text-align: right;
           min-width: 5rem;
         }
@@ -252,6 +253,7 @@ function formatDate(dateInput: string | string[]): string {
     overflow: hidden;
     @include tablet-small {
       display: grid;
+      grid-template-columns: auto max-width;
       grid-template-areas: 
         "roeiers coaches"
         "boot boot";
