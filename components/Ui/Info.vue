@@ -51,7 +51,7 @@ onBeforeUnmount(() => {
     height: fit-content;
     width: 1.2rem;
     &:hover {
-      color: black;
+      color: red;
     }
   }
   > .info {
@@ -69,21 +69,6 @@ onBeforeUnmount(() => {
     background-color: white;
     filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.15));
     transition: visibility 0.2s, opacity 0.2s;
-    > .row {
-      display: grid;
-      grid-template-columns: 19.2px auto;
-      column-gap: 0.5rem;
-      align-items: center;
-      > span:first-child {
-        justify-self: center;
-      }
-    }
-    &:deep(.lacking.nuxt-icon svg) {
-      color: $neutral-variant80;
-    }
-    &:deep(.present.nuxt-icon svg) {
-      color: green;
-    }
   }
   > .show {
     visibility: initial;

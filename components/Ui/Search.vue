@@ -2,7 +2,18 @@
   .component-wrapper 
     .element-wrapper
       .element-body
-        h1 Zoek naar roeiers, stuurtjes, coaches
+        .title
+          h1 Zoek naar roeiers, stuurtjes, coaches
+          UiInfo
+            .help
+              span Hoe is dit anders dan Knrbeter?
+            .link
+              span Knrbeter gebruikte de KNRB als bron die alleen resultaten van klasserende wedstrijden bevat. Klasserende resultaten vind je tegenwoordig niet meer op Knrbeter, maar op de website van de 
+              a(href="https://roeievenementen.knrb.nl/person-search") KNRB
+              span .
+              br
+              br
+              span Roeiblik gebruikt Time-team als bron en toont alle vermeldingen van een persoon binnen Time-team.
         .search(:class="{ 'searchable': searchQuery && searchQuery.length > 0 }")
           input(placeholder="Naam..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
           UiLoader.loading(v-if="loading")
@@ -13,17 +24,10 @@
           .headers
             .name
               span Naam
-              UiInfo
+              UiInfo(v-if="rowerStore.results.length > 1")
                 .help
-                  .question
-                    span Waarom sta ik er meerdere keren tussen?
-                    span Wanneer je wordt ingeschreven voor een wedstrijd kan je waarschijnlijk als nieuwe of bestaande roeier worden ingeschreven.
-                  .question
-                    span Hoe is dit anders dan Knrbeter?
-                    .link
-                      span Knrbeter gebruikte de KNRB als bron die alleen resultaten van klasserende wedstrijden bevat. Klasserende resultaten vind je tegenwoordig niet meer op Knrbeter, maar op de website van de 
-                      a(href="https://roeievenementen.knrb.nl/person-search") KNRB
-                      span .
+                  span Waarom sta ik er meerdere keren tussen?
+                  span Wanneer je wordt ingeschreven voor een wedstrijd kan je als nieuwe of bestaande roeier worden ingeschreven.
             span.id ID
           .result(v-for="rower, index in paginatedResults" :key="rower.id" @click="selectRower(rower.id, index)")
             span {{ rower.displayname }}
@@ -102,9 +106,18 @@ function prevPage() {
   align-self: center;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  h1 {
-    margin-bottom: 4rem;
+  .title {
+    display: flex;
+    h1 {
+      margin-bottom: 4rem;
+    }
+    &:deep(.info) {
+      right: 1.2rem;
+      top: 1rem;
+      left: initial;
+      width: 40rem;
+      z-index: 999;
+    }
   }
   .search {
     position: relative;
@@ -178,26 +191,21 @@ function prevPage() {
     color: $neutral-variant50;
     .name {
       display: flex;
+      column-gap: 0.1rem;
       & .help {
         text-align: left;
         display: flex;
-        flex-direction: column;
         width: 20rem;
-        row-gap: 1rem;
+        row-gap: 0.25rem;
         font-weight: normal;
         color: black;
         flex-direction: column;
         @include mobile {
           width: 13rem;
         }
-        .question {
-          display: flex;
-          row-gap: 0.25rem;
-          flex-direction: column;
-          >:first-child {
-            font-weight: bold;
-            color: $neutral50;
-          }
+        >:first-child {
+          font-weight: bold;
+          color: $neutral50;
         }
       }
     }
@@ -255,6 +263,26 @@ function prevPage() {
       opacity: 0.5;
       font-size: 0.9rem;
     }
+  }
+}
+
+.help {
+  text-align: left;
+  display: flex;
+  width: 20rem;
+  row-gap: 0.25rem;
+  font-weight: normal;
+  color: black;
+  flex-direction: column;
+  .link {
+    text-align: left;
+  }
+  @include mobile {
+    width: 13rem;
+  }
+  >:first-child {
+    font-weight: bold;
+    color: $neutral50;
   }
 }
 </style>
