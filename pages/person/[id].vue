@@ -3,7 +3,7 @@
   UiRowerIntro(v-if="rowerStore && rowerStore.rower.displayname")
   .loader-container(v-if="!rowerStore || rowerStore.loading")
     UiLoader
-    span Voor veel resultaten kan dit een paar seconden duren.
+    span Dit kan een paar seconden duren.
   UiTimeteam(v-if="rowerStore && rowerStore.rower?.allRaceCrewInfo")
 </template>
 

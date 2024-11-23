@@ -12,22 +12,25 @@
             .race-event(v-for="(event, eventKey) in crew" :key="eventKey" :class="event.length > 1 ? 'multiple-events' : 'single-event'")
               .race-detail(v-for="(race, raceKey) in event" :class="getRaceClass(race, event)")
                 .top-label
-                  span {{ formatDate(race.date) }}
-                  span {{ race.location }}
+                  span {{ formatDate(race.date) || 'Datum niet aanwezig' }}
+                  span {{ race.location || 'Locatie niet aanwezig' }}
                 .entry
-                  img(:src="race.blades.crop")
-                  span {{ race.entry_name }}
+                  img(v-if="race.blades" :src="race.blades.crop")
+                  span {{ race.entry_name || 'Niet aanwezig' }}
                 .title
-                  span(v-if="raceKey == 0") {{ race.field_name }}
-                  span(v-else) {{ race.event_code }}
-                  span(v-if="raceKey == 0").result {{ race.adjusted_position }} in {{ race.round_type_code }}
-                  span(v-else).result {{ race.adjusted_position }} in {{ race.round_type_name }}
+                  span {{ raceKey == 0 ? (race.field_name || 'Niet aanwezig') : (race.event_code || 'Niet aanwezig') }}
+                  .result 
+                    nuxt-icon(v-if="race.adjusted_position === 1 && (race.round_type_code === 'FA' || /^\d/.test(race.round_type_code))" name="trophy")
+
+                    span
+                      | {{ formatPosition(race.adjusted_position) || (raceKey == 0 ? 'Niet aanwezig' : 'Tijd ontbreekt') }} in 
+                      | {{ raceKey == 0 ? (race.round_type_code || `${race.timing_layout.distance}m`) : (race.round_type_name || 'ontbreekt') }}
                 .bottom-label
                   span.role {{ race.role }}
-                  span.time {{race.timing_layout.code}} in {{ race.result }}
-                .rules(v-if="race.rules.length > 0")
-                  span {{ race.rules[0].code }} door
-                .icon(v-if="raceKey === event.length - 1")
+                  span(v-if="race.result").time {{ race.timing_layout.code }} in {{ race.result }}
+                .rules(v-if="race.rules.length > 0 && race.result")
+                  span {{ race.rules[0].code || 'niet gevonden' }} door
+                .icon(v-if="raceKey === 0")
                   nuxt-icon(
                     :name="expandedRaceKey === `${crewKey}-${eventKey}-${raceKey}` ? 'less' : 'more'"
                     @click="toggleExpand(crewKey, eventKey, raceKey)"
@@ -36,14 +39,14 @@
                   .expand(v-show="expandedRaceKey === `${crewKey}-${eventKey}-${raceKey}`")
                     .rowers
                       h4 Roeiers
-                      span(v-for="(rower, idx) in race.rowers") {{ idx + 1 }} {{ rower.name }}
-                      span(v-if="race.coxes[0]") (c) {{race.coxes[0]}}
+                      span(v-for="(rower, idx) in race.rowers") {{ idx + 1 }} {{ rower.name || 'niet gevonden' }}
+                      span(v-if="race.coxes[0]") (c) {{race.coxes[0] || 'niet gevonden'}}
                     .coaches
                       h4 Coaches
-                      span(v-for="coach in race.coaches") {{ coach }}
+                      span(v-for="coach in race.coaches") {{ coach || 'niet gevonden' }}
                     .boat
                       h4 Boot
-                      span {{ race.boat_name }}
+                      span {{ race.boat_name || 'niet gevonden' }}
                       
   
   </template>
@@ -70,14 +73,19 @@ function toggleExpand(crewKey: string, eventKey: string, raceKey: string) {
   }
 }
 
+function formatPosition(position) {
+  if (!position) return null;
+  return position + (position === 1 ? 'ste' : 'de');
+}
+
 // Function to determine the appropriate class for each race
 function getRaceClass(race: any, event: any[]): string {
-  const finalsOrder = ['FA', 'FB', 'FC', 'FD', 'FE', 'HF', 'KF', 'E', 'TT'];
+  const finalsOrder = ['FA', 'FB', 'FC', 'FD', 'FE', 'HF', 'KF', 'E', 'H', 'TT'];
   const highestAttainedFinal = event.length === 1 ? race : event.find(e => finalsOrder.includes(e.round_type_code)) || { round_type_code: '' };
 
   if (race.round_type_code === highestAttainedFinal.round_type_code) {
     return 'final';
-  } else if (['E', 'TT', 'HF', 'KF'].includes(race.round_type_code) || !race.round_type_code || /^R\d*$/.test(race.round_type_code)) {
+  } else if (['E', 'H', 'TT', 'HF', 'KF'].includes(race.round_type_code) || !race.round_type_code || /^R\d*$/.test(race.round_type_code)) {
     return event.length === 1 ? 'final' : 'preliminary';
   } else if (/^\d+m$/.test(race.round_type_code) && event.length > 1) {
     return 'multiple-distance';
@@ -98,12 +106,12 @@ function formatDate(dateInput: string | string[]): string {
   } else if (typeof dateInput === 'string') {
     dateString = dateInput;
   } else {
-    return 'Invalid Date';
+    return undefined;
   }
 
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
-    return 'Invalid Date'; // Handle cases where the date cannot be parsed
+    return undefined; // Handle cases where the date cannot be parsed
   }
 
   return date.toLocaleDateString('en-GB', {
@@ -115,12 +123,24 @@ function formatDate(dateInput: string | string[]): string {
 
 </script>
   
-  <style lang="scss" scoped>
-  .multiple-events {
-    display: flex;
-    flex-direction: column;
-    row-gap: 2rem;
+<style lang="scss" scoped>
+.multiple-events {
+  display: flex;
+  flex-direction: column;
+  /* row-gap: 1.2rem; */
+
+  > :not(:first-child) {
+    margin-top: 1rem;
+    .entry, .top-label {
+      display: none!important;
+    }
+    .role {
+      visibility: hidden;
+    }
+    margin-top: 1rem;
   }
+}
+
   
 
   
@@ -209,12 +229,13 @@ function formatDate(dateInput: string | string[]): string {
         display: flex;
         justify-content: space-between;
         column-gap: 2.5rem;
-        margin: 0.07rem 0 0.35rem;
         font-size: 1.5rem;
         font-weight: bold;
         .title {
         }
         .result {
+          display: flex;
+          column-gap: 0.2rem;
           text-transform: initial;
           text-align: right;
           min-width: 5rem;
@@ -227,8 +248,7 @@ function formatDate(dateInput: string | string[]): string {
         font-size: 1.15rem;
       }
       .icon {
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
+        margin-top: 0.5rem;
         display: flex;
         justify-content: center;
         .nuxt-icon {
@@ -247,6 +267,7 @@ function formatDate(dateInput: string | string[]): string {
   }
   
   .expand {
+    margin: 0.5rem;
     display: flex;
     justify-content: space-between;
     overflow: hidden;
@@ -294,10 +315,11 @@ function formatDate(dateInput: string | string[]): string {
   }
 
 .preliminary {
-  margin-top: 1rem;
   border-left: 1px solid rgba(0, 0, 0, 0.05);
 
   margin-left: 1rem;
+  margin-right: 2rem;
+  margin-top: 1rem!important;
   .top-label, .entry,  {
     display: none!important;
   }
@@ -305,9 +327,10 @@ function formatDate(dateInput: string | string[]): string {
     padding-left: 1rem;
   }
   .title {
+    margin-top: initial!important;
     >:first-child {
-      font-size: 1.2rem;
-      font-weight: normal;
+      font-size: 1.1rem;
+      font-weight: bold;
       padding-left: 1rem;
     }
   }
@@ -323,11 +346,12 @@ function formatDate(dateInput: string | string[]): string {
     font-size: 0.9rem;
   }
   .result {
-    font-size: 1.2rem!important;
+    font-size: 1.1rem!important;
     font-weight: normal!important;
+    font-weight: bold!important;
   }
   .time {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     min-width: max-content;
   }
 }

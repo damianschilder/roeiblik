@@ -11,8 +11,8 @@
                   .club(v-if="rowerStore.rower.unique_clubs" v-for="club in rowerStore.rower.unique_clubs" :key="club.id")
                     img(:src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`")
                     span {{ club.name }}
-                NuxtLink( to="/faq")
-                  UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
+                //- NuxtLink( to="/faq")
+                //-   UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
             .right
               transition(name="fade")
                 UiOverviewTable(v-if="rowerStore && rowerStore.rower.roleCounts")

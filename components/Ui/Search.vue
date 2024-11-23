@@ -83,7 +83,6 @@ function prevPage() {
 
 <style lang="scss" scoped>
 .component-wrapper {
-  min-height: 50%;
   align-self: center;
   @include mobile {
     margin-top: 5rem;
