@@ -14,7 +14,7 @@
           .name
             span Naam
           span.id ID
-        .result(v-for="rower, index in paginatedResults" :key="rower.id" @click="selectRower(rower.id, index)")
+        .result(v-for="rower, index in paginatedResults" :key="rower.id" @click="selectRower(rower.id, ((currentPage -1 ) * resultsPerPage) + index)")
           span {{ rower.displayname }}
           span.id {{ rower.id }}
         .pagination(v-if="rowerStore.results.length > resultsPerPage")
