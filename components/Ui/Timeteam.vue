@@ -231,8 +231,7 @@ function formatDate(dateInput: string | string[]): string {
         column-gap: 2.5rem;
         font-size: 1.5rem;
         font-weight: bold;
-        .title {
-        }
+        word-break: break-word;
         .result {
           display: flex;
           column-gap: 0.2rem;
