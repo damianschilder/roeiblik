@@ -3,7 +3,10 @@
   .element-wrapper
       .element-body 
         .navbar-content
-          NuxtLink( to="/") Roeiblik.nl
+          .left
+          NuxtLink.title( to="/") Roeiblik.nl
+          .right
+            NuxtLink.faq(to="/faq") FAQ
 </template>
 
 <style lang="scss">
@@ -22,15 +25,50 @@
   height: 100%;
   display: flex;
   align-items: center;
-  font-family: "Racing Sans One";
   font-size: 32px;
-  color: $seed;
-  @include mobile {
-    justify-content: center;
+  justify-content: space-between;
+
+  .left {
+    display: none;
   }
-  a {
-  color: $seed;
-  text-decoration: none;
+
+  .right {
+    display: flex;
+    align-items: center;
+    
+    .faq {
+      font-weight: bold;
+      font-size: 1.2rem;
+      text-decoration: none;
+      color: $neutral50;
+      letter-spacing: .15rem;
+
+      &:hover {
+        color: $seed;
+      }
+    }
+  }
+
+  .title {
+    color: $seed;
+    font-family: "Racing Sans One";
+    text-decoration: none;
+  }
+
+  // Mobile-specific adjustments
+  @include mobile {
+    justify-content: center; // Centers all content
+
+    .left,
+    .right {
+      display: none; // Hide the other elements
+    }
+
+    .title {
+      display: block; // Ensure the title is visible
+      text-align: center; // Explicitly center the text
+    }
   }
 }
+
 </style>

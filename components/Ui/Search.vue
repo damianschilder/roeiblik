@@ -1,26 +1,26 @@
 <template lang="pug">
-  .component-wrapper 
-    .element-wrapper
-      .element-body
-        h1 Zoek naar roeiers, stuurtjes, coaches binnen Time-Team.
-        .search(:class="{ 'searchable': searchQuery && searchQuery.length > 0 }")
-          input(placeholder="Naam..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
-          UiLoader.loading(v-if="loading")
-          nuxt-icon(v-else name="search" @click="searchRowers()")
-        .error(v-if="rowerStore.error") Te veel verzoeken achter elkaar of time-team is niet beschikbaar.
-        .empty(v-if="empty") Helaas, geen resultaten.
-        .results(:class="{ 'loading-results': loading }" v-if="rowerStore && !rowerStore.error && paginatedResults.length > 0")
-          .headers
-            .name
-              span Naam
-            span.id ID
-          .result(v-for="rower, index in paginatedResults" :key="rower.id" @click="selectRower(rower.id, index)")
-            span {{ rower.displayname }}
-            span.id {{ rower.id }}
-          .pagination(v-if="rowerStore.results.length > resultsPerPage")
-            button(@click="prevPage" :disabled="currentPage === 1") Previous
-            span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, rowerStore.results.length) }} of {{ rowerStore.results.length }} {{ rowerStore.results.length === 1 ? 'result' : 'results' }}
-            button(@click="nextPage" :disabled="currentPage === totalPages") Next
+.component-wrapper
+  .element-wrapper
+    .element-body
+      h1 Zoek naar roeiers, stuurtjes, coaches binnen Time-Team.
+      .search(:class="{ 'searchable': searchQuery && searchQuery.length > 0 }")
+        input(placeholder="Naam..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
+        UiLoader.loading(v-if="loading")
+        nuxt-icon(v-else name="search" @click="searchRowers()")
+      .error(v-if="rowerStore.error") Te veel verzoeken achter elkaar of time-team is niet beschikbaar.
+      .empty(v-if="empty") Helaas, geen resultaten.
+      .results(:class="{ 'loading-results': loading }" v-if="rowerStore && !rowerStore.error && paginatedResults.length > 0")
+        .headers
+          .name
+            span Naam
+          span.id ID
+        .result(v-for="rower, index in paginatedResults" :key="rower.id" @click="selectRower(rower.id, index)")
+          span {{ rower.displayname }}
+          span.id {{ rower.id }}
+        .pagination(v-if="rowerStore.results.length > resultsPerPage")
+          button(@click="prevPage" :disabled="currentPage === 1") Previous
+          span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, rowerStore.results.length) }} of {{ rowerStore.results.length }} {{ rowerStore.results.length === 1 ? 'result' : 'results' }}
+          button(@click="nextPage" :disabled="currentPage === totalPages") Next
 </template>
 
 <script setup lang="ts">
@@ -84,9 +84,6 @@ function prevPage() {
 <style lang="scss" scoped>
 .component-wrapper {
   align-self: center;
-  @include mobile {
-    margin-top: 5rem;
-  }
 }
 
 .element-body {
@@ -97,10 +94,14 @@ function prevPage() {
   h1 {
     text-align: center;
     margin-bottom: 4rem;
+    @include mobile {
+      margin-top: 5rem;
+    }
   }
   .search {
     position: relative;
     margin-bottom: 2rem;
+
     > input {
       border-bottom: 1px solid $seed;
       width: 30rem;
