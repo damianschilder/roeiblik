@@ -3,7 +3,7 @@
     .element-wrapper
       .element-body
         .error(v-if="rowerStore.error") Can't connect to databank. Please try again later.
-        .races(v-if="rowerStore.rower.firstEntryDate")
+        .races(v-if="Object.keys(rowerStore.rower.allRaceCrewInfo).length")
           .actions
             UiSort(@click="toggleSortOrder" :label="isReversed ? 'Oudste eerst' : 'Recentste eerst'")
           .header
