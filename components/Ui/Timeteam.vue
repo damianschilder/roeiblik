@@ -3,12 +3,14 @@
     .element-wrapper
       .element-body
         .error(v-if="rowerStore.error") Can't connect to databank. Please try again later.
-        .races( v-if="rowerStore.rower.firstEntryDate")
+        .races(v-if="rowerStore.rower.firstEntryDate")
+          .actions
+            UiSort(@click="toggleSortOrder" :label="isReversed ? 'Oudste eerst' : 'Recentste eerst'")
           .header
-            span {{ formatDate(rowerStore.rower.firstEntryDate) }}
-            span {{Object.keys(rowerStore.rower.allRaceCrewInfo).length}} races
-            span {{ formatDate(rowerStore.rower.lastEntryDate) }}
-          .race(v-for="(crew, crewKey) in rowerStore.rower.allRaceCrewInfo" :key="crewKey")
+            //- span {{ formatDate(rowerStore.rower.firstEntryDate) }}
+            span {{ Object.keys(sortedRaceCrewInfo).length }} races
+            //- span {{ formatDate(rowerStore.rower.lastEntryDate) }}
+          .race(v-for="(crew, crewKey) in sortedRaceCrewInfo" :key="crewKey")
             .race-event(v-for="(event, eventKey) in crew" :key="eventKey" :class="event.length > 1 ? 'multiple-events' : 'single-event'")
               .race-detail(v-for="(race, raceKey) in event" :class="getRaceClass(race, event)")
                 .top-label
@@ -21,7 +23,6 @@
                   span {{ raceKey == 0 ? (race.field_name || 'Niet aanwezig') : (race.event_code || 'Niet aanwezig') }}
                   .result 
                     nuxt-icon(v-if="race.adjusted_position === 1 && (race.round_type_code === 'FA' || /^\d/.test(race.round_type_code))" name="trophy")
-
                     span.text
                       | {{ formatPosition(race.adjusted_position) || (raceKey == 0 ? 'Niet aanwezig' : 'Tijd ontbreekt') }} in 
                       | {{ raceKey == 0 ? (race.round_type_code || `${race.timing_layout.distance}m`) : (race.round_type_name || 'ontbreekt') }}
@@ -40,18 +41,16 @@
                     .rowers
                       h4 Roeiers
                       span(v-for="(rower, idx) in race.rowers") {{ idx + 1 }} {{ rower.name || 'niet gevonden' }}
-                      span(v-if="race.coxes[0]") (c) {{race.coxes[0] || 'niet gevonden'}}
+                      span(v-if="race.coxes[0]") (c) {{ race.coxes[0] || 'niet gevonden' }}
                     .coaches
                       h4 Coaches
                       span(v-for="coach in race.coaches") {{ coach || 'niet gevonden' }}
                     .boat
                       h4 Boot
                       span {{ race.boat_name || 'niet gevonden' }}
-                      
-  
-  </template>
-  
-  <script setup lang="ts">
+</template>
+
+<script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useRowersStore } from '@/stores/rowers';
@@ -62,6 +61,23 @@ const route = useRoute();
 // Store the currently expanded race key
 const expandedRaceKey = ref<string | null>(null);
 
+// State to track the sort order
+const isReversed = ref(false);
+
+// Function to toggle the sort order
+function toggleSortOrder() {
+  isReversed.value = !isReversed.value;
+}
+
+// Computed property to handle the sorted race crew info
+const sortedRaceCrewInfo = computed(() => {
+  const raceCrewInfo = rowerStore.rower.allRaceCrewInfo;
+  return isReversed.value
+    ? Object.fromEntries(Object.entries(raceCrewInfo).reverse())
+    : raceCrewInfo;
+});
+
+// Function to handle expanding/collapsing race details
 function toggleExpand(crewKey: string, eventKey: string, raceKey: string) {
   const uniqueKey = `${crewKey}-${eventKey}-${raceKey}`;
   if (expandedRaceKey.value === uniqueKey) {
@@ -120,8 +136,8 @@ function formatDate(dateInput: string | string[]): string {
     year: 'numeric',
   });
 }
-
 </script>
+
   
 <style lang="scss" scoped>
 .multiple-events {
@@ -141,7 +157,13 @@ function formatDate(dateInput: string | string[]): string {
   }
 }
 
-  
+.actions {
+  display: flex;
+  margin-top: 2rem;
+  @include mobile {
+    display: initial;
+  }
+}
 
   
   .final {
@@ -157,7 +179,6 @@ function formatDate(dateInput: string | string[]): string {
   }
   
   .component-wrapper {
-    margin-top: 2rem;
     .element-wrapper {
       .element-body {
         display: flex;
@@ -187,14 +208,13 @@ function formatDate(dateInput: string | string[]): string {
     } 
     .header {
       display: flex;
+      margin-top: 1rem;
       justify-content: space-between;
       color: $neutral50;
       font-size: 0.9rem;
-      padding-bottom: 0.1rem;
       font-weight: bold;
       padding-bottom: 0.1rem;
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-
     }
     .race {
       display: flex;
@@ -261,9 +281,6 @@ function formatDate(dateInput: string | string[]): string {
           }
         }
       }
-    }
-    >:nth-child(2) {
-      padding-top: 1.5rem;
     }
   }
   
