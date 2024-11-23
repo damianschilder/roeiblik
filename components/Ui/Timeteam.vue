@@ -160,9 +160,6 @@ function formatDate(dateInput: string | string[]): string {
 .actions {
   display: flex;
   margin-top: 2rem;
-  @include mobile {
-    display: initial;
-  }
 }
 
   
