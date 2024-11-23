@@ -21,7 +21,7 @@
           button(@click="prevPage" :disabled="currentPage === 1") Previous
           span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, rowerStore.results.length) }} of {{ rowerStore.results.length }} {{ rowerStore.results.length === 1 ? 'result' : 'results' }}
           button(@click="nextPage" :disabled="currentPage === totalPages") Next
-</template>
+</template> 
 
 <script setup lang="ts">
 const rowerStore = useRowersStore();
@@ -55,7 +55,7 @@ async function searchRowers() {
 
 function selectRower(id: Person['id'], index: number) {
   rowerStore.getRower(id, index);
-  if (rowerStore.results && rowerStore.results[index] && rowerStore.results[index].id) {
+  if (rowerStore.results && rowerStore.results[(currentPage.value - 1) * resultsPerPage + 1 + index] && rowerStore.results[index].id) {
     router.push({ name: 'person-id', params: { id: rowerStore.results[index].id } });
   }
 }
