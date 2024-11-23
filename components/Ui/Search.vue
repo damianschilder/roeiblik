@@ -55,9 +55,7 @@ async function searchRowers() {
 
 function selectRower(id: Person['id'], index: number) {
   rowerStore.getRower(id, index);
-  if (rowerStore.results && rowerStore.results[(currentPage.value - 1) * resultsPerPage + 1 + index] && rowerStore.results[index].id) {
-    router.push({ name: 'person-id', params: { id: rowerStore.results[index].id } });
-  }
+  router.push({ name: 'person-id', params: { id: rowerStore.results[index].id } });
 }
 
 // Computed properties for pagination

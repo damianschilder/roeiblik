@@ -5,19 +5,6 @@
       .content
         nuxt-icon(name="filter")
         span Filter
-      .dropdown
-        .pair
-          input( type="checkbox")
-          span Als roeier
-        .pair
-          input( type="checkbox")
-          span Als stuur
-        .pair
-          input( type="checkbox")
-          span Als coach
-        .pair
-          input( type="checkbox")
-          span Alleen winsten
   </template>
     
   <script setup lang="ts">

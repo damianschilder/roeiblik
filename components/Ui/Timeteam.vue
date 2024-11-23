@@ -6,11 +6,12 @@
         .races(v-if="Object.keys(rowerStore.rower.allRaceCrewInfo).length")
           .actions
             UiSort(@click="toggleSortOrder" :label="isReversed ? 'Oudste eerst' : 'Recentste eerst'")
+            UiWon( v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0" v-model="showOnlyWins" )
           .header
             //- span {{ formatDate(rowerStore.rower.firstEntryDate) }}
             span {{ Object.keys(sortedRaceCrewInfo).length }} races
             //- span {{ formatDate(rowerStore.rower.lastEntryDate) }}
-          .race(v-for="(crew, crewKey) in sortedRaceCrewInfo" :key="crewKey")
+          .race(v-for="(crew, crewKey) in sortedRaceCrewInfo" :key="crewKey" )
             .race-event(v-for="(event, eventKey) in crew" :key="eventKey" :class="event.length > 1 ? 'multiple-events' : 'single-event'")
               .race-detail(v-for="(race, raceKey) in event" :class="getRaceClass(race, event)")
                 .top-label
@@ -57,6 +58,7 @@ import { useRowersStore } from '@/stores/rowers';
 
 const rowerStore = useRowersStore();
 const route = useRoute();
+const showOnlyWins = ref(false);
 
 // Store the currently expanded race key
 const expandedRaceKey = ref<string | null>(null);
@@ -71,11 +73,40 @@ function toggleSortOrder() {
 
 // Computed property to handle the sorted race crew info
 const sortedRaceCrewInfo = computed(() => {
-  const raceCrewInfo = rowerStore.rower.allRaceCrewInfo;
+  const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {}; // Ensure it's always an object
+
+  const processedInfo = Object.entries(raceCrewInfo).reduce((crewAcc, [crewKey, events]) => {
+    // Process and filter events
+    const filteredEvents = Object.entries(events).reduce((eventAcc, [eventKey, races]) => {
+      // Filter races based on the 'showOnlyWins' condition
+      const filteredRaces = (races || []).filter(
+        race =>
+          !showOnlyWins.value || // Include all if the checkbox is unchecked
+          (race.adjusted_position === 1 && race.round_type_code === 'FA') // Include only wins if checked
+      );
+
+      // Only include the event if it has races left after filtering
+      if (filteredRaces.length > 0) {
+        eventAcc[eventKey] = filteredRaces;
+      }
+
+      return eventAcc;
+    }, {} as Record<string, typeof races>);
+
+    // Only include the crew if there are events left after filtering
+    if (Object.keys(filteredEvents).length > 0) {
+      crewAcc[crewKey] = filteredEvents;
+    }
+
+    return crewAcc;
+  }, {} as typeof raceCrewInfo);
+
+  // Sort the resulting data by date if necessary
   return isReversed.value
-    ? Object.fromEntries(Object.entries(raceCrewInfo).reverse())
-    : raceCrewInfo;
+    ? Object.fromEntries(Object.entries(processedInfo).reverse())
+    : processedInfo;
 });
+
 
 // Function to handle expanding/collapsing race details
 function toggleExpand(crewKey: string, eventKey: string, raceKey: string) {
@@ -159,6 +190,7 @@ function formatDate(dateInput: string | string[]): string {
 
 .actions {
   display: flex;
+  justify-content: space-between;
   margin-top: 2rem;
 }
 
@@ -377,6 +409,18 @@ function formatDate(dateInput: string | string[]): string {
 }
 .rules2 {
   font-size: 1rem!important;
+}
+
+.checkmark:after {
+  left: 9px;
+  top: 5px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
 }
 </style>
   

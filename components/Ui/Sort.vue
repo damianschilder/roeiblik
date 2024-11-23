@@ -21,6 +21,13 @@ defineProps({
     border: 1px solid rgba(0, 0, 0, 0.05);
     cursor: pointer;
     border-radius: 5px;
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
   }
+:deep(svg) {
+  height: 1.1rem;
+  width: 1.1rem;
+}
   </style>
     
