@@ -22,7 +22,7 @@
                   .result 
                     nuxt-icon(v-if="race.adjusted_position === 1 && (race.round_type_code === 'FA' || /^\d/.test(race.round_type_code))" name="trophy")
 
-                    span
+                    span.text
                       | {{ formatPosition(race.adjusted_position) || (raceKey == 0 ? 'Niet aanwezig' : 'Tijd ontbreekt') }} in 
                       | {{ raceKey == 0 ? (race.round_type_code || `${race.timing_layout.distance}m`) : (race.round_type_name || 'ontbreekt') }}
                 .bottom-label
@@ -238,7 +238,9 @@ function formatDate(dateInput: string | string[]): string {
           column-gap: 0.2rem;
           text-transform: initial;
           text-align: right;
-          min-width: 5rem;
+          .text {
+            min-width: 7.0625rem;
+          }
         }
       }
       .bottom-label {
