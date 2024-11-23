@@ -5,7 +5,7 @@
       .footer-content
         NuxtLink Roeiblik
         .source 
-          span Source: Time-Team Regatta Systems 
+          span Bron: Time-Team Regatta Systems 
           a(href="https://time-team.nl/") https://time-team.nl/
           span .
 </template>
