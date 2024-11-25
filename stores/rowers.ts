@@ -28,7 +28,7 @@ export const useRowersStore = defineStore("rowers", () => {
     }
   }
 
-  async function getRower(id, index) {
+  async function getRower(id: string, index: number) {
     loading.value = true;
 
     if (results.value && results.value[index]) {
@@ -52,7 +52,6 @@ export const useRowersStore = defineStore("rowers", () => {
       }
 
       let allRaceCrewInfo = {};
-      let roleCounts = { Rower: 0, Coach: 0, Cox: 0, Unknown: 0 };
       let totalWins = { Rower: 0, Coach: 0, Cox: 0 };
       const uniqueClubs = new Map();
 
@@ -75,10 +74,6 @@ export const useRowersStore = defineStore("rowers", () => {
         if (entryData) {
           const role = determineRole(personDetails, entryData);
           raceDetails.role = role;
-
-          if (roundEntry.round_type_code !== "E") {
-            roleCounts[role]++;
-          }
 
           if (
             raceDetails.adjusted_position === 1 &&
@@ -151,6 +146,40 @@ export const useRowersStore = defineStore("rowers", () => {
           acc[key] = allRaceCrewInfo[key];
           return acc;
         }, {});
+
+      // Calculate role counts based on finalized allRaceCrewInfo
+      let roleCounts = { Rower: 0, Coach: 0, Cox: 0, Undefined: 0 };
+
+      for (const eventId in allRaceCrewInfo) {
+        for (const entryName in allRaceCrewInfo[eventId]) {
+          let hasRower = false;
+          let hasCoach = false;
+          let hasCox = false;
+          let hasUndefined = false;
+
+          for (const race of allRaceCrewInfo[eventId][entryName]) {
+            switch (race.role) {
+              case "Rower":
+                hasRower = true;
+                break;
+              case "Coach":
+                hasCoach = true;
+                break;
+              case "Cox":
+                hasCox = true;
+                break;
+              case "Undefined":
+                hasUndefined = true;
+                break;
+            }
+          }
+
+          if (hasRower) roleCounts.Rower++;
+          if (hasCoach) roleCounts.Coach++;
+          if (hasCox) roleCounts.Cox++;
+          if (hasUndefined) roleCounts.Undefined++;
+        }
+      }
 
       const firstEntryDate = Object.values(allRaceCrewInfo)
         .flatMap(event => Object.values(event).flatMap(entry => entry))
@@ -280,7 +309,7 @@ export const useRowersStore = defineStore("rowers", () => {
       adjusted_position: adjustedPos,
       club,
       combination,
-      entry_name: entryName, // Added entry name
+      entry_name: entryName,
       rowers,
       coaches,
       coxes,
