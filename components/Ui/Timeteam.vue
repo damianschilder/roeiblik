@@ -9,7 +9,7 @@
             UiWon( v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0" v-model="showOnlyWins" )
           .header
             //- span {{ formatDate(rowerStore.rower.firstEntryDate) }}
-            span {{ Object.keys(sortedRaceCrewInfo).length }} races
+            span {{ Object.keys(sortedRaceCrewInfo).length }} wedstrijden
             //- span {{ formatDate(rowerStore.rower.lastEntryDate) }}
           .race(v-for="(crew, crewKey) in sortedRaceCrewInfo" :key="crewKey" )
             .race-event(v-for="(event, eventKey) in crew" :key="eventKey" :class="event.length > 1 ? 'multiple-events' : 'single-event'")
@@ -76,44 +76,54 @@
   
   // Computed property to handle the sorted race crew info
   const sortedRaceCrewInfo = computed(() => {
-    const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {}; // Ensure it's always an object
-  
-    const processedInfo = Object.entries(raceCrewInfo).reduce((crewAcc, [crewKey, events]) => {
-      // Process and filter events
-      const filteredEvents = Object.entries(events).reduce((eventAcc, [eventKey, races]) => {
-        // Filter races based on the 'showOnlyWins' condition
-        const filteredRaces = (races || []).filter(race => {
-          const isFinalWin = race.adjusted_position === 1 && race.round_type_code === 'FA';
-          const isNumberedSingleRace = race.adjusted_position === 1 && /^\d/.test(race.round_type_code) && races.length === 1;
-  
-          return (
-            !showOnlyWins.value || // Include all if the checkbox is unchecked
-            isFinalWin || // Include only wins if checked
-            isNumberedSingleRace // Include if round_type_code starts with a number and is the only race in the event, with position 1
-          );
-        });
-  
-        // Only include the event if it has races left after filtering
-        if (filteredRaces.length > 0) {
-          eventAcc[eventKey] = filteredRaces;
-        }
-  
-        return eventAcc;
-      }, {} as Record<string, typeof races>);
-  
-      // Only include the crew if there are events left after filtering
-      if (Object.keys(filteredEvents).length > 0) {
-        crewAcc[crewKey] = filteredEvents;
+  const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {}; // Ensure it's always an object
+
+  const processedInfo = Object.entries(raceCrewInfo).reduce((crewAcc, [crewKey, events]) => {
+    // Process and filter events
+    const filteredEvents = Object.entries(events).reduce((eventAcc, [eventKey, races]) => {
+      // Filter races based on the 'showOnlyWins' condition
+      const filteredRaces = (races || []).filter(race => {
+        const isFinalWin = race.adjusted_position === 1 && race.round_type_code === 'FA';
+        const isNumberedSingleRace = race.adjusted_position === 1 && /^\d/.test(race.round_type_code) && races.length === 1;
+
+        return (
+          !showOnlyWins.value || // Include all if the checkbox is unchecked
+          isFinalWin || // Include only wins if checked
+          isNumberedSingleRace // Include if round_type_code starts with a number and is the only race in the event, with position 1
+        );
+      });
+
+      // Only include the event if it has races left after filtering
+      if (filteredRaces.length > 0) {
+        eventAcc[eventKey] = filteredRaces;
       }
-  
-      return crewAcc;
-    }, {} as typeof raceCrewInfo);
-  
-    // Sort the resulting data by date if necessary
-    return isReversed.value
-      ? Object.fromEntries(Object.entries(processedInfo).reverse())
-      : processedInfo;
+
+      return eventAcc;
+    }, {} as Record<string, typeof races>);
+
+    // Only include the crew if there are events left after filtering
+    if (Object.keys(filteredEvents).length > 0) {
+      crewAcc[crewKey] = filteredEvents;
+    }
+
+    return crewAcc;
+  }, {} as typeof raceCrewInfo);
+
+  // Convert processed info to array for sorting
+  const entries = Object.entries(processedInfo);
+
+  // Sort the resulting data by date
+  const sortedEntries = entries.sort(([_, eventA], [__, eventB]) => {
+    const dateA = new Date(Object.values(eventA)[0][0]?.date?.[0] ?? '1970-01-01');
+    const dateB = new Date(Object.values(eventB)[0][0]?.date?.[0] ?? '1970-01-01');
+    return isReversed.value ? dateA - dateB : dateB - dateA;
   });
+
+  // Convert sorted entries back to an object
+  return Object.fromEntries(sortedEntries);
+});
+
+
   
   // Function to handle expanding/collapsing race details
   function toggleExpand(crewKey: string, eventKey: string, raceKey: string) {

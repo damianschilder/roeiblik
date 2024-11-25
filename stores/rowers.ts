@@ -7,6 +7,7 @@ export const useRowersStore = defineStore("rowers", () => {
   const error = ref<boolean>(false);
   const results = ref<Person[]>([]);
   const rower = ref<Object>({});
+  const storeCurrentPage = ref<number>(1);
 
   async function searchRowers(query: string) {
     if (!loading.value) {
@@ -325,7 +326,7 @@ export const useRowersStore = defineStore("rowers", () => {
     return undefined;
   }
 
-  return { loading, error, results, searchRowers, getRower, rower };
+  return { loading, error, results, searchRowers, getRower, rower, storeCurrentPage };
 });
 
 if (import.meta.hot) {
