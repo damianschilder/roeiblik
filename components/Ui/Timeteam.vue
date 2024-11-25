@@ -23,7 +23,10 @@
                 .title
                   span {{ raceKey == 0 ? (race.field_name || 'Niet aanwezig') : (race.event_code || 'Niet aanwezig') }}
                   .result 
-                    nuxt-icon(v-if="race.adjusted_position === 1 && (race.round_type_code === 'FA' || /^\d/.test(race.round_type_code))" name="trophy")
+                    nuxt-icon(
+                      v-if="race.adjusted_position === 1 && (race.round_type_code === 'FA' || ( /^\d/.test(race.round_type_code) && event.length === 1 ))"
+                      name="trophy"
+                    )
                     span.text
                       | {{ formatPosition(race.adjusted_position) || (raceKey == 0 ? 'Niet aanwezig' : 'Tijd ontbreekt') }} in 
                       | {{ raceKey == 0 ? (race.round_type_code || `${race.timing_layout.distance}m`) : (race.round_type_name || 'ontbreekt') }}
@@ -49,125 +52,130 @@
                     .boat
                       h4 Boot
                       span {{ race.boat_name || 'niet gevonden' }}
-</template>
-
-<script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useRoute } from 'vue-router';
-import { useRowersStore } from '@/stores/rowers';
-
-const rowerStore = useRowersStore();
-const route = useRoute();
-const showOnlyWins = ref(false);
-
-// Store the currently expanded race key
-const expandedRaceKey = ref<string | null>(null);
-
-// State to track the sort order
-const isReversed = ref(false);
-
-// Function to toggle the sort order
-function toggleSortOrder() {
-  isReversed.value = !isReversed.value;
-}
-
-// Computed property to handle the sorted race crew info
-const sortedRaceCrewInfo = computed(() => {
-  const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {}; // Ensure it's always an object
-
-  const processedInfo = Object.entries(raceCrewInfo).reduce((crewAcc, [crewKey, events]) => {
-    // Process and filter events
-    const filteredEvents = Object.entries(events).reduce((eventAcc, [eventKey, races]) => {
-      // Filter races based on the 'showOnlyWins' condition
-      const filteredRaces = (races || []).filter(
-        race =>
-          !showOnlyWins.value || // Include all if the checkbox is unchecked
-          (race.adjusted_position === 1 && race.round_type_code === 'FA') // Include only wins if checked
-      );
-
-      // Only include the event if it has races left after filtering
-      if (filteredRaces.length > 0) {
-        eventAcc[eventKey] = filteredRaces;
+  </template>
+  
+  <script setup lang="ts">
+  import { ref, computed } from 'vue';
+  import { useRoute } from 'vue-router';
+  import { useRowersStore } from '@/stores/rowers';
+  
+  const rowerStore = useRowersStore();
+  const route = useRoute();
+  const showOnlyWins = ref(false);
+  
+  // Store the currently expanded race key
+  const expandedRaceKey = ref<string | null>(null);
+  
+  // State to track the sort order
+  const isReversed = ref(false);
+  
+  // Function to toggle the sort order
+  function toggleSortOrder() {
+    isReversed.value = !isReversed.value;
+  }
+  
+  // Computed property to handle the sorted race crew info
+  const sortedRaceCrewInfo = computed(() => {
+    const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {}; // Ensure it's always an object
+  
+    const processedInfo = Object.entries(raceCrewInfo).reduce((crewAcc, [crewKey, events]) => {
+      // Process and filter events
+      const filteredEvents = Object.entries(events).reduce((eventAcc, [eventKey, races]) => {
+        // Filter races based on the 'showOnlyWins' condition
+        const filteredRaces = (races || []).filter(race => {
+          const isFinalWin = race.adjusted_position === 1 && race.round_type_code === 'FA';
+          const isNumberedSingleRace = race.adjusted_position === 1 && /^\d/.test(race.round_type_code) && races.length === 1;
+  
+          return (
+            !showOnlyWins.value || // Include all if the checkbox is unchecked
+            isFinalWin || // Include only wins if checked
+            isNumberedSingleRace // Include if round_type_code starts with a number and is the only race in the event, with position 1
+          );
+        });
+  
+        // Only include the event if it has races left after filtering
+        if (filteredRaces.length > 0) {
+          eventAcc[eventKey] = filteredRaces;
+        }
+  
+        return eventAcc;
+      }, {} as Record<string, typeof races>);
+  
+      // Only include the crew if there are events left after filtering
+      if (Object.keys(filteredEvents).length > 0) {
+        crewAcc[crewKey] = filteredEvents;
       }
-
-      return eventAcc;
-    }, {} as Record<string, typeof races>);
-
-    // Only include the crew if there are events left after filtering
-    if (Object.keys(filteredEvents).length > 0) {
-      crewAcc[crewKey] = filteredEvents;
-    }
-
-    return crewAcc;
-  }, {} as typeof raceCrewInfo);
-
-  // Sort the resulting data by date if necessary
-  return isReversed.value
-    ? Object.fromEntries(Object.entries(processedInfo).reverse())
-    : processedInfo;
-});
-
-
-// Function to handle expanding/collapsing race details
-function toggleExpand(crewKey: string, eventKey: string, raceKey: string) {
-  const uniqueKey = `${crewKey}-${eventKey}-${raceKey}`;
-  if (expandedRaceKey.value === uniqueKey) {
-    // Collapse if the same race is clicked again
-    expandedRaceKey.value = null;
-  } else {
-    // Expand the new race and collapse others
-    expandedRaceKey.value = uniqueKey;
-  }
-}
-
-function formatPosition(position) {
-  if (!position) return null;
-  return position + (position === 1 ? 'ste' : 'de');
-}
-
-// Function to determine the appropriate class for each race
-function getRaceClass(race: any, event: any[]): string {
-  const finalsOrder = ['FA', 'FB', 'FC', 'FD', 'FE', 'HF', 'KF', 'E', 'H', 'TT'];
-  const highestAttainedFinal = event.length === 1 ? race : event.find(e => finalsOrder.includes(e.round_type_code)) || { round_type_code: '' };
-
-  if (race.round_type_code === highestAttainedFinal.round_type_code) {
-    return 'final';
-  } else if (['E', 'H', 'TT', 'HF', 'KF'].includes(race.round_type_code) || !race.round_type_code || /^R\d*$/.test(race.round_type_code)) {
-    return event.length === 1 ? 'final' : 'preliminary';
-  } else if (/^\d+m$/.test(race.round_type_code) && event.length > 1) {
-    return 'multiple-distance';
-  } else if (/^\d+m$/.test(race.round_type_code)) {
-    return 'distance';
-  } else {
-    return '';
-  }
-}
-
-// Function to format the date to "5 June 2022"
-function formatDate(dateInput: string | string[]): string {
-  let dateString: string;
-
-  // Handle if dateInput is an array
-  if (Array.isArray(dateInput) && dateInput.length > 0) {
-    dateString = dateInput[0]; // Use the first date in the array
-  } else if (typeof dateInput === 'string') {
-    dateString = dateInput;
-  } else {
-    return undefined;
-  }
-
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) {
-    return undefined; // Handle cases where the date cannot be parsed
-  }
-
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+  
+      return crewAcc;
+    }, {} as typeof raceCrewInfo);
+  
+    // Sort the resulting data by date if necessary
+    return isReversed.value
+      ? Object.fromEntries(Object.entries(processedInfo).reverse())
+      : processedInfo;
   });
-}
-</script>
+  
+  // Function to handle expanding/collapsing race details
+  function toggleExpand(crewKey: string, eventKey: string, raceKey: string) {
+    const uniqueKey = `${crewKey}-${eventKey}-${raceKey}`;
+    if (expandedRaceKey.value === uniqueKey) {
+      // Collapse if the same race is clicked again
+      expandedRaceKey.value = null;
+    } else {
+      // Expand the new race and collapse others
+      expandedRaceKey.value = uniqueKey;
+    }
+  }
+  
+  function formatPosition(position) {
+    if (!position) return null;
+    return position + (position === 1 ? 'ste' : 'de');
+  }
+  
+  // Function to determine the appropriate class for each race
+  function getRaceClass(race: any, event: any[]): string {
+    const finalsOrder = ['FA', 'FB', 'FC', 'FD', 'FE', 'HF', 'KF', 'E', 'H', 'TT'];
+    const highestAttainedFinal = event.length === 1 ? race : event.find(e => finalsOrder.includes(e.round_type_code)) || { round_type_code: '' };
+  
+    if (race.round_type_code === highestAttainedFinal.round_type_code) {
+      return 'final';
+    } else if (['E', 'H', 'TT', 'HF', 'KF'].includes(race.round_type_code) || !race.round_type_code || /^R\d*$/.test(race.round_type_code)) {
+      return event.length === 1 ? 'final' : 'preliminary';
+    } else if (/^\d+m$/.test(race.round_type_code) && event.length > 1) {
+      return 'multiple-distance';
+    } else if (/^\d+m$/.test(race.round_type_code)) {
+      return 'distance';
+    } else {
+      return '';
+    }
+  }
+  
+  // Function to format the date to "5 June 2022"
+  function formatDate(dateInput: string | string[]): string {
+    let dateString: string;
+  
+    // Handle if dateInput is an array
+    if (Array.isArray(dateInput) && dateInput.length > 0) {
+      dateString = dateInput[0]; // Use the first date in the array
+    } else if (typeof dateInput === 'string') {
+      dateString = dateInput;
+    } else {
+      return undefined;
+    }
+  
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return undefined; // Handle cases where the date cannot be parsed
+    }
+  
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+  </script>
+  
 
   
 <style lang="scss" scoped>
