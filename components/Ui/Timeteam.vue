@@ -44,11 +44,11 @@
                   .expand(v-show="expandedRaceKey === `${crewKey}-${eventKey}-${raceKey}`")
                     .rowers
                       h4 Roeiers
-                      span(v-for="(rower, idx) in race.rowers") {{ idx + 1 }} {{ rower.name || 'niet gevonden' }}
-                      span(v-if="race.coxes[0]") (c) {{ race.coxes[0] || 'niet gevonden' }}
+                      span(v-for="(rower, idx) in race.rowers" :class="{ 'rower': (rower.name === rowerStore.rower.displayname) }") {{ idx + 1 }} {{ rower.name || 'niet gevonden' }}
+                      span(v-if="race.coxes[0]" :class="{ 'rower': (race.coxes[0] === rowerStore.rower.displayname) }") (c) {{ race.coxes[0] || 'niet gevonden' }}
                     .coaches
                       h4 Coaches
-                      span(v-for="coach in race.coaches") {{ coach || 'niet gevonden' }}
+                      span(v-for="coach in race.coaches" :class="{ 'rower': (coach === rowerStore.rower.displayname) }") {{ coach || 'niet gevonden' }}
                     .boat
                       h4 Boot
                       span {{ race.boat_name || 'niet gevonden' }}
@@ -204,6 +204,11 @@
     }
     margin-top: 1rem;
   }
+}
+
+
+.rower {
+  font-weight: bold;
 }
 
 .actions {
