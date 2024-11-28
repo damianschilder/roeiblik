@@ -5,12 +5,8 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'cloudflare' // Targets Cloudflare Workers
   },
-  runtimeConfig: {
-    public: {
-      foodDataKey: process.env.NUXT_PUBLIC_FOODCENTRAL_API_KEY,
-      gtagId: process.env.NUXT_PUBLIC_GTAG_ID
-    }
-  },
+
+  site: {  url: 'https://roeiblik.com/',  name: 'Roeiblik'  },
 
   app: {
     head: {
@@ -18,20 +14,23 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'Zoek naar uitslagen van roeiers, stuurtjes en coaches binnen Time-Team.'},
+        { name: 'keywords', content: 'roeiblik, roei blik, taarten, roei taarten, roeien, uitslagen, time-team, time team, winsten, stuurtjes, roeiers, coaches' },
       ],
-      link: [{ rel: 'icon', type: 'image/png', href: '/favicon.png?v=2' }]
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/favicon.png?v=2' },
+        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Mulish/Mulish-VariableFont.ttf', crossorigin: 'anonymous' },
+        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Racing Sans One/RacingSansOne-Regular.ttf', crossorigin: 'anonymous' }
+      ],
     },
   },
 
-  modules: [
-    [
-      '@pinia/nuxt',
-      {
-        autoImports: ['defineStore', 'acceptHMRUpdate'],
-      },
-    ],
-    'nuxt-icons',
-  ],
+  modules: [[
+    '@pinia/nuxt',
+    {
+      autoImports: ['defineStore', 'acceptHMRUpdate'],
+    },
+  ], 'nuxt-icons', '@nuxtjs/sitemap', '@nuxtjs/robots'],
 
   imports: {
     dirs: ['stores', 'types'],

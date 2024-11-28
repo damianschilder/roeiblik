@@ -24,6 +24,15 @@
             span Om te verduidelijken of de juiste persoon is gevonden, worden deze verenigingen onder de naam weergegeven.
 </template>
 
+<script setup lang="ts">
+useHead({
+  title: 'FAQ',
+  meta: [
+    { name: 'description', content: 'Vaak gestelde vragen.' },
+  ],
+});
+</script>
+
 <style lang="scss" scoped>
 .content {
   padding: 3.5rem 0 1rem;

@@ -14,6 +14,16 @@ import { useRowersStore } from '@/stores/rowers';
 const rowerStore = useRowersStore();
 const runtimeConfig = useRuntimeConfig();
 
+const pageTitle = computed(() => {
+  return rowerStore?.rower?.displayname || 'Roeiblik';
+});
+
+// Dynamically set the head title
+useHead({
+  title: pageTitle,
+});
+
+
 const route = useRoute();
 
 const isLoading = computed(() => rowerStore.loading);
