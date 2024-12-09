@@ -9,7 +9,7 @@
             UiWon( v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0" v-model="showOnlyWins" )
           .header
             //- span {{ formatDate(rowerStore.rower.firstEntryDate) }}
-            span {{ Object.keys(sortedRaceCrewInfo).length }} wedstrijden
+            span {{ Object.keys(sortedRaceCrewInfo).length }} vermeldingen
             //- span {{ formatDate(rowerStore.rower.lastEntryDate) }}
           .race(v-for="(crew, crewKey) in sortedRaceCrewInfo" :key="crewKey" )
             .race-event(v-for="(event, eventKey) in crew" :key="eventKey" :class="event.length > 1 ? 'multiple-events' : 'single-event'")

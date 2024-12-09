@@ -8,8 +8,10 @@
               h2 {{ rowerStore.rower.displayname }}
               .clubs
                 transition-group(name="fade" tag="div" class="club-group")
-                  .club(v-if="rowerStore.rower.unique_clubs" v-for="club in rowerStore.rower.unique_clubs" :key="club.id")
-                    img(:src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`")
+                  .club(v-if="rowerStore.rower.unique_clubs" v-for="club in rowerStore.rower.unique_clubs" :key="club.id" )
+                    img(
+                      :src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`"
+                      @error="handleImageError($event)")
                     span {{ club.name }}
                 //- NuxtLink( to="/faq")
                 //-   UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
@@ -21,6 +23,12 @@
   <script setup lang="ts">
   const rowerStore = useRowersStore();
   const runtimeConfig = useRuntimeConfig();
+
+// Handle broken image error
+function handleImageError(event: Event): void {
+  const imgElement = event.target as HTMLImageElement;
+  imgElement.style.visibility = 'hidden'; // Hide the broken image
+}
 
   // Function to format the date to "5 June 2022"
 function formatDate(dateInput: string | string[]): string {

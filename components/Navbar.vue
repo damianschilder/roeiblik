@@ -4,7 +4,7 @@
       .element-body 
         .navbar-content
           .left
-          NuxtLink.title( to="https://roeiblik.com/") Roeiblik
+          NuxtLink.title( to="/") Roeiblik
           .right
             NuxtLink.faq(to="/faq") FAQ
 </template>
