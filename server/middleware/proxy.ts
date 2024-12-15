@@ -1,7 +1,7 @@
 // In-memory rate limit store
 const rateLimitStore: Record<string, { count: number; lastRequest: number }> = {};
 
-const MAX_REQUESTS_PER_MINUTE = 10; // Max 10 requests per minute per IP
+const MAX_REQUESTS_PER_MINUTE = 1000; // Max 10 requests per minute per IP
 const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute in milliseconds
 
 export default defineEventHandler(async (event) => {
