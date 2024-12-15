@@ -1,11 +1,9 @@
+// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   pages: true,
-  ssr: true, // Enable Server-Side Rendering
+  ssr: true,
   nitro: {
-    preset: 'cloudflare-pages', // Use cloudflare-pages preset
-    externals: {
-      inline: ['papaparse'], // Inline papaparse to avoid Rollup issues
-    },
+    preset: 'cloudflare',
   },
 
   site: {
@@ -15,17 +13,35 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: "Roeiblik",
+      title: 'Roeiblik',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Zoek naar uitslagen van roeiers, stuurtjes en coaches binnen Time-Team.' },
-        { name: 'keywords', content: 'roeiblik, roei blik, taarten, roei taarten, roeien, uitslagen, time-team, time team, winsten, stuurtjes, roeiers, coaches' },
+        {
+          name: 'description',
+          content: 'Zoek naar uitslagen van roeiers, stuurtjes en coaches binnen Time-Team.',
+        },
+        {
+          name: 'keywords',
+          content: 'roeiblik, roei blik, taarten, roei taarten, roeien, uitslagen, time-team, time team, winsten, stuurtjes, roeiers, coaches',
+        },
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png?v=2' },
-        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Mulish/Mulish-VariableFont.ttf', crossorigin: 'anonymous' },
-        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Racing Sans One/RacingSansOne-Regular.ttf', crossorigin: 'anonymous' },
+        {
+          rel: 'preload',
+          as: 'font',
+          type: 'font/ttf',
+          href: '/assets/fonts/Mulish/Mulish-VariableFont.ttf',
+          crossorigin: 'anonymous',
+        },
+        {
+          rel: 'preload',
+          as: 'font',
+          type: 'font/ttf',
+          href: '/assets/fonts/Racing Sans One/RacingSansOne-Regular.ttf',
+          crossorigin: 'anonymous',
+        },
       ],
     },
   },
@@ -42,33 +58,46 @@ export default defineNuxtConfig({
     '@nuxtjs/robots',
   ],
 
+  sitemap: {
+    hostname: 'https://roeiblik.com',
+    gzip: true,
+    routes: async () => {
+      return [];
+    },
+  },
+
   robots: {
     rules: [
-      { userAgent: '*', allow: '/' }, // Fixing missing allow/disallow rules
+      { userAgent: '*', allow: '/' },
     ],
+    sitemap: 'https://roeiblik.com/sitemap.xml',
   },
 
   imports: {
     dirs: ['stores', 'types'],
   },
 
-  css: [
-    "@/assets/style/app.scss",
-  ],
+  css: ['@/assets/style/app.scss'],
 
   vite: {
     css: {
       preprocessorOptions: {
         scss: {
-          additionalData: `
-            @use "@/assets/style/_variables.scss" as *;
-            @use "@/assets/style/_breakpoints.scss" as *;
-          `,
+          additionalData:
+            '@use "@/assets/style/_variables.scss" as *; @use "@/assets/style/_breakpoints.scss" as *;',
         },
       },
     },
+    build: {
+      target: 'esnext',
+    },
+  },
+
+  build: {
+    transpile: ['papaparse'],
   },
 
   devtools: { enabled: true },
+
   compatibilityDate: '2024-11-20',
 });
