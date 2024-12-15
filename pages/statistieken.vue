@@ -1,52 +1,114 @@
 <template lang="pug">
-  .page-wrapper
-    h2 Uitslagen per veld
-    StatisticsTable( :fileList="event_results_list" folder="event_results" :hiddenColumns="['Regatta ID', 'Event Name']")
-    h2 Statistieken per club per veld
-    StatisticsTable( :fileList="club_statistics_list" folder="club_statistics" :hiddenColumns="['Event Name']")
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue';
-  const event_results_list = ref([]);
-  const club_statistics_list = ref([]);
-  
-  onMounted(async () => {
-    // Fetch JSON from the public folder
-    const event_results_list_response = await fetch('/file_lists/event_results_list.json');
-    event_results_list.value = await event_results_list_response.json();
-  
-    const club_statistics_list_response = await fetch('/file_lists/club_statistics_list.json');
-    club_statistics_list.value = await club_statistics_list_response.json();
-  });
-  </script>
-  
-  
-  <style lang="scss" scoped>
-  .page-wrapper {
-    display: flex;
-    flex-direction: column;
-    padding: 3rem 0 0;
-    height: 100%;
-  }
-  
-  .beta {
-    display: none;
-    justify-content: center;
-    align-items: center;
-    padding: 0.5rem 0.5rem;
-    font-size: 0.9rem;
-    background-color: rgba(230, 0, 0, 0.10);;
-    a {
-      color: #663333;
-  
+.page-wrapper
+  .header
+    h2 {{title}}
+    .select-file
+      select(v-model="selectedEventName")
+        option( style="font-family: 'Mulish', sans-serif;" v-for="(file, index) in allEventNames" :key="index" :value="file.event_name") {{ file.event_name }}
+  h3 Uitslagen per veld
+  StatisticsTable.table(
+    :selectedFile="getFileByEventName(selectedEventName, 'event_results')"
+    folder="event_results"
+    :hiddenColumns="['Regatta ID', 'Event Name', 'Last Tournament Date', 'Fastest Time']"
+    winnaars=true
+  )
+  h3 Statistieken per club
+  StatisticsTable(
+    :selectedFile="getFileByEventName(selectedEventName, 'club_statistics')"
+    folder="club_statistics"
+    :hiddenColumns="['Event Name']"
+  )
+
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+
+
+const title = ref('Selecteer een veld');
+
+// Reactive variables for file lists
+const eventResultsList = ref([]);
+const clubStatisticsList = ref([]);
+
+// User-selected event name
+const selectedEventName = ref(''); // Start with an empty value
+
+// Fetch JSON files on mount
+onMounted(async () => {
+  try {
+    const eventResultsResponse = await fetch('/file_lists/event_results_list.json');
+    eventResultsList.value = await eventResultsResponse.json();
+
+    const clubStatisticsResponse = await fetch('/file_lists/club_statistics_list.json');
+    clubStatisticsList.value = await clubStatisticsResponse.json();
+
+    // Default to the first available event name if lists are not empty
+    if (eventResultsList.value.length) {
+      selectedEventName.value = eventResultsList.value[0].event_name;
     }
-    @include mobile {
-      display: flex;
-    }
+  } catch (error) {
+    console.error('Error loading JSON files:', error);
   }
-  
-  h2 {
-    margin-bottom: 1rem;
-  }
-  </style>
+});
+
+// Combine all unique event names from both lists
+const allEventNames = computed(() => {
+  const namesSet = new Set([
+    ...eventResultsList.value.map(file => file.event_name),
+    ...clubStatisticsList.value.map(file => file.event_name),
+  ]);
+  return Array.from(namesSet).map(name => ({ event_name: name }));
+});
+
+// Function to find the correct file by event name and type
+const getFileByEventName = (eventName, type) => {
+  title.value = eventName;
+  const list = type === 'event_results' ? eventResultsList.value : clubStatisticsList.value;
+  const file = list.find(file => file.event_name === eventName);
+  return file ? file.filename : null; // Return filename or null if not found
+};
+</script>
+
+
+<style lang="scss" scoped>
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  padding: 3rem 1rem 0;
+  height: 100%;
+}
+
+h3 {
+  margin-bottom: 1rem;
+}
+
+.table {
+  margin-bottom: 5rem;
+}
+
+select, option {
+  cursor: pointer;
+  background-color: white;
+  padding: 0.5rem 0.5rem;
+  border-radius: 5px;
+  row-gap: 0.25rem;
+  margin-top: 0.5rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1rem;
+  display: grid;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  grid-template-columns: repeat(3, 1fr);
+  filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.05));
+}
+option, select {
+  font-family: "Mulish";
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+</style>
