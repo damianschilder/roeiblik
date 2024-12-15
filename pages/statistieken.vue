@@ -1,9 +1,9 @@
 <template lang="pug">
   .page-wrapper
     h2 Uitslagen per veld
-    StatisticsTable( :fileList="event_results_list" folder="event_results")
+    StatisticsTable( :fileList="event_results_list" folder="event_results" :hiddenColumns="['Regatta ID']")
     h2 Statistieken per club per veld
-    StatisticsTable( :fileList="club_statistics_list" folder="club_statistics")
+    StatisticsTable( :fileList="club_statistics_list" folder="club_statistics" :hiddenColumns="['Event Name']")
   </template>
   
   <script setup>

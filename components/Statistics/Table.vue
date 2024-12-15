@@ -6,7 +6,7 @@
         .select-file
           select#file-select(v-model="selectedFile" @change="loadCSV")
             option(v-for="(file, index) in files" :key="index" :value="file.filename") {{ file.event_name }}
-  
+      
         // Column Visibility Checkboxes
         .checkbox-container
           label(v-for="(header, index) in headers" :key="index")
@@ -40,10 +40,14 @@
     folder: {
       type: String,
       required: true,
-    }
+    },
+    hiddenColumns: {
+      type: Array,
+      default: () => [], // Default to an empty array if not provided
+    },
   });
   
-  const { folder } = props;
+  const { folder, hiddenColumns } = props;
   
   // Reactive variables
   const files = ref([]);
@@ -70,7 +74,7 @@
       // Extract and prepare headers
       headers.value = output[0].map(name => ({
         name: name,
-        visible: true,
+        visible: !hiddenColumns.includes(name), // Set visibility based on hiddenColumns
       }));
   
       // Extract rows and format specific columns
