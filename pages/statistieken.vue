@@ -9,7 +9,7 @@
     StatisticsTable.table(
       :selectedFile="getFileByEventName(selectedEventName, 'event_results')"
       folder="event_results"
-      :hiddenColumns="['Regatta ID', 'Event Name', 'Last Tournament Date', 'Fastest Time']"
+      :hiddenColumns="['Id', 'Event Name', 'Wedstrijd laatste dag', 'Snelste tijd']"
       winnaars=true
     )
     h3 Statistieken per club
@@ -22,7 +22,7 @@
     StatisticsTable.table(
       :selectedFile="getFileByEventName(selectedEventName, 'event_rowers')"
       folder="event_rowers"
-      :hiddenColumns="['Event Name', 'personId','firstRegattaId','lastRegattaId', 'firstRegattaWonId', 'EventNameWon']"
+      :hiddenColumns="['Event Name', 'Id','Eerste wedstrijd ID','Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
     )
   </template>
   
