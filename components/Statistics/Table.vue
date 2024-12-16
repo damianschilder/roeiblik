@@ -34,7 +34,7 @@
                 td(v-for="(cell, cellIndex) in row" 
                   :key="cellIndex" 
                   v-show="headers[cellIndex]?.visible" 
-                  :class="{ number: numberColumnArray.includes(headers[cellIndex]?.name) }") {{ cell.endsWith('.0') ? cell.slice(0, -2) : cell }}
+                  :class="{ number: numberColumnArray.includes(headers[cellIndex]?.name) }") {{ cell === 'NaN:NaN.NaN' ? '' : (cell.endsWith('.0') ? cell.slice(0, -2) : cell) }}
         p(v-else) No matching results found.
   </template>
   
