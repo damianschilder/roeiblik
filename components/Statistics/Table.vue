@@ -31,10 +31,10 @@
               th(v-for="(header, index) in headers" :key="index" v-show="header.visible" :class="{ 'sticky': headerSticky }") {{ header.name }}
           tbody
             tr(v-for="(row, rowIndex) in filteredRows" :key="rowIndex")
-              td(v-for="(cell, cellIndex) in row" 
+                td(v-for="(cell, cellIndex) in row" 
                   :key="cellIndex" 
                   v-show="headers[cellIndex]?.visible" 
-                  :class="{ number: numberColumnArray.includes(headers[cellIndex]?.name) }") {{ cell }}
+                  :class="{ number: numberColumnArray.includes(headers[cellIndex]?.name) }") {{ cell.endsWith('.0') ? cell.slice(0, -2) : cell }}
         p(v-else) No matching results found.
   </template>
   
