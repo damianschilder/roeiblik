@@ -117,6 +117,7 @@
     margin-top: 0.5rem;
     max-width: 100%;
     white-space: nowrap;
+    text-transform: capitalize;
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 1rem;
