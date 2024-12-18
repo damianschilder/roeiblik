@@ -3,9 +3,9 @@
   .element-wrapper
       .element-body 
         .navbar-content
-          .left
           NuxtLink.title( to="/") Roeiblik
           .right
+            NuxtLink.statistieken(to="/statistieken") Landelijke statistieken
             NuxtLink.faq(to="/faq") FAQ
 </template>
 
@@ -27,7 +27,6 @@
   align-items: center;
   font-size: 32px;
   justify-content: space-between;
-
   .left {
     display: none;
   }
@@ -35,7 +34,8 @@
   .right {
     display: flex;
     align-items: center;
-    
+    column-gap: 2rem;
+    margin-left: 2rem;
     .faq {
       font-weight: bold;
       font-size: 1.2rem;
@@ -43,6 +43,17 @@
       color: $neutral50;
       letter-spacing: .15rem;
 
+      &:hover {
+        color: $seed;
+      }
+    }
+    .statistieken {
+      font-weight: bold;
+      font-size: 1.2rem;
+      text-decoration: none;
+      color: $neutral50;
+      // letter-spacing: .15rem;
+  
       &:hover {
         color: $seed;
       }
@@ -57,12 +68,12 @@
 
   // Mobile-specific adjustments
   @include mobile {
-    justify-content: center; // Centers all content
+    // justify-content: center; // Centers all content
 
     .left,
-    .right {
-      display: none; // Hide the other elements
-    }
+    // .right {
+    //   display: none; // Hide the other elements
+    // }
 
     .title {
       display: block; // Ensure the title is visible
