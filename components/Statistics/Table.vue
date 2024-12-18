@@ -3,7 +3,7 @@
     .content
       // Filter Button
       .actions
-        UiButton(label="Filters" :active="showFilters" @click="toggleFilters") {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+        UiButton(label="Filters" icon="filter" :active="showFilters" @click="toggleFilters") {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
         .button
           label
             input.checkbox(type="checkbox" v-model="headerSticky" @change="toggleSticky")
@@ -12,6 +12,7 @@
           label
             input.checkbox(type="checkbox" v-model="showWinnerOnly" @change="updatePositionColumns")
             span Alleen winnaars
+        UiButton(label="Download" icon="download" @click="downloadFile")
         // Search functionality
       .filters(v-if="showFilters")
         .search
@@ -158,6 +159,17 @@
       row[columnIndex]?.toString().toLowerCase().includes(searchQuery.value.toLowerCase())
     );
   };
+
+  const downloadFile = () => {
+  const csvContent = [headers.value.map(h => h.name).join(','), ...rows.value.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute('download', props.selectedFile || 'data.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
   </script>
   
   <style lang="scss" scoped>

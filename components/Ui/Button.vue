@@ -1,7 +1,7 @@
 <template lang="pug">
 .component-wrapper 
   .button(:class="{ active }")
-    nuxt-icon(name="filter")
+    nuxt-icon(:name="icon")
     span {{label}}
 </template>
     
@@ -9,6 +9,7 @@
 
 defineProps({
   label: String,
+  icon: String,
   active: Boolean,
 })
 
