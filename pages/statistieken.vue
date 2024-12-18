@@ -8,7 +8,7 @@
           placeholder="Zoek naar een veld..."
           v-model="searchQuery"
           @focus="showDropdown = true"
-          @focusout="showDropdown = false"
+            @focusout="setTimeout(() => showDropdown = false, 100)"
           @input="filterOptions"
         )
         ul.dropdown-list(v-show="showDropdown")

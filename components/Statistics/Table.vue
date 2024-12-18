@@ -24,7 +24,7 @@
             input(type="checkbox" v-model="header.visible") 
             span {{ header.name }}
       
-      .table-container
+      .table-container(:class="{ 'loading': loading }")
         table(v-if="filteredRows.length")
           thead
             tr
@@ -68,6 +68,7 @@
   // Reactive variables
   const rows = ref([]);
   const headers = ref([]);
+  const loading = ref(false);
   const showFilters = ref(false); // Toggle visibility of the filter section
   const showWinnerOnly = ref(false); // Toggle to show only "Position 1"
   const headerSticky = ref(true); // Toggle to show sticky header
@@ -97,6 +98,7 @@
   
   // CSV loading function
   const loadCSV = async () => {
+    loading.value = true;
     if (!props.selectedFile) return;
   
     const fileUrl = `/${props.folder}/${props.selectedFile}`;
@@ -122,6 +124,7 @@
         )
       );
     });
+    loading.value = false;
   };
   
   // Watch for changes in selectedFile and reload CSV
@@ -158,6 +161,9 @@
   </script>
   
   <style lang="scss" scoped>
+  .loading {
+    opacity: 0.5;
+  }
   .table-container {
     overflow-x: auto; /* Enable horizontal scrolling */
     overflow-y: auto; /* Enable horizontal scrolling */
