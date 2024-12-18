@@ -1,28 +1,40 @@
 <template lang="pug">
   .page-wrapper
     .header
-      h2 {{title}}
-      .select-file
-        select(v-model="selectedEventName")
-          option( style="font-family: 'Mulish', sans-serif;" v-for="(file, index) in allEventNames" :key="index" :value="file.event_name") {{ file.event_name }}
+      h2 {{ title }}
+      .dropdown-wrapper(ref="dropdownWrapper")
+        input.search-input(
+          type="text"
+          placeholder="Zoek naar een veld..."
+          v-model="searchQuery"
+          @focus="showDropdown = true"
+          @focusout="showDropdown = false"
+          @input="filterOptions"
+        )
+        ul.dropdown-list(v-show="showDropdown")
+          li.dropdown-item(
+            v-for="(event, index) in filteredEvents"
+            :key="index"
+            @click="selectEvent(event.event_name)"
+          ) {{ event.event_name }}
     h3 Uitslagen per veld
     StatisticsTable.table(
-      :selectedFile="getFileByEventName(selectedEventName, 'event_results')"
+      :selectedFile="getFilePath(selectedEventName, 'event_results')"
       folder="event_results"
       :hiddenColumns="['Id', 'Event Name', 'Wedstrijd laatste dag', 'Snelste tijd']"
-      winnaars=true
+      winnaars
     )
     h3 Statistieken per club
     StatisticsTable.table(
-      :selectedFile="getFileByEventName(selectedEventName, 'club_statistics')"
-      folder="club_statistics"
+      :selectedFile="getFilePath(selectedEventName, 'event_statistics')"
+      folder="event_statistics"
       :hiddenColumns="['Event Name']"
     )
     h3 Statistieken per roeier
-    StatisticsTable.table(
-      :selectedFile="getFileByEventName(selectedEventName, 'event_rowers')"
+    StatisticsTable(
+      :selectedFile="getFilePath(selectedEventName, 'event_rowers')"
       folder="event_rowers"
-      :hiddenColumns="['Event Name', 'Id','Eerste wedstrijd ID','Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
+      :hiddenColumns="['Event Name', 'Id', 'Eerste wedstrijd ID', 'Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
     )
   </template>
   
@@ -30,65 +42,73 @@
   import { ref, computed, onMounted } from 'vue';
   
   const title = ref('Selecteer een veld');
+  const combinedFileList = ref([]);
+  const selectedEventName = ref('');
+  const searchQuery = ref('');
+  const showDropdown = ref(false);
+  const filteredEvents = ref([]);
   
-  // Reactive variables for file lists
-  const eventResultsList = ref([]);
-  const clubStatisticsList = ref([]);
-  const eventRowersList = ref([]);
-  
-  // User-selected event name
-  const selectedEventName = ref(''); // Start with an empty value
-  
-  // Fetch JSON files on mount
   onMounted(async () => {
     try {
-      const eventResultsResponse = await fetch('/file_lists/event_results_list.json');
-      eventResultsList.value = await eventResultsResponse.json();
+      const response = await fetch('/combined_files_list.json');
+      combinedFileList.value = await response.json();
   
-      const clubStatisticsResponse = await fetch('/file_lists/club_statistics_list.json');
-      clubStatisticsList.value = await clubStatisticsResponse.json();
+      // Initialize the filteredEvents with the full list
+      filteredEvents.value = combinedFileList.value;
   
-      const eventRowersResponse = await fetch('/file_lists/event_rowers_list.json');
-      eventRowersList.value = await eventRowersResponse.json();
-  
-      // Default to the first available event name if lists are not empty
-      if (eventResultsList.value.length) {
-        selectedEventName.value = eventResultsList.value[0].event_name;
+      // Default to the first event name if available
+      if (combinedFileList.value.length) {
+        selectedEventName.value = combinedFileList.value[0].event_name;
+        searchQuery.value = selectedEventName.value;
       }
     } catch (error) {
-      console.error('Error loading JSON files:', error);
+      console.error('Error loading combined JSON file:', error);
     }
+  
+    // Close dropdown when clicking outside
+    document.addEventListener('click', handleClickOutside);
   });
   
-  // Combine all unique event names from all lists
-  const allEventNames = computed(() => {
-    const namesSet = new Set([
-      ...eventResultsList.value.map(file => file.event_name),
-      ...clubStatisticsList.value.map(file => file.event_name),
-      ...eventRowersList.value.map(file => file.event_name),
-    ]);
-    return Array.from(namesSet).map(name => ({ event_name: name }));
+  // Filter events based on search query
+  const filterOptions = () => {
+    const query = searchQuery.value.toLowerCase();
+    filteredEvents.value = combinedFileList.value.filter(event =>
+      event.event_name.toLowerCase().includes(query)
+    );
+  };
+  
+  // Select event from dropdown
+  const selectEvent = (eventName) => {
+    selectedEventName.value = eventName;
+    searchQuery.value = eventName;
+    showDropdown.value = false;
+  };
+  
+  // Close dropdown when clicking outside
+  const handleClickOutside = (event) => {
+    const { dropdownWrapper } = $refs;
+    if (dropdownWrapper && !dropdownWrapper.contains(event.target)) {
+      showDropdown.value = false;
+    }
+  };
+  
+  onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
   });
   
-  // Function to find the correct file by event name and type
-  const getFileByEventName = (eventName, type) => {
+  // Function to get file path by event name and file type
+  const getFilePath = (eventName, fileType) => {
     title.value = eventName;
-    let list;
-    switch (type) {
-      case 'event_results':
-        list = eventResultsList.value;
-        break;
-        case 'club_statistics':
-          list = clubStatisticsList.value;
-          break;
-          case 'event_rowers':
-            list = eventRowersList.value;
-            break;
-            default:
-              return null;
-            }
-    const file = list.find(file => file.event_name === eventName);
-    return file ? file.filename : null; // Return filename or null if not found
+    const event = combinedFileList.value.find(event => event.event_name === eventName);
+    if (event) {
+      const fileTypeIndexMap = {
+        event_results: 1,
+        event_statistics: 0,
+        event_rowers: 2,
+      };
+      return event.files[fileTypeIndexMap[fileType]] || null;
+    }
+    return null;
   };
   </script>
   
@@ -100,38 +120,60 @@
     height: 100%;
   }
   
+  h2 {
+    text-transform: capitalize;
+    margin-bottom: 1rem;
+  }
   h3 {
     margin-bottom: 1rem;
   }
-  
+  .header{
+    margin-bottom: 2rem;
+  }
+
   .table {
     margin-bottom: 5rem;
   }
   
-  select, option {
-    cursor: pointer;
-    background-color: white;
-    padding: 0.5rem 0.5rem;
-    border-radius: 5px;
-    row-gap: 0.25rem;
-    margin-top: 0.5rem;
-    max-width: 100%;
-    white-space: nowrap;
+  .dropdown-wrapper {
+    position: relative;
+    max-width: max-content;
     text-transform: capitalize;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 1rem;
-    display: grid;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    grid-template-columns: repeat(3, 1fr);
-    filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.05));
-  }
-  option, select {
-    font-family: "Mulish";
+    input {
+      text-transform: capitalize;
+
+    }
   }
   
-  .header {
-    margin-bottom: 2rem;
+  .search-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    font-size: 1rem;
+    font-family: 'Mulish', sans-serif;
   }
+  
+  .dropdown-list {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    z-index: 1000;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .dropdown-item {
+    padding: 0.5rem;
+    cursor: pointer;
+    font-family: 'Mulish', sans-serif;
+  }
+
   </style>
   
