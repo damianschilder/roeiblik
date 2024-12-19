@@ -30,10 +30,16 @@
       folder="event_statistics"
       :hiddenColumns="['Event Name']"
     )
-    h3 Statistieken per roeier
+    //- h3 Statistieken per roeier
+    //- StatisticsTable.table(
+    //-   :selectedFile="getFilePath(selectedEventName, 'event_rowers')"
+    //-   folder="event_rowers"
+    //-   :hiddenColumns="['Event Name', 'Id', 'Eerste wedstrijd ID', 'Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
+    //- )
+    h3 Statistieken per vereniging per roeier
     StatisticsTable(
-      :selectedFile="getFilePath(selectedEventName, 'event_rowers')"
-      folder="event_rowers"
+      :selectedFile="getFilePath(selectedEventName, 'event_club_rowers_statistics')"
+      folder="event_club_rowers_statistics"
       :hiddenColumns="['Event Name', 'Id', 'Eerste wedstrijd ID', 'Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
     )
   </template>
@@ -64,9 +70,6 @@
     } catch (error) {
       console.error('Error loading combined JSON file:', error);
     }
-  
-    // Close dropdown when clicking outside
-    document.addEventListener('click', handleClickOutside);
   });
   
   // Filter events based on search query
@@ -84,18 +87,6 @@
     showDropdown.value = false;
   };
   
-  // Close dropdown when clicking outside
-  const handleClickOutside = (event) => {
-    const { dropdownWrapper } = $refs;
-    if (dropdownWrapper && !dropdownWrapper.contains(event.target)) {
-      showDropdown.value = false;
-    }
-  };
-  
-  onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
-  });
-  
   // Function to get file path by event name and file type
   const getFilePath = (eventName, fileType) => {
     title.value = eventName;
@@ -105,6 +96,7 @@
         event_results: 1,
         event_statistics: 0,
         event_rowers: 2,
+        event_club_rowers_statistics: 3,
       };
       return event.files[fileTypeIndexMap[fileType]] || null;
     }
