@@ -121,6 +121,10 @@
   display: flex;
   column-gap: 5rem;
   margin-top: 5rem;
+  @include mobile {
+    flex-direction: column;
+    row-gap: 2rem;
+  }
 }
 .nuxt-icon {
   display: flex;

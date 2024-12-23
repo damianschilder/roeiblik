@@ -39,6 +39,9 @@
   height: 100%;
   width: 100%;
   padding: 0 1rem;
+  @include mobile {
+    justify-content: center;
+  }
 }
 .title {
     color: $roeiblik;
@@ -69,6 +72,9 @@
     text-decoration: underline;
     color: $roeiblik;
   }
+  @include mobile {
+    display: none;
+  }
 }
 .small {
   text-decoration: none;
@@ -77,6 +83,8 @@
   &:hover {
     color: $black;
     text-decoration: underline;
+  }@include mobile {
+    display: none;
   }
 }
 
