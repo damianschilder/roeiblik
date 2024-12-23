@@ -60,7 +60,7 @@
   
   function selectRower(id: Person['id'], index: number) {
     if (!(id === rowerStore.rower.id)) rowerStore.getRower(id, index);
-    router.push({ name: 'person-id', params: { id: rowerStore.results[index].id } });
+    router.push({ name: 'Time-Team-persoon-id', params: { id: rowerStore.results[index].id } });
   }
   
   // Computed properties for pagination
@@ -94,12 +94,12 @@
   
   <style lang="scss" scoped>
   .component-wrapper {
-    align-self: center;
+    /* align-self: center; */
   }
   
   .element-body {
     display: flex;
-    align-self: center;
+    /* align-self: center; */
     flex-direction: column;
     align-items: center;
     h1 {
@@ -111,10 +111,12 @@
     }
     .search {
       position: relative;
+      display: flex;
+      justify-content: center;
       margin-bottom: 2rem;
   
       > input {
-        border-bottom: 1px solid $seed;
+        border-bottom: 1px solid $red;
         width: 30rem;
         font-size: 1.5rem;
         text-align: center;
@@ -123,7 +125,7 @@
           width: 100%;
         }
         &:focus {
-          border-bottom: 2px solid $seed;
+          border-bottom: 2px solid $red;
           margin-bottom: initial;
         }
       }
@@ -133,8 +135,8 @@
         margin-bottom: 0;
         width: 1.8rem;
         right: 0;
-        color: $neutral-variant50;
         top: 0;
+        color: $black50;
       }
       > .loading {
         position: absolute;
@@ -144,12 +146,6 @@
     }
   }
   
-  .searchable {
-    &:deep(.nuxt-icon svg) {
-      cursor: pointer;
-      color: black;
-    }
-  }
   
   .results {
     display: flex;
@@ -180,7 +176,7 @@
       font-weight: bold;
       padding: 0 0.5rem;
       background-color: initial;
-      color: $neutral-variant50;
+      opacity: 0.5;
       .name {
         display: flex;
         column-gap: 0.1rem;
@@ -214,23 +210,23 @@
       padding: 0.3rem 0.5rem;
       border-radius: 5px;
       column-gap: 6rem;
-      color: $neutral-variant20;
       cursor: pointer;
       white-space: nowrap;
       .id {
         font-size: 0.95rem;
-        color: $neutral50
+        opacity: 0.5;
+
       }
       @include tablet-small {
         flex-direction: column;
         text-align: left;
         .id {
           font-size: 0.8rem;
-          color: $neutral50
+          color: $black50;
         }
       }
       &:hover {
-        background-color: rgba(230, 0, 0, 0.03);
+        background-color: $red25;
         border-radius: 0.25rem;
       }
     }
@@ -242,18 +238,20 @@
       margin-top: 1rem;
       button {
         font-family: "Lato";
-        background: rgba(230, 0, 0, 0.03);
+        background: $red50;
         border: none;
         border-radius: 5px;
         padding: 0.25rem 0.5rem;
         cursor: pointer;
+        font-weight: bold;
+        color: $black50;
         &:disabled {
-          cursor: not-allowed;
-          opacity: 0.5;
+          cursor: initial;
+          color: $black20;
         }
       }
       span {
-        opacity: 0.5;
+        color: $black50;
         font-size: 0.9rem;
       }
     }
@@ -280,7 +278,14 @@
   }
 
 .current-rower {
-  background-color: rgba(230, 0, 0, 0.03)!important;
+  background-color: $red5!important;
+}
+
+.searchable {
+  &:deep(.nuxt-icon svg) {
+    cursor: pointer;
+    color: $red!important;
+  }
 }
 </style>
   

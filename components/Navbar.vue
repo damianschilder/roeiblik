@@ -1,20 +1,31 @@
 <template lang="pug">
 .navbar-wrapper
   .element-wrapper
-      .element-body 
-        .navbar-content
-          NuxtLink.title( to="/") Roeiblik
-          .right
-            NuxtLink.statistieken(to="/statistieken") Landelijke statistieken
-            NuxtLink.faq(to="/faq") FAQ
+    .navbar-content
+      NuxtLink.title( to="/") Roeiblik
+      .middle
+        NuxtLink.big(to="/Time-Team")
+          span Compobeter
+          nuxt-icon(name="person search")
+        NuxtLink.big(to="/KNRB/statistieken")
+          span Statistieken
+          nuxt-icon(name="leaderboard")
+      .right
+        NuxtLink.small(to="/faq") FAQ
+        //- span |
+        //- NuxtLink.small(to="/contact") Contact
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .navbar-wrapper {
   grid-area: 'navbar';
-  height: 75px;
-  background-color: white;
-  filter: drop-shadow(0px 4px 1px rgba(0, 0, 0, 0.25));
+  height: 70px;
+  position: sticky;
+  top: 0;
+  // background-color: rgba(15, 0, 0, .15);  
+  z-index: 999;
+  backdrop-filter: blur(7px);
+
 }
 
 .element-wrapper{
@@ -22,64 +33,56 @@
 }
 
 .navbar-content {
-  height: 100%;
   display: flex;
-  align-items: center;
-  font-size: 32px;
   justify-content: space-between;
-  .left {
-    display: none;
-  }
-
-  .right {
-    display: flex;
-    align-items: center;
-    column-gap: 2rem;
-    margin-left: 2rem;
-    .faq {
-      font-weight: bold;
-      font-size: 1.2rem;
-      text-decoration: none;
-      color: $neutral50;
-      letter-spacing: .15rem;
-
-      &:hover {
-        color: $seed;
-      }
-    }
-    .statistieken {
-      font-weight: bold;
-      font-size: 1.2rem;
-      text-decoration: none;
-      color: $neutral50;
-      // letter-spacing: .15rem;
-  
-      &:hover {
-        color: $seed;
-      }
-    }
-  }
-
-  .title {
-    color: $seed;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: 0 1rem;
+}
+.title {
+    color: $roeiblik;
     font-family: "Racing Sans One";
     text-decoration: none;
-  }
+    font-size: 2rem;
+}
 
-  // Mobile-specific adjustments
-  @include mobile {
-    // justify-content: center; // Centers all content
-
-    .left,
-    // .right {
-    //   display: none; // Hide the other elements
-    // }
-
-    .title {
-      display: block; // Ensure the title is visible
-      text-align: center; // Explicitly center the text
-    }
+.middle {
+  display: flex;
+  column-gap: 2rem;
+}
+.right {
+  display: flex;
+  column-gap: 0.5rem;
+  span {
+    color: $black50;
   }
 }
 
+.big {
+  display: flex;
+  column-gap: 0.25rem;
+  text-decoration: none;
+  font-weight: bold;
+  color: $black80;
+  &:hover {
+    text-decoration: underline;
+    color: $roeiblik;
+  }
+}
+.small {
+  text-decoration: none;
+  color: $black50;
+  font-size: 0.9rem;
+  &:hover {
+    color: $black;
+    text-decoration: underline;
+  }
+}
+
+a {
+  :hover {
+    color: $roeiblik;
+  }
+}
 </style>

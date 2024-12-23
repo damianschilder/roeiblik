@@ -5,8 +5,8 @@
 
 <style lang="scss">
 .loader {
-  border: 2px solid $neutral-variant90; /* Light grey */
-  border-top: 2px solid $neutral-variant40;; /* Blue */
+  border: 2px solid $neutral90;
+  border-top: 2px solid $neutral80;
   border-radius: 50%;
   width: 15px;
   height: 15px;

@@ -49,7 +49,7 @@ useHead({
     row-gap: 0.25rem;
     >:first-child {
       font-weight: bold;
-      color: $neutral50
+      color: $black50;
     }
   }
 }

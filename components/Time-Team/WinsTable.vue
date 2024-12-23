@@ -41,4 +41,9 @@ table {
   }
   padding: 0;
 }
+
+th {
+  color: $black50;
+  font-weight: bold;
+}
 </style>

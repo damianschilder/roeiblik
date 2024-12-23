@@ -1,10 +1,10 @@
 <template lang="pug">
 .page-wrapper
-  UiRowerIntro(v-if="rowerStore && rowerStore.rower.displayname")
+  Time-TeamHeader(v-if="rowerStore && rowerStore.rower.displayname")
   .loader-container(v-if="!rowerStore || rowerStore.loading")
     UiLoader
     span Dit kan een paar seconden duren.
-  UiTimeteam(v-if="rowerStore && rowerStore.rower?.allRaceCrewInfo")
+  Time-TeamRaces(v-if="rowerStore && rowerStore.rower?.allRaceCrewInfo")
 </template>
 
 <script setup lang="ts">

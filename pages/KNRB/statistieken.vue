@@ -8,7 +8,7 @@
           placeholder="Zoek naar een veld..."
           v-model="searchQuery"
           @focus="showDropdown = true"
-            @focusout="setTimeout(() => showDropdown = false, 100)"
+          @focusout="closeDropdown"
           @input="filterOptions"
         )
         ul.dropdown-list(v-show="showDropdown")
@@ -36,12 +36,12 @@
     //-   folder="event_rowers"
     //-   :hiddenColumns="['Event Name', 'Id', 'Eerste wedstrijd ID', 'Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
     //- )
-    h3 Statistieken per vereniging per roeier
-    StatisticsTable(
-      :selectedFile="getFilePath(selectedEventName, 'event_club_rowers_statistics')"
-      folder="event_club_rowers_statistics"
-      :hiddenColumns="['Event Name', 'Id', 'Eerste wedstrijd ID', 'Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
-    )
+    //- h3 Statistieken per vereniging per roeier
+    //- StatisticsTable(
+    //-   :selectedFile="getFilePath(selectedEventName, 'event_club_rowers_statistics')"
+    //-   folder="event_club_rowers_statistics"
+    //-   :hiddenColumns="['Event Name', 'Id', 'Eerste wedstrijd ID', 'Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
+    //- )
   </template>
   
   <script setup>
@@ -54,6 +54,12 @@
   const showDropdown = ref(false);
   const filteredEvents = ref([]);
   
+function closeDropdown() {
+    setTimeout(() => {
+      showDropdown.value = false;
+    }, 100);
+  }
+
   onMounted(async () => {
     try {
       const response = await fetch('/combined_files_list.json');
@@ -142,6 +148,7 @@
     padding: 0.5rem;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 5px;
+    background-color: white;
     font-size: 1rem;
     font-family: 'Mulish', sans-serif;
   }
@@ -155,7 +162,7 @@
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-top: none;
     border-radius: 0 0 5px 5px;
-    z-index: 1000;
+    z-index: 800;
     list-style: none;
     margin: 0;
     padding: 0;

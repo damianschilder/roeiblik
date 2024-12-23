@@ -16,6 +16,7 @@
     'nuxt'
     'footer';
   grid-template-rows: 75px 1fr 7rem; // Use 1fr to let the content area grow
+  background-color: $beige;
 }
 
 .slot-wrapper {

@@ -17,7 +17,7 @@
                 //-   UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
             .right
               transition(name="fade")
-                UiOverviewTable(v-if="rowerStore && rowerStore.rower.roleCounts")
+                Time-TeamWinsTable(v-if="rowerStore && rowerStore.rower.roleCounts")
   </template>
   
   <script setup lang="ts">
@@ -61,7 +61,8 @@ function formatDate(dateInput: string | string[]): string {
     .background {
       padding: 3.5rem 0 2rem;
       min-height: 5.875rem;
-      background-color: rgba(230, 0, 0, 0.05);
+      /* background-color: rgba(230, 0, 0, 0.05); */
+      border-bottom: 1px solid $black10;
       .element-wrapper {
         .element-body {
           display: flex;
@@ -117,7 +118,7 @@ function formatDate(dateInput: string | string[]): string {
                     text-transform: uppercase;
                     font-weight: bold;
                     letter-spacing: .2rem;
-                    color: $neutral-variant40;
+                    color: black50;
                     @include tablet-small {
                       font-size: 1rem;
                     }
@@ -148,7 +149,7 @@ function formatDate(dateInput: string | string[]): string {
   }
   >:first-child {
     font-weight: bold;
-    color: $neutral50;
+    color: $black50;
   }
 }
 

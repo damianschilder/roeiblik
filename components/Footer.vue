@@ -3,7 +3,7 @@
   .element-wrapper
     .element-body 
       .footer-content
-        NuxtLink Roeiblik
+        NuxtLink.title Roeiblik
         .source 
           span Bron: Time-Team Regatta Systems 
           a(href="https://time-team.nl/") https://time-team.nl/
@@ -14,18 +14,19 @@
 .footer-wrapper {
   grid-area: 'footer';
   height: 7rem;
-  background-color: #332B2B;
 }
 
+.title {
+  color: $roeiblik;
+}
 .footer-content {
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: rgba(230, 0, 0, 1);
-  color: white;
   font-family: "Racing Sans One";
+  color: $black50;
   text-align: center;
   font-size: 32px;
   a {
@@ -35,7 +36,7 @@
   margin-top: 1rem;
   font-size: 13px;
   > a {
-    color: white;
+    color: $black50;
   }
 }
 }

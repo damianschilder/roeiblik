@@ -23,8 +23,8 @@
                 .title
                   span {{ raceKey == 0 ? (race.field_name || 'Niet aanwezig') : (race.event_code || 'Niet aanwezig') }}
                   .result 
-                    nuxt-icon(
-                      v-if="race.adjusted_position === 1 && (race.round_type_code === 'FA' || ( /^\d/.test(race.round_type_code) && event.length === 1 ))"
+                    nuxt-icon.trophy(
+                      v-if="(race.timing_layout.distance === 2000 && race.is_final === true && (race.round_type_code === 'FA' || ( /^\d/.test(race.round_type_code) && event.length === 1 )) && race.adjusted_position === 1)|| race.adjusted_position === 1 && (race.round_type_code === 'FA' || ( /^\d/.test(race.round_type_code) && event.length === 1 ))"
                       name="trophy"
                     )
                     span.text
@@ -49,7 +49,7 @@
                     .coaches
                       h4 Coaches
                       span(v-for="coach in race.coaches" :class="{ 'rower': (coach === rowerStore.rower.displayname) }") {{ coach || 'niet gevonden' }}
-                    .boat
+                    .boat(v-if="race.boat_name")
                       h4 Boot
                       span {{ race.boat_name || 'niet gevonden' }}
   </template>
@@ -77,6 +77,7 @@
   // Computed property to handle the sorted race crew info
   const sortedRaceCrewInfo = computed(() => {
   const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {}; // Ensure it's always an object
+  console.log(raceCrewInfo)
 
   const processedInfo = Object.entries(raceCrewInfo).reduce((crewAcc, [crewKey, events]) => {
     // Process and filter events
@@ -206,6 +207,16 @@
   }
 }
 
+.nuxt-icon {
+  display: flex;
+  align-items: center;
+}
+.trophy {
+  color: $red;
+}
+:deep(svg) {
+  margin-bottom: 0;
+}
 
 .rower {
   font-weight: bold;
@@ -262,7 +273,7 @@
       display: flex;
       margin-top: 1rem;
       justify-content: space-between;
-      color: $neutral50;
+      color: $black50;
       font-size: 0.9rem;
       font-weight: bold;
       padding-bottom: 0.1rem;
@@ -284,7 +295,7 @@
         margin-bottom: 0.8rem;
       }
       .top-label {
-        color: $neutral50;
+        color: $black50;
         font-size: 0.9rem;
       }
       .entry {
@@ -307,6 +318,7 @@
         .result {
           display: flex;
           column-gap: 0.2rem;
+          align-items: center;
           text-transform: initial;
           text-align: right;
           .text {
@@ -353,7 +365,7 @@
       row-gap: 0.05rem;
       flex-direction: column;
       >:first-child {
-        color: $neutral50;
+        color: $black50;
         font-weight: bold;
         margin-bottom: 0.25rem;
       }
@@ -428,7 +440,7 @@
 .rules {
   display: flex;
   justify-content: end;
-  color: $neutral-variant50;
+  color: $black50;
 }
 .rules2 {
   font-size: 1rem!important;
