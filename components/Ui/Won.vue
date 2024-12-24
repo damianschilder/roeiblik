@@ -49,5 +49,9 @@
   height: 1.1rem;
   width: 1.1rem;
 }
+.nuxt-icon {
+  display: flex;
+  align-items: center;
+}
   </style>
   

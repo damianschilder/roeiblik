@@ -48,6 +48,7 @@
     font-family: "Racing Sans One";
     text-decoration: none;
     font-size: 2rem;
+    width: 7.625rem;
 }
 
 .middle {
@@ -56,7 +57,9 @@
 }
 .right {
   display: flex;
+  justify-content: end;
   column-gap: 0.5rem;
+  width: 7.625rem;
   span {
     color: $black50;
   }
