@@ -20,15 +20,17 @@
     h3 Uitslagen per veld
     StatisticsTable.table(
       :selectedFile="getFilePath(selectedEventName, 'event_results')"
-      folder="event_results"
-      :hiddenColumns="['Id', 'Event Name', 'Wedstrijd laatste dag', 'Snelste tijd']"
+      :hiddenColumns="['Id', 'Event Name', 'Wedstrijd laatste dag', 'Snelste tijd', 'Event Code']"
       winnaars
     )
     h3 Statistieken per club
     StatisticsTable.table(
       :selectedFile="getFilePath(selectedEventName, 'event_statistics')"
-      folder="event_statistics"
-      :hiddenColumns="['Event Name']"
+      :hiddenColumns="['Event Name', 'Event Code']"
+    )
+    h3 Statistieken per veld per jaar
+    StatisticsChart(
+      :selectedFile="getFilePath(selectedEventName, 'event_statistics_by_year')"
     )
     //- h3 Statistieken per roeier
     //- StatisticsTable.table(
@@ -45,70 +47,71 @@
   </template>
   
   <script setup>
-  import { ref, computed, onMounted } from 'vue';
-  
-  const title = ref('Selecteer een veld');
-  const combinedFileList = ref([]);
-  const selectedEventName = ref('');
-  const searchQuery = ref('');
-  const showDropdown = ref(false);
-  const filteredEvents = ref([]);
-  
-function closeDropdown() {
-    setTimeout(() => {
-      showDropdown.value = false;
-    }, 100);
-  }
+import { ref, computed, onMounted } from 'vue';
 
-  onMounted(async () => {
-    try {
-      const response = await fetch('/combined_files_list.json');
-      combinedFileList.value = await response.json();
-  
-      // Initialize the filteredEvents with the full list
-      filteredEvents.value = combinedFileList.value;
-  
-      // Default to the first event name if available
-      if (combinedFileList.value.length) {
-        selectedEventName.value = combinedFileList.value[0].event_name;
-        searchQuery.value = selectedEventName.value;
-      }
-    } catch (error) {
-      console.error('Error loading combined JSON file:', error);
-    }
-  });
-  
-  // Filter events based on search query
-  const filterOptions = () => {
-    const query = searchQuery.value.toLowerCase();
-    filteredEvents.value = combinedFileList.value.filter(event =>
-      event.event_name.toLowerCase().includes(query)
-    );
-  };
-  
-  // Select event from dropdown
-  const selectEvent = (eventName) => {
-    selectedEventName.value = eventName;
-    searchQuery.value = eventName;
+const title = ref('Selecteer een veld');
+const combinedFileList = ref([]);
+const selectedEventName = ref('');
+const searchQuery = ref('');
+const showDropdown = ref(false);
+const filteredEvents = ref([]);
+
+function closeDropdown() {
+  setTimeout(() => {
     showDropdown.value = false;
-  };
-  
-  // Function to get file path by event name and file type
-  const getFilePath = (eventName, fileType) => {
-    title.value = eventName;
-    const event = combinedFileList.value.find(event => event.event_name === eventName);
-    if (event) {
-      const fileTypeIndexMap = {
-        event_results: 1,
-        event_statistics: 0,
-        event_rowers: 2,
-        event_club_rowers_statistics: 3,
-      };
-      return event.files[fileTypeIndexMap[fileType]] || null;
+  }, 100);
+}
+
+onMounted(async () => {
+  try {
+    const response = await fetch('/combined_files_list.json');
+    combinedFileList.value = await response.json();
+
+    // Initialize the filteredEvents with the full list
+    filteredEvents.value = combinedFileList.value;
+
+    // Default to the first event name if available
+    if (combinedFileList.value.length) {
+      selectedEventName.value = combinedFileList.value[0].event_name;
+      searchQuery.value = selectedEventName.value;
     }
-    return null;
-  };
-  </script>
+  } catch (error) {
+    console.error('Error loading combined JSON file:', error);
+  }
+});
+
+// Filter events based on search query
+const filterOptions = () => {
+  const query = searchQuery.value.toLowerCase();
+  filteredEvents.value = combinedFileList.value.filter(event =>
+    event.event_name.toLowerCase().includes(query)
+  );
+};
+
+// Select event from dropdown
+const selectEvent = (eventName) => {
+  selectedEventName.value = eventName;
+  searchQuery.value = eventName;
+  showDropdown.value = false;
+};
+
+// Function to get file path by event name and file type
+const getFilePath = (eventName, fileType) => {
+  title.value = eventName;
+  const event = combinedFileList.value.find(event => event.event_name === eventName);
+  if (event) {
+    const fileTypeIndexMap = {
+      event_results: 0,
+      event_statistics: 1,
+      event_statistics_by_year: 2, // Newly added folder
+    };
+    return event.files[fileTypeIndexMap[fileType]] || null;
+  }
+  return null;
+};
+</script>
+
+
   
   <style lang="scss" scoped>
   .page-wrapper {

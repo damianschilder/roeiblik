@@ -52,10 +52,6 @@
       type: String,
       required: true,
     },
-    folder: {
-      type: String,
-      required: true,
-    },
     hiddenColumns: {
       type: Array,
       default: () => [],
@@ -102,7 +98,7 @@
     loading.value = true;
     if (!props.selectedFile) return;
   
-    const fileUrl = `/${props.folder}/${props.selectedFile}`;
+    const fileUrl = `/${props.selectedFile}`;
     const response = await fetch(fileUrl);
     const csvText = await response.text();
   
