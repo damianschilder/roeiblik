@@ -54,6 +54,9 @@
 .middle {
   display: flex;
   column-gap: 2rem;
+  @include mobile {
+    display: none;
+  }
 }
 .right {
   display: flex;
@@ -62,6 +65,9 @@
   width: 7.625rem;
   span {
     color: $black50;
+  }
+  @include mobile {
+    display: none;
   }
 }
 
@@ -74,9 +80,6 @@
   &:hover {
     text-decoration: underline;
     color: $roeiblik;
-  }
-  @include mobile {
-    display: none;
   }
 }
 .small {

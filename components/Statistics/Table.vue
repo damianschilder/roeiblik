@@ -4,14 +4,14 @@
       // Filter Button
       .actions
         UiButton(label="Filters" icon="filter" :active="showFilters" @click="toggleFilters") {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
-        .button
-          label
-            input.checkbox(type="checkbox" v-model="headerSticky" @change="toggleSticky")
-            span Sticky header
-        .button(v-if="winnaars")
-          label
-            input.checkbox(type="checkbox" v-model="showWinnerOnly" @change="updatePositionColumns")
-            span Alleen winnaars
+        //- .button
+        //-   label
+        //-     input.checkbox(type="checkbox" v-model="headerSticky" @change="toggleSticky")
+        //-     span Sticky header
+        //- .button(v-if="winnaars")
+        //-   label
+        //-     input.checkbox(type="checkbox" v-model="showWinnerOnly" @change="updatePositionColumns")
+        //-     span Alleen winnaars
         UiButton(label="Download" icon="download" @click="downloadFile")
         // Search functionality
       .filters(v-if="showFilters")
