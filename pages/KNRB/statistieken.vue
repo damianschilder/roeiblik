@@ -28,8 +28,12 @@
       :selectedFile="getFilePath(selectedEventName, 'event_statistics')"
       :hiddenColumns="['Event Name', 'Event Code']"
     )
-    h3 Statistieken per veld per jaar
-    StatisticsChart(
+    //- h3 Statistieken per veld per jaar, lijngrafiek
+    //- StatisticsChart(
+    //-   :selectedFile="getFilePath(selectedEventName, 'event_statistics_by_year')"
+    //- )
+    h3 Statistieken per veld per jaar, staafgrafiek
+    StatisticsBar(
       :selectedFile="getFilePath(selectedEventName, 'event_statistics_by_year')"
     )
     //- h3 Statistieken per roeier

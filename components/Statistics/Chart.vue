@@ -11,7 +11,7 @@
       )
       label(:for="club") {{ club }}
   .controls
-    .checkbox(v-for="metric in ['wins', 'entries', 'avgPosition', 'avgWinningTime', 'winRate']" :key="metric" class="toggle-option")
+    .checkbox(v-for="metric in ['avgPosition', 'winRate']" :key="metric" class="toggle-option")
       input(
         type="checkbox"
         :id="metric"
