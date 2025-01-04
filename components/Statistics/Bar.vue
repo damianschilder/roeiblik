@@ -324,6 +324,18 @@ const renderChart = async () => {
         legend: {
           display: true,
         },
+        datalabels: {
+            /* Adjust data label font size according to chart size */
+            font: function(context) {
+              var width = context.chart.width;
+              var size = Math.round(width / 32);
+
+              return {
+              weight: 'bold',
+              size: size
+              };
+            }
+          }
       },
       scales: {
         x: {
@@ -418,6 +430,7 @@ canvas {
   display: block;
   width: 100%;
   height: auto;
+  min-height: 20rem;
 }
 
 input, label {

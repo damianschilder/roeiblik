@@ -4,7 +4,7 @@
       select(v-model="selectedYear")
         option(value="" selected) Alle jaren
         option(v-for="year in uniqueYears" :key="year" :value="year") {{ year }}
-    canvas#regattaChart
+    canvas#regattaChart( style="height:600px; width:100%;" )
   </template>
   
   <script setup>
@@ -144,37 +144,49 @@
         maintainAspectRatio: true,
         scales: {
           y: {
-            beginAtZero: true,
-            title: {
-              display: false,
-              text: 'Time (mm:ss.mmm)',
-            },
-            ticks: {
-              callback: (value) => formatSecondsToTime(value),
-            },
+        beginAtZero: true,
+        title: {
+          display: false,
+          text: 'Time (mm:ss.mmm)',
+        },
+        ticks: {
+          callback: (value) => formatSecondsToTime(value),
+        },
           },
           x: {
-            title: {
-              display: false,
-              text: 'Regatta Name (Year)',
-            },
-            ticks: {
-              maxRotation: 70,
-              minRotation: 70,
-            },
+        title: {
+          display: false,
+          text: 'Regatta Name (Year)',
+        },
+        ticks: {
+          maxRotation: 70,
+          minRotation: 70,
+        },
           },
         },
         plugins: {
           tooltip: {
-            callbacks: {
-                label: (context) => {
-                const value = context.raw;
-                const dataIndex = context.dataIndex;
-                const location = filteredData[dataIndex]['Location'];
-                return `${formatSecondsToTime(value)}, ${location})`;
-                },
+        callbacks: {
+            label: (context) => {
+            const value = context.raw;
+            const dataIndex = context.dataIndex;
+            const location = filteredData[dataIndex]['Location'];
+            return `${formatSecondsToTime(value)}, ${location})`;
             },
+        },
           },
+          datalabels: {
+            /* Adjust data label font size according to chart size */
+            font: function(context) {
+              var width = context.chart.width;
+              var size = Math.round(width / 32);
+
+              return {
+              weight: 'bold',
+              size: size
+              };
+            }
+          }
         },
       },
     });
@@ -196,6 +208,7 @@
   .component-wrapper {
     width: 100%;
     height: 100%;
+    min-height: 20rem;
   }
   
   .filter-container {
@@ -204,7 +217,8 @@
   
   canvas {
     width: 100%;
-    height: 100%;
+    min-height: 30rem;
+    height: 400px;
   }
 
 select {
