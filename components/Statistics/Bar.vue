@@ -161,6 +161,19 @@ const createPattern = (color) => {
   return ctx.createPattern(canvas, "repeat");
 };
 
+const calculateTrendLine = (data) => {
+  const n = data.length;
+  const sumX = data.reduce((sum, point, index) => sum + index, 0);
+  const sumY = data.reduce((sum, point) => sum + point, 0);
+  const sumXY = data.reduce((sum, point, index) => sum + index * point, 0);
+  const sumX2 = data.reduce((sum, point, index) => sum + index * index, 0);
+
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+
+  return data.map((_, index) => slope * index + intercept);
+};
+
 const updateChartData = async () => {
   console.debug("Starting updateChartData");
   isUpdating.value = true;
@@ -180,6 +193,18 @@ const updateChartData = async () => {
           barPercentage: 0.6,
         };
         datasets.push(entriesDataset);
+
+        const entriesTrendLine = calculateTrendLine(clubData.map((row) => row.entries));
+        const entriesTrendDataset = {
+          label: `${club} - Entries Trend`,
+          data: entriesTrendLine,
+          borderColor: clubColors.value[club].replace("1)", "1)"),
+          backgroundColor: "transparent",
+          type: "line",
+          borderDash: [5, 5], // Dotted line
+          tension: 0,
+        };
+        datasets.push(entriesTrendDataset);
       }
 
       if (selectedMetrics.value.includes("wins")) {
@@ -193,6 +218,18 @@ const updateChartData = async () => {
           barPercentage: 0.6,
         };
         datasets.push(winsDataset);
+
+        const winsTrendLine = calculateTrendLine(clubData.map((row) => row.wins));
+        const winsTrendDataset = {
+          label: `${club} - Wins Trend`,
+          data: winsTrendLine,
+          borderColor: clubColors.value[club].replace("1)", "1)"),
+          backgroundColor: "transparent",
+          type: "line",
+          borderDash: [5, 5], // Dotted line
+          tension: 0,
+        };
+        datasets.push(winsTrendDataset);
       }
 
       if (selectedMetrics.value.includes("avgPosition")) {
@@ -202,9 +239,21 @@ const updateChartData = async () => {
           borderColor: clubColors.value[club].replace("1)", "1)"),
           backgroundColor: "transparent",
           type: "line",
-          tension: 0.05,
+          tension: 0,
         };
         datasets.push(avgPositionDataset);
+
+        const avgPositionTrendLine = calculateTrendLine(clubData.map((row) => row.avgPosition));
+        const avgPositionTrendDataset = {
+          label: `${club} - Avg Position Trend`,
+          data: avgPositionTrendLine,
+          borderColor: clubColors.value[club].replace("1)", "1)"),
+          backgroundColor: "transparent",
+          type: "line",
+          borderDash: [5, 5], // Dotted line
+          tension: 0,
+        };
+        datasets.push(avgPositionTrendDataset);
       }
 
       if (selectedMetrics.value.includes("winRate")) {
@@ -215,9 +264,21 @@ const updateChartData = async () => {
           backgroundColor: "transparent",
           type: "line",
           borderDash: [5, 5], // Dotted line
-          tension: 0.05,
+          tension: 0,
         };
         datasets.push(winRateDataset);
+
+        const winRateTrendLine = calculateTrendLine(clubData.map((row) => row.winRate));
+        const winRateTrendDataset = {
+          label: `${club} - Win Rate Trend`,
+          data: winRateTrendLine,
+          borderColor: clubColors.value[club].replace("1)", "1)"),
+          backgroundColor: "transparent",
+          type: "line",
+          borderDash: [5, 5], // Dotted line
+          tension: 0,
+        };
+        datasets.push(winRateTrendDataset);
       }
 
       clubData.forEach((row) => yearsSet.add(row.year));

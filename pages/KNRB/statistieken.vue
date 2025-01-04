@@ -15,105 +15,102 @@
           li.dropdown-item(
             v-for="(event, index) in filteredEvents"
             :key="index"
-            @click="selectEvent(event.event_name)"
+            @click="selectEvent(event.event_name, event.code)"
           ) {{ event.event_name }}
-    h3 Uitslagen per veld
+    h3 Wedstrijd uitslagen, {{selectedEventCode}} veld.
     StatisticsTable.table(
       :selectedFile="getFilePath(selectedEventName, 'event_results')"
-      :hiddenColumns="['Id', 'Event Name', 'Wedstrijd laatste dag', 'Snelste tijd', 'Event Code']"
+      :hiddenColumns="['Id', 'Event Name', 'Wedstrijd laatste dag', 'Snelste tijd', 'Event Code', 'Team snelste tijd']"
       winnaars
     )
-    h3 Statistieken per club
+    h3 Winnende tijd en gemiddelde tijd van alle deelnemeners, {{selectedEventCode}} veld.
+    StatisticsTable.table(
+      :selectedFile="getFilePath(selectedEventName, 'event_times')"
+      :hiddenColumns="['Event Code', 'Event Name', 'Regatta Id']"
+    )
+    h3 Grafiek van winnende tijd en gemiddelde tijd van alle deelnemers, {{selectedEventCode}} veld.
+    StatisticsChart(
+      :selectedFile="getFilePath(selectedEventName, 'event_times')"
+    )
+    h3 Statistieken van verenigingen, {{selectedEventCode}} veld.
     StatisticsTable.table(
       :selectedFile="getFilePath(selectedEventName, 'event_statistics')"
       :hiddenColumns="['Event Name', 'Event Code']"
     )
-    //- h3 Statistieken per veld per jaar, lijngrafiek
-    //- StatisticsChart(
-    //-   :selectedFile="getFilePath(selectedEventName, 'event_statistics_by_year')"
-    //- )
-    h3 Statistieken per veld per jaar, staafgrafiek
+    h3 Grafuej van statistieken van verenigingen, {{selectedEventCode}} veld.
     StatisticsBar(
       :selectedFile="getFilePath(selectedEventName, 'event_statistics_by_year')"
     )
-    //- h3 Statistieken per roeier
-    //- StatisticsTable.table(
-    //-   :selectedFile="getFilePath(selectedEventName, 'event_rowers')"
-    //-   folder="event_rowers"
-    //-   :hiddenColumns="['Event Name', 'Id', 'Eerste wedstrijd ID', 'Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
-    //- )
-    //- h3 Statistieken per vereniging per roeier
-    //- StatisticsTable(
-    //-   :selectedFile="getFilePath(selectedEventName, 'event_club_rowers_statistics')"
-    //-   folder="event_club_rowers_statistics"
-    //-   :hiddenColumns="['Event Name', 'Id', 'Eerste wedstrijd ID', 'Laatste wedstrijd ID', 'Eerste punt ID', 'Eerste punt veld']"
-    //- )
   </template>
   
   <script setup>
-import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
 
-const title = ref('Selecteer een veld');
-const combinedFileList = ref([]);
-const selectedEventName = ref('');
-const searchQuery = ref('');
-const showDropdown = ref(false);
-const filteredEvents = ref([]);
+  const title = ref('Selecteer een veld');
+  const combinedFileList = ref([]);
+  const selectedEventName = ref('');
+  const selectedEventCode = ref('');
+  const searchQuery = ref('');
+  const showDropdown = ref(false);
+  const filteredEvents = ref([]);
 
-function closeDropdown() {
-  setTimeout(() => {
-    showDropdown.value = false;
-  }, 100);
-}
+  function closeDropdown() {
+    setTimeout(() => {
+      showDropdown.value = false;
+    }, 100);
+  }
 
-onMounted(async () => {
-  try {
-    const response = await fetch('/combined_files_list.json');
-    combinedFileList.value = await response.json();
+  onMounted(async () => {
+    try {
+      const response = await fetch('/combined_files_list.json');
+      combinedFileList.value = await response.json();
 
-    // Initialize the filteredEvents with the full list
-    filteredEvents.value = combinedFileList.value;
+      // Initialize the filteredEvents with the full list
+      filteredEvents.value = combinedFileList.value;
 
-    // Default to the first event name if available
-    if (combinedFileList.value.length) {
-      selectedEventName.value = combinedFileList.value[0].event_name;
-      searchQuery.value = selectedEventName.value;
+      // Default to the first event name if available
+      if (combinedFileList.value.length) {
+        selectedEventName.value = combinedFileList.value[0].event_name;
+        searchQuery.value = selectedEventName.value;
+      }
+    } catch (error) {
+      console.error('Error loading combined JSON file:', error);
     }
-  } catch (error) {
-    console.error('Error loading combined JSON file:', error);
-  }
-});
+  });
 
-// Filter events based on search query
-const filterOptions = () => {
-  const query = searchQuery.value.toLowerCase();
-  filteredEvents.value = combinedFileList.value.filter(event =>
-    event.event_name.toLowerCase().includes(query)
-  );
-};
+  // Filter events based on search query
+  const filterOptions = () => {
+    const query = searchQuery.value.toLowerCase();
+    filteredEvents.value = combinedFileList.value.filter(event =>
+      event.event_name.toLowerCase().includes(query)
+    );
+  };
 
-// Select event from dropdown
-const selectEvent = (eventName) => {
-  selectedEventName.value = eventName;
-  searchQuery.value = eventName;
-  showDropdown.value = false;
-};
+  // Select event from dropdown
+  const selectEvent = (eventName, eventCode) => {
+    console.log(eventName, eventCode);
+    selectedEventName.value = eventName;
+    selectedEventCode.value = eventCode;
+    searchQuery.value = eventName;
+    showDropdown.value = false;
+  };
 
-// Function to get file path by event name and file type
-const getFilePath = (eventName, fileType) => {
-  title.value = eventName;
-  const event = combinedFileList.value.find(event => event.event_name === eventName);
-  if (event) {
-    const fileTypeIndexMap = {
-      event_results: 0,
-      event_statistics: 1,
-      event_statistics_by_year: 2, // Newly added folder
-    };
-    return event.files[fileTypeIndexMap[fileType]] || null;
-  }
-  return null;
-};
-</script>
+  // Function to get file path by event name and file type
+  const getFilePath = (eventName, fileType) => {
+    title.value = eventName;
+    const event = combinedFileList.value.find(event => event.event_name === eventName);
+    if (event) {
+      const fileTypeIndexMap = {
+        event_results: 0,
+        event_statistics: 1,
+        event_statistics_by_year: 2,
+        event_times: 3, // Newly added folder
+      };
+      return event.files[fileTypeIndexMap[fileType]] || null;
+    }
+    return null;
+  };
+  </script>
 
 
   
