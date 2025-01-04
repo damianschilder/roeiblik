@@ -1,46 +1,48 @@
 <template lang="pug">
-  .page-wrapper
-    .header
-      h2 {{ title }}
-      .dropdown-wrapper(ref="dropdownWrapper")
-        input.search-input(
-          type="text"
-          placeholder="Zoek naar een veld..."
-          v-model="searchQuery"
-          @focus="showDropdown = true"
-          @focusout="closeDropdown"
-          @input="filterOptions"
-        )
-        ul.dropdown-list(v-show="showDropdown")
-          li.dropdown-item(
-            v-for="(event, index) in filteredEvents"
-            :key="index"
-            @click="selectEvent(event.event_name, event.code)"
-          ) {{ event.event_name }}
-    h3 Wedstrijd uitslagen, {{selectedEventCode}} veld.
-    StatisticsTable.table(
-      :selectedFile="getFilePath(selectedEventName, 'event_results')"
-      :hiddenColumns="['Id', 'Event Name', 'Wedstrijd laatste dag', 'Snelste tijd', 'Event Code', 'Team snelste tijd']"
-      winnaars
-    )
-    h3 Winnende tijd en gemiddelde tijd van alle deelnemeners, {{selectedEventCode}} veld.
-    StatisticsTable.table(
-      :selectedFile="getFilePath(selectedEventName, 'event_times')"
-      :hiddenColumns="['Event Code', 'Event Name', 'Regatta Id']"
-    )
-    h3 Grafiek van winnende tijd en gemiddelde tijd van alle deelnemers, {{selectedEventCode}} veld.
-    StatisticsChart(
-      :selectedFile="getFilePath(selectedEventName, 'event_times')"
-    )
-    h3 Statistieken van verenigingen, {{selectedEventCode}} veld.
-    StatisticsTable.table(
-      :selectedFile="getFilePath(selectedEventName, 'event_statistics')"
-      :hiddenColumns="['Event Name', 'Event Code']"
-    )
-    h3 Grafuej van statistieken van verenigingen, {{selectedEventCode}} veld.
-    StatisticsBar(
-      :selectedFile="getFilePath(selectedEventName, 'event_statistics_by_year')"
-    )
+.page-wrapper
+  .header
+    h2 {{ title }}
+    .dropdown-wrapper(ref="dropdownWrapper")
+      input.search-input(
+        type="text"
+        placeholder="Zoek naar een veld..."
+        v-model="searchQuery"
+        @focus="showDropdown = true"
+        @focusout="closeDropdown"
+        @input="filterOptions"
+      )
+      ul.dropdown-list(v-show="showDropdown")
+        li.dropdown-item(
+          v-for="(event, index) in filteredEvents"
+          :key="index"
+          @click="selectEvent(event.event_name, event.code)"
+        ) {{ event.event_name }}
+  h3 Wedstrijd uitslagen, {{selectedEventCode}} veld.
+  StatisticsTable.table(
+    :selectedFile="getFilePath(selectedEventName, 'event_results')"
+    :hiddenColumns="['Id', 'Event Name', 'Wedstrijd laatste dag', 'Snelste tijd', 'Event Code', 'Team snelste tijd']"
+    winnaars
+  )
+  h3 Winnende tijd en gemiddelde tijd van alle deelnemeners, {{selectedEventCode}} veld.
+  StatisticsTable.table(
+    :selectedFile="getFilePath(selectedEventName, 'event_times')"
+    :hiddenColumns="['Event Code', 'Event Name', 'Regatta Id']"
+  )
+  h3 Grafiek van winnende tijd en gemiddelde tijd van alle deelnemers, {{selectedEventCode}} veld.
+  StatisticsChart(
+    :selectedFile="getFilePath(selectedEventName, 'event_times')"
+  )
+  h3 Statistieken van verenigingen, {{selectedEventCode}} veld.
+  StatisticsTable.table(
+    :selectedFile="getFilePath(selectedEventName, 'event_statistics')"
+    :hiddenColumns="['Event Name', 'Event Code']"
+  )
+  h3 Grafuej van statistieken van verenigingen, {{selectedEventCode}} veld.
+  StatisticsBar(
+    :selectedFile="getFilePath(selectedEventName, 'event_statistics_by_year')"
+  )
+  h1.weird test
+  h1.weird test
   </template>
   
   <script setup>
@@ -120,6 +122,7 @@
     flex-direction: column;
     padding: 3rem 1rem 0;
     height: 100%;
+    margin-bottom: 4rem;
   }
   
   h2 {
@@ -177,6 +180,8 @@
     cursor: pointer;
     font-family: 'Mulish', sans-serif;
   }
-
+.weird {
+  visibility: hidden;
+}
   </style>
   

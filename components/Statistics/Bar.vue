@@ -430,7 +430,6 @@ canvas {
   display: block;
   width: 100%;
   height: auto;
-  min-height: 20rem;
 }
 
 input, label {

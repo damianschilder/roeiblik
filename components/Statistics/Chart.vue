@@ -166,14 +166,14 @@
         },
         plugins: {
           tooltip: {
-        callbacks: {
-            label: (context) => {
-            const value = context.raw;
-            const dataIndex = context.dataIndex;
-            const location = filteredData[dataIndex]['Location'];
-            return `${formatSecondsToTime(value)}, ${location})`;
+            callbacks: {
+                label: (context) => {
+                const value = context.raw;
+                const dataIndex = context.dataIndex;
+                const location = filteredData[dataIndex]['Location'];
+                return `${formatSecondsToTime(value)}, ${location})`;
+                },
             },
-        },
           },
           datalabels: {
             /* Adjust data label font size according to chart size */
@@ -208,7 +208,6 @@
   .component-wrapper {
     width: 100%;
     height: 100%;
-    min-height: 20rem;
   }
   
   .filter-container {
@@ -217,8 +216,6 @@
   
   canvas {
     width: 100%;
-    min-height: 30rem;
-    height: 400px;
   }
 
 select {
