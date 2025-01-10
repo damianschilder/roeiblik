@@ -29,7 +29,7 @@
     :hiddenColumns="['Event Code', 'Event Name', 'Regatta Id']"
   )
   h3 Grafiek van winnende tijd en gemiddelde tijd van alle deelnemers, {{selectedEventCode}} veld.
-  StatisticsChart(
+  StatisticsChart.table(
     :selectedFile="getFilePath(selectedEventName, 'event_times')"
   )
   h3 Statistieken van verenigingen, {{selectedEventCode}} veld.
@@ -37,7 +37,7 @@
     :selectedFile="getFilePath(selectedEventName, 'event_statistics')"
     :hiddenColumns="['Event Name', 'Event Code']"
   )
-  h3 Grafuej van statistieken van verenigingen, {{selectedEventCode}} veld.
+  h3 Grafiek van statistieken van verenigingen, {{selectedEventCode}} veld.
   StatisticsBar(
     :selectedFile="getFilePath(selectedEventName, 'event_statistics_by_year')"
   )
