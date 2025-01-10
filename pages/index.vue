@@ -10,12 +10,31 @@
     .text
       h1 Roeiblik
     .buttons
-      NuxtLink.compobeter(to="/Time-Team")
-        span Compobeter
-        nuxt-icon(name="person search" style="style-one")
-      NuxtLink.statistieken(to="/KNRB/statistieken")
-        span Statistieken
-        nuxt-icon(name="leaderboard")
+      .button.compobeter2
+        .tags
+          span.tag.compo Comporoeien
+          span.tag.wedstro Wedstrijdroeien
+        NuxtLink.compobeter(to="/Time-Team")
+          span Compobeter
+          nuxt-icon(name="person search" style="style-one")
+        .info
+          nuxt-icon(name="info")
+          .info-text
+            span Doorzoek 
+            span.bold Time-Team 
+            span op compo- en wedstrijd resultaten van personen.
+      .button.statistieken2
+        .tags
+          span.tag.wedstro Wedstrijdroeien
+        NuxtLink.statistieken(to="/KNRB/statistieken")
+          span Statistieken
+          nuxt-icon(name="leaderboard")
+        .info
+          nuxt-icon(name="info")
+          .info-text
+            span Landelijkse statistieken van de 
+            span.bold KNRB 
+            span per veld.
 </template>
 
 <style lang="scss" scoped>
@@ -72,21 +91,55 @@
 
 .button {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  row-gap: 0.5rem;
+}
+
+.compobeter2 {
+  max-width: 263.25px
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.statistieken2 {
+  max-width: 255.627px
+}
+
+.tags {
+  display: flex;
   column-gap: 0.5rem;
-  align-self: center;
-  background-color: rgba(23, 218, 162, 0.25);
+}
+.tag {
+  padding: 0.25rem 0.5rem;
   width: max-content;
-  font-size: 0.9rem;
-  padding: 0.5rem 0.25rem;
-  color: rgba(23, 218, 162, 1);
   border-radius: 5px;
-  outline: rgba(23, 218, 162, 1) solid 1px;
-  :deep(svg) {
-    height: 1.2rem;
-    width: 1.2rem;
-    margin-bottom: 0;
+  font-size: 0.75rem;
+}
+.info {
+  display: flex;
+  column-gap: 0.5rem;
+  font-size: 0.9rem;
+  .nuxt-icon {
+    display: flex;
+    flex-direction: column;
   }
+  :deep(svg) {
+    height: 1.25rem;
+    width: 1.25rem;
+    margin-bottom: 0;
+    align-self: start;
+  }
+}
+.compo {
+  outline: 1px solid $orange;
+  color: $orange;
+}
+
+.wedstro {
+  outline: 1px solid #9800E0;
+  color: #9800E0;
 }
 
 .compobeter, .statistieken {
