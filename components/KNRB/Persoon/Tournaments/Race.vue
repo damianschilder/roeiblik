@@ -56,20 +56,17 @@ const { isIntersecting: isVisible, observe } = useIntersectionObserver();
 
 onMounted(() => {
   if (target.value) {
-    // console.log('Setting up observer...');
     const unobserve = observe(target.value, {
-      root: null, // Use the viewport
-      threshold: 0.1, // Trigger when 10% of the element is visible
+      root: null,
+      threshold: 0.1,
     });
 
     onUnmounted(() => {
-      // console.log('Cleaning up observer...');
       unobserve();
     });
   }
 });
 
-// Watch for visibility changes and call the function
 watch(isVisible, (newValue) => {
   if (newValue) {
     if (!fetchedRaces.value.includes(props.race.raceId)) {

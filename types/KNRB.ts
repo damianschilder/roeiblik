@@ -41,7 +41,7 @@ interface RaceTeamTime {
   splitTime: number;
 }
 
-interface TeamMember {
+export interface TeamMember {
   boatPosition: number | null;
   fullName: string;
   isCox: boolean;

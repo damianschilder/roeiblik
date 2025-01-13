@@ -8,7 +8,7 @@
             span {{formatPosition(race.position)}}, {{race.raceName}}
         .event-time(v-if="race.distance")
           span {{race.distance}}, {{formatTime(race.endTime)}}
-        KNRBPersoonTournamentsPositions(v-if="race.raceTeams && race.raceTeams.length > 0" :positions="race.raceTeams")
+        KNRBPersoonTournamentsPositions(v-if="race.raceTeams && race.raceTeams.length > 0" :positions="race.raceTeams" preliminary=true)
   </template>
   
   <script setup lang="ts">

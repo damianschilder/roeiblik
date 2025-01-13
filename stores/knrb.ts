@@ -8,6 +8,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
   const results = ref<PersonResult[]>([]);
   const person = ref<Person | {}>({});
   const currentPage = ref<number>(1);
+  const calledLimitedPersons = ref<object[]>([]);
 
   async function search(query: string) {
     if (!loading.value) {
@@ -134,17 +135,16 @@ export const useKNRBStore = defineStore("KNRB", () => {
         // Locate the relevant person in the raceTeams
         const tournaments = (person.value as Person).tournaments;
         if (tournaments) {
+          outerLoop:
           for (const tournament of tournaments) {
             for (const race of tournament.races) {
-              // Check if raceTeams exists before accessing it
               if (race.raceTeams) {
                 for (const raceTeam of race.raceTeams) {
                   for (const teamMember of raceTeam.teamVersion.teamMembers) {
                     if (teamMember.person.personId === personId) {
-                      // Replace the "person" key with the fetched data
                       teamMember.person = fetchedLimitedPerson;
                       console.log(`Updated person ${personId} with limited data.`);
-                      break;
+                      break outerLoop;
                     }
                   }
                 }
@@ -163,7 +163,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
   }
   
   
-  return { loading, error, results, person, search, getRower, getRound, getLimitedPerson, currentPage };
+  return { loading, error, results, person, search, getRower, getRound, getLimitedPerson, currentPage, calledLimitedPersons };
 });
 
 if (import.meta.hot) {
