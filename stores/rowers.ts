@@ -13,7 +13,7 @@ export const useRowersStore = defineStore("rowers", () => {
     if (!loading.value) {
       loading.value = true;
       try {
-        const response: SearchResponse = await $fetch('/api/proxy/search', {
+        const response: SearchResponse = await $fetch('/api/Time-Team/search', {
           method: "GET",
           params: { query },
         });
@@ -36,8 +36,9 @@ export const useRowersStore = defineStore("rowers", () => {
     }
 
     try {
-      const response = await $fetch(`/api/proxy/person/${id}`, {
+      const response = await $fetch(`/api/Time-Team/person`, {
         method: "GET",
+        params: { id }
       });
 
       const { person, race_crew, entry, event, round } = response;
