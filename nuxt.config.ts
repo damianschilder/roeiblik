@@ -20,7 +20,7 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png?v=2' },
         { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Mulish/Mulish-VariableFont.ttf', crossorigin: 'anonymous' },
-        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Racing Sans One/RacingSansOne-Regular.ttf', crossorigin: 'anonymous' }
+        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Racing-Sans-One/RacingSansOne-Regular.ttf', crossorigin: 'anonymous' }
       ],
     },
   },
