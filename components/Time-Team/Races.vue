@@ -15,7 +15,7 @@
             .race-event(v-for="(event, eventKey) in crew" :key="eventKey" :class="event.length > 1 ? 'multiple-events' : 'single-event'")
               .race-detail(v-for="(race, raceKey) in event" :class="getRaceClass(race, event)")
                 .top-label
-                  span {{ formatDate(race.date) || 'Datum niet aanwezig' }}
+                  span {{ race.date[0] || 'Datum niet aanwezig' }}
                   span {{ race.location || 'Locatie niet aanwezig' }}
                 .entry
                   img(v-if="race.blades" :src="race.blades.crop")

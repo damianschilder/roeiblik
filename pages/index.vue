@@ -22,7 +22,7 @@
           .info-text
             span Doorzoek 
             span.bold Time-Team 
-            span op compo- en wedstrijd resultaten van personen.
+            span op compo- en wedstrijdresultaten van personen.
       .button.statistieken2
         .tags
           span.tag.wedstro Wedstrijdroeien
