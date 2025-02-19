@@ -159,21 +159,18 @@ export const useRowersStore = defineStore("rowers", () => {
           return acc;
         }, {});
 
-      // Convert first and last entry dates to ISO format.
-      const rawFirstDate = Object.values(allRaceCrewInfo)
+      // Instead of just storing the first entry date, we now create an object containing the first race.
+      const racesArray = Object.values(allRaceCrewInfo)
         .flatMap(event => Object.values(event).flatMap(entry => entry))
-        .map(race => race.date)
-        .filter(date => date)
-        .sort()[0];
-      const rawLastDate = Object.values(allRaceCrewInfo)
-        .flatMap(event => Object.values(event).flatMap(entry => entry))
-        .map(race => race.date)
-        .filter(date => date)
-        .sort()
-        .reverse()[0];
+        .filter(race => race.date)
+        .map(race => ({ ...race, date: formatDateISO(race.date) }));
 
-      const firstEntryDate = rawFirstDate ? formatDateISO(rawFirstDate) : undefined;
-      const lastEntryDate = rawLastDate ? formatDateISO(rawLastDate) : undefined;
+      // Sort races by date in ascending order
+      racesArray.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const firstRace = racesArray[0] || undefined;
+
+      // Optionally, keep the last entry date if needed.
+      const lastEntryDate = racesArray.length ? racesArray[racesArray.length - 1].date : undefined;
 
       rower.value = {
         id: personDetails.id,
@@ -181,7 +178,7 @@ export const useRowersStore = defineStore("rowers", () => {
         allRaceCrewInfo,
         roleCounts: calculateRoleCounts(allRaceCrewInfo),
         totalWins,
-        firstEntryDate,
+        firstRace,  // Changed from firstEntryDate to firstRace (an object)
         lastEntryDate,
         unique_clubs: Array.from(uniqueClubs.values()),
       };
@@ -287,7 +284,6 @@ export const useRowersStore = defineStore("rowers", () => {
     const blades = entryData?.blades || undefined;
 
     const eventData = entryData?.event_id ? data.event?.[entryData.event_id] : null;
-    // Updated date handling: use formatDateISO to return a date string in ISO format.
     let date;
     if (raceCrewEntry.race_id) {
       const raceObj = data.race?.[raceCrewEntry.race_id];
@@ -300,7 +296,6 @@ export const useRowersStore = defineStore("rowers", () => {
         }
       }
     }
-    // If no date found via race, try using eventData regatta days (pick the first day)
     if (!date && eventData?.regatta_days && eventData.regatta_days.length > 0) {
       date = formatDateISO(eventData.regatta_days[0].day_date);
     }

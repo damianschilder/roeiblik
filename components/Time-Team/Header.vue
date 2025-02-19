@@ -13,9 +13,11 @@
                       :src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`"
                       @error="handleImageError($event)")
                     span {{ club.name }}
-              .first-sign( v-if="rowerStore.rower.firstEntryDate")
-                span Eerste vermelding: 
-                span.date {{formatDate(rowerStore.rower.firstEntryDate)}}
+              .first-sign( v-if="rowerStore.rower.firstRace")
+                span Eerste race: 
+                span.date {{formatDate(rowerStore.rower.firstRace.date)}}, 
+                span {{rowerStore.rower.firstRace.entry_name}} | 
+                span {{rowerStore.rower.firstRace.event_code}}, 
                 //- NuxtLink( to="/faq")
                 //-   UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
             .right
