@@ -2,7 +2,7 @@
   .component-wrapper
     .element-wrapper
       .element-body
-        h1 Zoek naar comporoeiers, wedstrijdroeiers, stuurtjes en coaches binnen de KNRB.
+        h1 Zoek naar comporoeiers, wedstrijdroeiers, stuurtjes en coaches binnen Time-Team.
         .search(:class="{ 'searchable': searchQuery && searchQuery.length > 0 }")
           input(placeholder="Naam..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
           UiLoader.loading(v-if="loading")

@@ -13,6 +13,9 @@
                       :src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`"
                       @error="handleImageError($event)")
                     span {{ club.name }}
+              .first-sign( v-if="rowerStore.rower.firstEntryDate")
+                span Eerste vermelding: 
+                span.date {{formatDate(rowerStore.rower.firstEntryDate)}}
                 //- NuxtLink( to="/faq")
                 //-   UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
             .right
@@ -31,24 +34,20 @@ function handleImageError(event: Event): void {
 }
 
   // Function to format the date to "5 June 2022"
-function formatDate(dateInput: string | string[]): string {
+  function formatDate(dateInput: string | string[]): string {
   let dateString: string;
-
-  // Handle if dateInput is an array
   if (Array.isArray(dateInput) && dateInput.length > 0) {
-    dateString = dateInput[0]; // Use the first date in the array
+    dateString = dateInput[0];
   } else if (typeof dateInput === 'string') {
     dateString = dateInput;
   } else {
-    return 'Invalid Date';
+    return undefined;
   }
-
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
-    return 'Invalid Date'; // Handle cases where the date cannot be parsed
+    return undefined;
   }
-
-  return date.toLocaleDateString('en-GB', {
+  return date.toLocaleDateString('nl-NL', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -170,6 +169,11 @@ function formatDate(dateInput: string | string[]): string {
   
   .fade-enter-from, .fade-leave-to {
     opacity: 0;
+  }
+
+  .first-sign {
+    /* font-weight: bold; */
+    opacity: 0.5;
   }
   </style>
   

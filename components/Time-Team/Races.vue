@@ -6,30 +6,40 @@
         .races(v-if="Object.keys(rowerStore.rower.allRaceCrewInfo).length")
           .actions
             UiSort(@click="toggleSortOrder" :label="isReversed ? 'Oudste eerst' : 'Recentste eerst'")
-            UiWon( v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0" v-model="showOnlyWins" )
+            UiWon(
+              v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0"
+              v-model="showOnlyWins"
+            )
           .header
-            //- span {{ formatDate(rowerStore.rower.firstEntryDate) }}
             span {{ Object.keys(sortedRaceCrewInfo).length }} vermeldingen
             //- span {{ formatDate(rowerStore.rower.lastEntryDate) }}
-          .race(v-for="(crew, crewKey) in sortedRaceCrewInfo" :key="crewKey" )
-            .race-event(v-for="(event, eventKey) in crew" :key="eventKey" :class="event.length > 1 ? 'multiple-events' : 'single-event'")
-              .race-detail(v-for="(race, raceKey) in event" :class="getRaceClass(race, event)")
+          .race(v-for="(crew, crewKey) in sortedRaceCrewInfo" :key="crewKey")
+            .race-event(
+              v-for="(event, eventKey) in crew" 
+              :key="eventKey" 
+              :class="event.length > 1 ? 'multiple-events' : 'single-event'"
+            )
+              .race-detail(
+                v-for="(race, raceKey) in event" 
+                :class="getRaceClass(race, event)"
+              )
                 .top-label
-                  span {{ race.date[0] || 'Datum niet aanwezig' }}
+                  // Now call formatDate with race.date (which is an ISO string)
+                  span {{ formatDate(race.date) || 'Datum niet aanwezig' }}
                   span {{ race.location || 'Locatie niet aanwezig' }}
                 .entry
                   img(v-if="race.blades" :src="race.blades.crop")
                   span {{ race.entry_name || 'Niet aanwezig' }}
                 .title
-                  span {{ raceKey == 0 ? (race.field_name || 'Niet aanwezig') : (race.event_code || 'Niet aanwezig') }}
+                  span {{ raceKey === 0 ? (race.field_name || 'Niet aanwezig') : (race.event_code || 'Niet aanwezig') }}
                   .result 
                     nuxt-icon.trophy(
-                      v-if="(race.timing_layout.distance === 2000 && race.is_final === true && (race.round_type_code === 'FA' || ( /^\d/.test(race.round_type_code) && event.length === 1 )) && race.adjusted_position === 1)|| race.adjusted_position === 1 && (race.round_type_code === 'FA' || ( /^\d/.test(race.round_type_code) && event.length === 1 ))"
+                      v-if="(race.timing_layout.distance === 2000 && race.is_final === true && (race.round_type_code === 'FA' || (/^\d/.test(race.round_type_code) && event.length === 1)) && race.adjusted_position === 1) || (race.adjusted_position === 1 && (race.round_type_code === 'FA' || (/^\d/.test(race.round_type_code) && event.length === 1)))"
                       name="trophy"
                     )
                     span.text
-                      | {{ formatPosition(race.adjusted_position) || (raceKey == 0 ? 'Niet aanwezig' : 'Tijd ontbreekt') }} in 
-                      | {{ raceKey == 0 ? (race.round_type_code || `${race.timing_layout.distance}m`) : (race.round_type_name || 'ontbreekt') }}
+                      | {{ formatPosition(race.adjusted_position) || (raceKey === 0 ? 'Niet aanwezig' : 'Tijd ontbreekt') }} in 
+                      | {{ raceKey === 0 ? (race.round_type_code || `${race.timing_layout.distance}m`) : (race.round_type_name || 'ontbreekt') }}
                 .bottom-label
                   span.role {{ race.role }}
                   span(v-if="race.result").time {{ race.timing_layout.code }} in {{ race.result }}
@@ -44,157 +54,141 @@
                   .expand(v-show="expandedRaceKey === `${crewKey}-${eventKey}-${raceKey}`")
                     .rowers
                       h4 Roeiers
-                      span(v-for="(rower, idx) in race.rowers" :class="{ 'rower': (rower.name === rowerStore.rower.displayname) }") {{ idx + 1 }} {{ rower.name || 'niet gevonden' }}
-                      span(v-if="race.coxes[0]" :class="{ 'rower': (race.coxes[0] === rowerStore.rower.displayname) }") (c) {{ race.coxes[0] || 'niet gevonden' }}
+                      span(
+                        v-for="(rower, idx) in race.rowers" 
+                        :class="{ 'rower': (rower.name === rowerStore.rower.displayname) }"
+                      ) {{ idx + 1 }} {{ rower.name || 'niet gevonden' }}
+                      span(
+                        v-if="race.coxes[0]" 
+                        :class="{ 'rower': (race.coxes[0] === rowerStore.rower.displayname) }"
+                      ) (c) {{ race.coxes[0] || 'niet gevonden' }}
                     .coaches
                       h4 Coaches
-                      span(v-for="coach in race.coaches" :class="{ 'rower': (coach === rowerStore.rower.displayname) }") {{ coach || 'niet gevonden' }}
+                      span(
+                        v-for="coach in race.coaches" 
+                        :class="{ 'rower': (coach === rowerStore.rower.displayname) }"
+                      ) {{ coach || 'niet gevonden' }}
                     .boat(v-if="race.boat_name")
                       h4 Boot
                       span {{ race.boat_name || 'niet gevonden' }}
-  </template>
-  
-  <script setup lang="ts">
-  import { ref, computed } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { useRowersStore } from '@/stores/rowers';
-  
-  const rowerStore = useRowersStore();
-  const route = useRoute();
-  const showOnlyWins = ref(false);
-  
-  // Store the currently expanded race key
-  const expandedRaceKey = ref<string | null>(null);
-  
-  // State to track the sort order
-  const isReversed = ref(false);
-  
-  // Function to toggle the sort order
-  function toggleSortOrder() {
-    isReversed.value = !isReversed.value;
-  }
-  
-  // Computed property to handle the sorted race crew info
-  const sortedRaceCrewInfo = computed(() => {
-  const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {}; // Ensure it's always an object
-  console.log(raceCrewInfo)
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { useRowersStore } from '@/stores/rowers';
+
+const rowerStore = useRowersStore();
+const route = useRoute();
+const showOnlyWins = ref(false);
+
+// Store the currently expanded race key
+const expandedRaceKey = ref<string | null>(null);
+
+// State to track the sort order
+const isReversed = ref(false);
+
+function toggleSortOrder() {
+  isReversed.value = !isReversed.value;
+}
+
+// Computed property to handle the sorted race crew info
+const sortedRaceCrewInfo = computed(() => {
+  const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {};
+  console.log(raceCrewInfo);
 
   const processedInfo = Object.entries(raceCrewInfo).reduce((crewAcc, [crewKey, events]) => {
-    // Process and filter events
     const filteredEvents = Object.entries(events).reduce((eventAcc, [eventKey, races]) => {
-      // Filter races based on the 'showOnlyWins' condition
       const filteredRaces = (races || []).filter(race => {
         const isFinalWin = race.adjusted_position === 1 && race.round_type_code === 'FA';
         const isNumberedSingleRace = race.adjusted_position === 1 && /^\d/.test(race.round_type_code) && races.length === 1;
-
         return (
-          !showOnlyWins.value || // Include all if the checkbox is unchecked
-          isFinalWin || // Include only wins if checked
-          isNumberedSingleRace // Include if round_type_code starts with a number and is the only race in the event, with position 1
+          !showOnlyWins.value ||
+          isFinalWin ||
+          isNumberedSingleRace
         );
       });
-
-      // Only include the event if it has races left after filtering
       if (filteredRaces.length > 0) {
         eventAcc[eventKey] = filteredRaces;
       }
-
       return eventAcc;
     }, {} as Record<string, typeof races>);
 
-    // Only include the crew if there are events left after filtering
     if (Object.keys(filteredEvents).length > 0) {
       crewAcc[crewKey] = filteredEvents;
     }
-
     return crewAcc;
   }, {} as typeof raceCrewInfo);
 
-  // Convert processed info to array for sorting
   const entries = Object.entries(processedInfo);
 
-  // Sort the resulting data by date
+  // Sort by date. Now each race.date is an ISO string.
   const sortedEntries = entries.sort(([_, eventA], [__, eventB]) => {
-    const dateA = new Date(Object.values(eventA)[0][0]?.date?.[0] ?? '1970-01-01');
-    const dateB = new Date(Object.values(eventB)[0][0]?.date?.[0] ?? '1970-01-01');
-    return isReversed.value ? dateA - dateB : dateB - dateA;
+    const dateA = new Date(Object.values(eventA)[0][0]?.date ?? '1970-01-01');
+    const dateB = new Date(Object.values(eventB)[0][0]?.date ?? '1970-01-01');
+    return isReversed.value 
+      ? dateA.getTime() - dateB.getTime() 
+      : dateB.getTime() - dateA.getTime();
   });
 
-  // Convert sorted entries back to an object
   return Object.fromEntries(sortedEntries);
 });
 
+function toggleExpand(crewKey: string, eventKey: string, raceKey: string) {
+  const uniqueKey = `${crewKey}-${eventKey}-${raceKey}`;
+  expandedRaceKey.value = expandedRaceKey.value === uniqueKey ? null : uniqueKey;
+}
 
-  
-  // Function to handle expanding/collapsing race details
-  function toggleExpand(crewKey: string, eventKey: string, raceKey: string) {
-    const uniqueKey = `${crewKey}-${eventKey}-${raceKey}`;
-    if (expandedRaceKey.value === uniqueKey) {
-      // Collapse if the same race is clicked again
-      expandedRaceKey.value = null;
-    } else {
-      // Expand the new race and collapse others
-      expandedRaceKey.value = uniqueKey;
-    }
-  }
-  
-  function formatPosition(position) {
-    if (!position) return null;
-    return position + (position === 1 ? 'ste' : 'de');
-  }
-  
-  // Function to determine the appropriate class for each race
-  function getRaceClass(race: any, event: any[]): string {
-    const finalsOrder = ['FA', 'FB', 'FC', 'FD', 'FE', 'HF', 'KF', 'E', 'H', 'TT'];
-    const highestAttainedFinal = event.length === 1 ? race : event.find(e => finalsOrder.includes(e.round_type_code)) || { round_type_code: '' };
-  
-    if (race.round_type_code === highestAttainedFinal.round_type_code) {
-      return 'final';
-    } else if (['E', 'H', 'TT', 'HF', 'KF'].includes(race.round_type_code) || !race.round_type_code || /^R\d*$/.test(race.round_type_code)) {
-      return event.length === 1 ? 'final' : 'preliminary';
-    } else if (/^\d+m$/.test(race.round_type_code) && event.length > 1) {
-      return 'multiple-distance';
-    } else if (/^\d+m$/.test(race.round_type_code)) {
-      return 'distance';
-    } else {
-      return '';
-    }
-  }
-  
-  // Function to format the date to "5 June 2022"
-  function formatDate(dateInput: string | string[]): string {
-    let dateString: string;
-  
-    // Handle if dateInput is an array
-    if (Array.isArray(dateInput) && dateInput.length > 0) {
-      dateString = dateInput[0]; // Use the first date in the array
-    } else if (typeof dateInput === 'string') {
-      dateString = dateInput;
-    } else {
-      return undefined;
-    }
-  
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return undefined; // Handle cases where the date cannot be parsed
-    }
-  
-    return date.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }
-  </script>
-  
+function formatPosition(position) {
+  if (!position) return null;
+  return position + (position === 1 ? 'ste' : 'de');
+}
 
-  
+function getRaceClass(race: any, event: any[]): string {
+  const finalsOrder = ['FA', 'FB', 'FC', 'FD', 'FE', 'HF', 'KF', 'E', 'H', 'TT'];
+  const highestAttainedFinal = event.length === 1 
+    ? race 
+    : event.find(e => finalsOrder.includes(e.round_type_code)) || { round_type_code: '' };
+
+  if (race.round_type_code === highestAttainedFinal.round_type_code) {
+    return 'final';
+  } else if (['E', 'H', 'TT', 'HF', 'KF'].includes(race.round_type_code) || !race.round_type_code || /^R\d*$/.test(race.round_type_code)) {
+    return event.length === 1 ? 'final' : 'preliminary';
+  } else if (/^\d+m$/.test(race.round_type_code) && event.length > 1) {
+    return 'multiple-distance';
+  } else if (/^\d+m$/.test(race.round_type_code)) {
+    return 'distance';
+  } else {
+    return '';
+  }
+}
+
+// Function to format an ISO date string to Dutch display format ("9 maart 2024")
+function formatDate(dateInput: string | string[]): string {
+  let dateString: string;
+  if (Array.isArray(dateInput) && dateInput.length > 0) {
+    dateString = dateInput[0];
+  } else if (typeof dateInput === 'string') {
+    dateString = dateInput;
+  } else {
+    return undefined;
+  }
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date.toLocaleDateString('nl-NL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+</script>
+
 <style lang="scss" scoped>
 .multiple-events {
   display: flex;
   flex-direction: column;
-  /* row-gap: 1.2rem; */
-
   > :not(:first-child) {
     margin-top: 1rem;
     .entry, .top-label {
@@ -203,7 +197,6 @@
     .role {
       visibility: hidden;
     }
-    margin-top: 1rem;
   }
 }
 
@@ -211,9 +204,11 @@
   display: flex;
   align-items: center;
 }
+
 .trophy {
   color: $red;
 }
+
 :deep(svg) {
   margin-bottom: 0;
 }
@@ -228,181 +223,163 @@
   margin-top: 2rem;
 }
 
-  
-  .final {
-  }
-  
-  .distance {
-  }
-  
-  .knocked-out {
-  }
-  
-  .multiple-distance {
-  }
-  
-  .component-wrapper {
-    .element-wrapper {
-      .element-body {
-        display: flex;
-        justify-content: center;
-        .loading {
+.component-wrapper {
+  .element-wrapper {
+    .element-body {
+      display: flex;
+      justify-content: center;
+      .loading {
+        width: 2rem;
+        height: 2rem;
+        margin-top: initial;
+        &:deep(.loader) {
           width: 2rem;
           height: 2rem;
-          margin-top: initial;
-          &:deep(.loader) {
-            width: 2rem;
-            height: 2rem;
-          }
-        }
-        &:deep(.nuxt-icon svg) {
         }
       }
     }
   }
-  
-  .races {
+}
+
+.races {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  max-width: 70%;
+  @include mobile {
+    max-width: initial;
+  }
+  .header {
     display: flex;
-    flex: 1;
+    margin-top: 1rem;
+    justify-content: space-between;
+    color: $black50;
+    font-size: 0.9rem;
+    font-weight: bold;
+    padding-bottom: 0.1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  .race {
+    display: flex;
     flex-direction: column;
-    max-width: 70%;
-    @include mobile {
-      max-width: initial;
-    } 
-    .header {
+    row-gap: 2rem;
+    width: 100%;
+    padding: 3rem 0 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    &:last-child {
+      border: none;
+    }
+    .top-label {
       display: flex;
-      margin-top: 1rem;
       justify-content: space-between;
+      margin-bottom: 0.8rem;
       color: $black50;
       font-size: 0.9rem;
+    }
+    .entry {
+      display: flex;
+      column-gap: 0.25rem;
+      align-items: center;
+      text-transform: capitalize;
+      img {
+        height: 0.8rem;
+      }
+    }
+    .title {
+      text-transform: capitalize;
+      display: flex;
+      justify-content: space-between;
+      column-gap: 2.5rem;
+      font-size: 1.5rem;
       font-weight: bold;
-      padding-bottom: 0.1rem;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    .race {
-      display: flex;
-      flex-direction: column;
-      row-gap: 2rem;
-      width: 100%;
-      padding: 3rem 0 1.5rem;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-      &:last-child {
-        border: initial;
-      }
-      .top-label {
+      word-break: break-word;
+      .result {
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.8rem;
-      }
-      .top-label {
-        color: $black50;
-        font-size: 0.9rem;
-      }
-      .entry {
-        display: flex;
-        column-gap: 0.25rem;
+        column-gap: 0.2rem;
         align-items: center;
-        text-transform: capitalize;
-        img {
-          height: 0.8rem;
-        }
-      }
-      .title {
-        text-transform: capitalize;
-        display: flex;
-        justify-content: space-between;
-        column-gap: 2.5rem;
-        font-size: 1.5rem;
-        font-weight: bold;
-        word-break: break-word;
-        .result {
-          display: flex;
-          column-gap: 0.2rem;
-          align-items: center;
-          text-transform: initial;
-          text-align: right;
-          .text {
-            min-width: 7.0625rem;
-          }
-        }
-      }
-      .bottom-label {
-        margin-top: 0.75rem;
-        display: flex;
-        justify-content: space-between;
-        font-size: 1.15rem;
-      }
-      .icon {
-        margin-top: 0.5rem;
-        display: flex;
-        justify-content: center;
-        .nuxt-icon {
-          cursor: pointer;
-          padding: 0.1rem 0.3rem;
-          &:hover {
-            background-color: rgba(230, 0, 0, 0.03);
-            border-radius: 50px;
-          }
+        text-transform: initial;
+        text-align: right;
+        .text {
+          min-width: 7.0625rem;
         }
       }
     }
-  }
-  
-  .expand {
-    margin: 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    overflow: hidden;
-    @include tablet-small {
-      display: grid;
-      grid-template-columns: auto max-width;
-      grid-template-areas: 
-        "roeiers coaches"
-        "boot boot";
-    }
-    .rowers, .coxes, .coaches, .boat {
+    .bottom-label {
+      margin-top: 0.75rem;
       display: flex;
-      row-gap: 0.05rem;
-      flex-direction: column;
-      >:first-child {
-        color: $black50;
-        font-weight: bold;
-        margin-bottom: 0.25rem;
+      justify-content: space-between;
+      font-size: 1.15rem;
+    }
+    .icon {
+      margin-top: 0.5rem;
+      display: flex;
+      justify-content: center;
+      .nuxt-icon {
+        cursor: pointer;
+        padding: 0.1rem 0.3rem;
+        &:hover {
+          background-color: rgba(230, 0, 0, 0.03);
+          border-radius: 50px;
+        }
       }
     }
-    .rowers {
-      grid-area: roeiers;
-    }
-    .coaches {
-      grid-area: coaches;
-    }
-    .boat {
-      grid-area: boot;
-      @include tablet-small {
-        margin-top: 1rem;
-    }
+  }
+}
+
+.expand {
+  margin: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  overflow: hidden;
+  @include tablet-small {
+    display: grid;
+    grid-template-columns: auto max-width;
+    grid-template-areas:
+      "roeiers coaches"
+      "boot boot";
+  }
+  .rowers, .coxes, .coaches, .boat {
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.05rem;
+    >:first-child {
+      color: $black50;
+      font-weight: bold;
+      margin-bottom: 0.25rem;
     }
   }
-  
-  .expand-enter-active, .expand-leave-active {
-    transition: max-height 0.3s ease;
+  .rowers {
+    grid-area: roeiers;
   }
-  
-  .expand-enter-from, .expand-leave-to {
-    max-height: 0;
+  .coaches {
+    grid-area: coaches;
   }
-  
-  .expand-enter-to, .expand-leave-from {
-    max-height: 500px; // Use a value large enough to accommodate your content
+  .boat {
+    grid-area: boot;
+    @include tablet-small {
+      margin-top: 1rem;
+    }
   }
+}
+
+.expand-enter-active, .expand-leave-active {
+  transition: max-height 0.3s ease;
+}
+
+.expand-enter-from, .expand-leave-to {
+  max-height: 0;
+}
+
+.expand-enter-to, .expand-leave-from {
+  max-height: 500px;
+}
 
 .preliminary {
   border-left: 1px solid rgba(0, 0, 0, 0.05);
-
   margin-left: 1rem;
   margin-right: 2rem;
   margin-top: 1rem!important;
-  .top-label, .entry,  {
+  .top-label, .entry {
     display: none!important;
   }
   .expand {
@@ -429,7 +406,6 @@
   }
   .result {
     font-size: 1.1rem!important;
-    font-weight: normal!important;
     font-weight: bold!important;
   }
   .time {
@@ -437,11 +413,13 @@
     min-width: max-content;
   }
 }
+
 .rules {
   display: flex;
   justify-content: end;
   color: $black50;
 }
+
 .rules2 {
   font-size: 1rem!important;
 }
@@ -458,4 +436,3 @@
   transform: rotate(45deg);
 }
 </style>
-  
