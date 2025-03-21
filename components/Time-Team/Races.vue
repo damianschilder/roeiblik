@@ -109,7 +109,7 @@ function toggleSortOrder() {
   isReversed.value = !isReversed.value;
 }
 
-const nonFinalRaces = ['E', 'H', 'TT', 'HF', 'KF', 'HK', 'FB', 'FC', 'FD', 'FE', 'FF', 'e', 'h', 'tt', 'hf', 'kf', 'hk', 'fb', 'fc', 'fd', 'fe', 'ff'];
+const nonFinalRaces = ['E', 'H', 'R', 'TT', 'HF', 'KF', 'HK', 'FB', 'FC', 'FD', 'FE', 'FF', 'e', 'h', 'tt', 'hf', 'kf', 'hk', 'fb', 'fc', 'fd', 'fe', 'ff'];
 
 // Computed property to handle the sorted race crew info
 const sortedRaceCrewInfo = computed(() => {
@@ -346,6 +346,7 @@ function formatDate(dateInput: string | string[]): string {
         text-align: right;
         .text {
           min-width: 7.0625rem;
+          max-width: fit-content;
         }
       }
     }

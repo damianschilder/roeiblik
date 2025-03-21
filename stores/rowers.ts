@@ -88,7 +88,7 @@ export const useRowersStore = defineStore("rowers", () => {
           raceDetails.role = role;
 
           // Updated wins calculation:
-          const nonFinalRaces = ['E', 'H', 'TT', 'HF', 'KF', 'HK', 'FB', 'FC', 'FD', 'FE', 'FF', 'e', 'h', 'tt', 'hf', 'kf', 'hk', 'fb', 'fc', 'fd', 'fe', 'ff', 'race for lanes'];
+          const nonFinalRaces = ['E', 'H', 'R', 'TT', 'HF', 'KF', 'HK', 'FB', 'FC', 'FD', 'FE', 'FF', 'e', 'h', 'tt', 'hf', 'kf', 'hk', 'fb', 'fc', 'fd', 'fe', 'ff', 'race for lanes'];
           if (raceDetails.adjusted_position === 1 && !nonFinalRaces.includes(raceDetails.round_type_code)) {
             totalWins[role]++;
           }
