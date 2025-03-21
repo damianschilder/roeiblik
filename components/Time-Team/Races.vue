@@ -4,14 +4,20 @@
       .element-body
         .error(v-if="rowerStore.error") Can't connect to databank. Please try again later.
         .races(v-if="Object.keys(rowerStore.rower.allRaceCrewInfo).length")
-          .actions
-            UiSort(@click="toggleSortOrder" :label="isReversed ? 'Oudste eerst' : 'Recentste eerst'")
-            UiWon(
-              v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0"
-              v-model="showOnlyWins"
-            )
+          .actions(v-if="hasMultipleRoles")
+            UiSort( @click="toggleSortOrder" :label="isReversed ? 'Oudste eerst' : 'Recentste eerst'")
+            .right
+              select(v-if="hasMultipleRoles" v-model="selectedRole")
+                option(value="") Alle rollen
+                option(v-if="rowerStore.rower.roleCounts.Rower > 0" value="Rower") Roeier
+                option(v-if="rowerStore.rower.roleCounts.Coach > 0" value="Coach") Coach
+                option(v-if="rowerStore.rower.roleCounts.Cox > 0" value="Cox") Cox
+              UiWon(
+                v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0 && hasMultipleRoles"
+                v-model="showOnlyWins"
+              )
           .header
-            span {{ Object.keys(sortedRaceCrewInfo).length }} vermeldingen
+            span {{ Object.keys(sortedRaceCrewInfo).length }} {{ Object.keys(sortedRaceCrewInfo).length === 1 ? 'vermelding' : 'vermeldingen' }}
             //- span {{ formatDate(rowerStore.rower.lastEntryDate) }}
           .race(v-for="(crew, crewKey) in sortedRaceCrewInfo" :key="crewKey")
             .race-event(
@@ -34,7 +40,7 @@
                   span {{ raceKey === 0 ? (race.field_name || 'Niet aanwezig') : (race.event_code || 'Niet aanwezig') }}
                   .result 
                     nuxt-icon.trophy(
-                      v-if="(race.timing_layout.distance === 2000 && race.is_final === true && (race.round_type_code === 'FA' || (/^\d/.test(race.round_type_code) && event.length === 1)) && race.adjusted_position === 1) || (race.adjusted_position === 1 && (race.round_type_code === 'FA' || (/^\d/.test(race.round_type_code) && event.length === 1)))"
+                      v-if="(race.adjusted_position === 1 && !nonFinalRaces.includes(race.round_type_code))"
                       name="trophy"
                     )
                     span.text
@@ -81,6 +87,17 @@ import { useRowersStore } from '@/stores/rowers';
 const rowerStore = useRowersStore();
 const route = useRoute();
 const showOnlyWins = ref(false);
+const selectedRole = ref(''); // Reactive variable for role filtering
+
+// Computed property that returns true if the person has races in more than one distinct role.
+const hasMultipleRoles = computed(() => {
+  if (!rowerStore.rower.roleCounts) return false;
+  const counts = rowerStore.rower.roleCounts;
+  // Check only the defined roles: Rower, Coach, Cox.
+  const roles = ["Rower", "Coach", "Cox"];
+  const distinctRoles = roles.filter(role => counts[role] > 0);
+  return distinctRoles.length > 1;
+});
 
 // Store the currently expanded race key
 const expandedRaceKey = ref<string | null>(null);
@@ -92,6 +109,8 @@ function toggleSortOrder() {
   isReversed.value = !isReversed.value;
 }
 
+const nonFinalRaces = ['E', 'H', 'TT', 'HF', 'KF', 'HK', 'FB', 'FC', 'FD', 'FE', 'FF', 'e', 'h', 'tt', 'hf', 'kf', 'hk', 'fb', 'fc', 'fd', 'fe', 'ff'];
+
 // Computed property to handle the sorted race crew info
 const sortedRaceCrewInfo = computed(() => {
   const raceCrewInfo = rowerStore.rower.allRaceCrewInfo || {};
@@ -100,12 +119,11 @@ const sortedRaceCrewInfo = computed(() => {
   const processedInfo = Object.entries(raceCrewInfo).reduce((crewAcc, [crewKey, events]) => {
     const filteredEvents = Object.entries(events).reduce((eventAcc, [eventKey, races]) => {
       const filteredRaces = (races || []).filter(race => {
-        const isFinalWin = race.adjusted_position === 1 && race.round_type_code === 'FA';
+        const isFinalWin = race.adjusted_position === 1 && !nonFinalRaces.includes(race.round_type_code);
         const isNumberedSingleRace = race.adjusted_position === 1 && /^\d/.test(race.round_type_code) && races.length === 1;
+        const roleMatches = !selectedRole.value || race.role === selectedRole.value;
         return (
-          !showOnlyWins.value ||
-          isFinalWin ||
-          isNumberedSingleRace
+          (!showOnlyWins.value || isFinalWin || isNumberedSingleRace) && roleMatches
         );
       });
       if (filteredRaces.length > 0) {
@@ -220,7 +238,33 @@ function formatDate(dateInput: string | string[]): string {
 .actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 2rem;
+  .right {
+    display: flex;
+    column-gap: 0.5rem;
+    @include tablet-small {
+      align-items: end;
+      flex-direction: column-reverse;
+      row-gap: 0.25rem;
+    }
+    select {
+      padding: 0.25rem 0.5rem;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 5px;
+      display: flex;
+      width: min-content;
+      align-items: center;
+      column-gap: 0.4rem;
+      font: 1rem 'Mulish', sans-serif;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      outline: initial;
+      background-color: initial;
+  
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+    }
+  }
 }
 
 .component-wrapper {
@@ -245,6 +289,7 @@ function formatDate(dateInput: string | string[]): string {
   display: flex;
   flex: 1;
   flex-direction: column;
+  padding-top: 2rem;
   max-width: 70%;
   @include mobile {
     max-width: initial;

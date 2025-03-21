@@ -87,10 +87,9 @@ export const useRowersStore = defineStore("rowers", () => {
           const role = determineRole(personDetails, entryData);
           raceDetails.role = role;
 
-          if (
-            raceDetails.adjusted_position === 1 &&
-            isFinalRound(roundEntry.round_type_code)
-          ) {
+          // Updated wins calculation:
+          const nonFinalRaces = ['E', 'H', 'TT', 'HF', 'KF', 'HK', 'FB', 'FC', 'FD', 'FE', 'FF', 'e', 'h', 'tt', 'hf', 'kf', 'hk', 'fb', 'fc', 'fd', 'fe', 'ff', 'race for lanes'];
+          if (raceDetails.adjusted_position === 1 && !nonFinalRaces.includes(raceDetails.round_type_code)) {
             totalWins[role]++;
           }
 
@@ -195,36 +194,17 @@ export const useRowersStore = defineStore("rowers", () => {
     let roleCounts = { Rower: 0, Coach: 0, Cox: 0, Undefined: 0 };
     for (const eventId in allRaceCrewInfo) {
       for (const entryName in allRaceCrewInfo[eventId]) {
-        let hasRower = false;
-        let hasCoach = false;
-        let hasCox = false;
-        let hasUndefined = false;
-
-        for (const race of allRaceCrewInfo[eventId][entryName]) {
-          switch (race.role) {
-            case "Rower":
-              hasRower = true;
-              break;
-            case "Coach":
-              hasCoach = true;
-              break;
-            case "Cox":
-              hasCox = true;
-              break;
-            case "Undefined":
-              hasUndefined = true;
-              break;
-          }
+        const groupRaces = allRaceCrewInfo[eventId][entryName];
+        if (groupRaces.length > 0) {
+          // Use the role from the first race in the group
+          const role = groupRaces[0].role || "Undefined";
+          roleCounts[role] = (roleCounts[role] || 0) + 1;
         }
-
-        if (hasRower) roleCounts.Rower++;
-        if (hasCoach) roleCounts.Coach++;
-        if (hasCox) roleCounts.Cox++;
-        if (hasUndefined) roleCounts.Undefined++;
       }
     }
     return roleCounts;
   }
+  
 
   function getLocationAndDetailsByRaceCrewId(raceCrewId, data) {
     const raceCrewEntry = data.race_crew?.[raceCrewId];

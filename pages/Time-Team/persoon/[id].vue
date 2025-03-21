@@ -66,7 +66,6 @@ onMounted(async () => {
   justify-content: center;
   flex-direction: column;
   height: 100%;
-  max-width: 95%;
   text-align: center;
   &:deep(.component-wrapper) {
     display: flex;

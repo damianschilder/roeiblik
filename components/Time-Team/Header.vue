@@ -15,7 +15,7 @@
                     span {{ club.name }}
               .first-sign( v-if="rowerStore.rower.firstRace")
                 span Eerste race: 
-                span.date {{formatDate(rowerStore.rower.firstRace.date)}}, 
+                span.date  {{formatDate(rowerStore.rower.firstRace.date)}}, 
                 span {{rowerStore.rower.firstRace.entry_name}} | 
                 span {{rowerStore.rower.firstRace.event_code}}, 
                 //- NuxtLink( to="/faq")
@@ -176,6 +176,10 @@ function handleImageError(event: Event): void {
   .first-sign {
     /* font-weight: bold; */
     opacity: 0.5;
+    @include mobile {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
   }
   </style>
   
