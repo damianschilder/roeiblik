@@ -97,7 +97,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: calc(60vh);
+  // height: calc(60vh);
 }
 
 .button {
