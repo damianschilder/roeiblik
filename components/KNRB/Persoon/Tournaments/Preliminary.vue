@@ -71,6 +71,7 @@
       display: flex;
       justify-content: space-between;
       font-weight: bold;
+      column-gap: 1rem;
       font-size: 1.15rem;
       > .result {
         text-align: right;
