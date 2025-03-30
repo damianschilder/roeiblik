@@ -23,6 +23,18 @@
             span Doorzoek 
             span.bold Time-Team 
             span op compo- en wedstrijdresultaten van personen.
+      .button.knrbeter2
+        .tags
+          span.tag.wedstro Wedstrijdroeien
+        NuxtLink.statistieken(to="/KNRB")
+          span KNRBeter
+          nuxt-icon(name="person search" style="style-one")
+        .info
+          nuxt-icon(name="info")
+          .info-text
+            span Doorzoek de 
+            span.bold KNRB 
+            span op klasserende wedstrijdresultaten van personen.
       .button.statistieken2
         .tags
           span.tag.wedstro Wedstrijdroeien
@@ -42,7 +54,6 @@
   display: flex;
   flex-direction: column;
 //  padding: 3rem 0 0;
- height: 100%;
 }
 
 
@@ -96,7 +107,11 @@
 }
 
 .compobeter2 {
-  max-width: 263.25px
+  max-width: 263.25px;
+}
+
+.knrbeter2 {
+  max-width: 227.25px
 }
 
 .bold {
@@ -174,7 +189,7 @@
   display: flex;
   column-gap: 5rem;
   margin-top: 5rem;
-  @include mobile {
+  @include tablet-small {
     flex-direction: column;
     row-gap: 2rem;
   }
@@ -183,6 +198,16 @@
   display: flex;
   :deep(svg) {
     align-self: center;;
+  }
+}
+
+.compobeter {
+  background-color: $roeiblik;
+  color: white;
+  &:hover {
+    background-color: initial;
+    color: black;
+    filter: drop-shadow(0px 0px 0px $black);
   }
 }
 </style>
