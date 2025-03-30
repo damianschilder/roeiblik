@@ -38,11 +38,20 @@ export const useKNRBStore = defineStore("KNRB", () => {
           params: { id },
         });
         person.value = fetchedPerson;
-        // Automatically get the round for the first race of the first tournament
-        getRound(
-          fetchedPerson.tournaments[0].races[0].tournamentId,
-          fetchedPerson.tournaments[0].races[0].raceId
-        );
+        // Compute statistics based on tournaments and races
+        computePersonStats();
+        // Automatically get the round for the first race of the first tournament, if available
+        if (
+          fetchedPerson.tournaments &&
+          fetchedPerson.tournaments.length > 0 &&
+          fetchedPerson.tournaments[0].races &&
+          fetchedPerson.tournaments[0].races.length > 0
+        ) {
+          getRound(
+            fetchedPerson.tournaments[0].races[0].tournamentId,
+            fetchedPerson.tournaments[0].races[0].raceId
+          );
+        }
         error.value = false;
       } catch (e) {
         error.value = true;
@@ -104,6 +113,8 @@ export const useKNRBStore = defineStore("KNRB", () => {
         console.warn('No race or preliminary race found with the provided raceId:', raceId);
       }
   
+      // Recompute statistics after race data update
+      computePersonStats();
       error.value = false; // Reset error state on success
     } catch (e) {
       error.value = true; // Set error state on failure
@@ -142,7 +153,8 @@ export const useKNRBStore = defineStore("KNRB", () => {
           }
         }
       }
-  
+      // Recompute statistics after updating limited person data
+      computePersonStats();
       error.value = false;
     } catch (e) {
       error.value = true;
@@ -150,6 +162,80 @@ export const useKNRBStore = defineStore("KNRB", () => {
     } finally {
       loading.value = false;
     }
+  }
+  
+  // Computes statistics for the person:
+  // - roleCounts: number of races participated in for each role
+  // - totalWins: number of races won for each role (win = raceName is "A-finale" and position is 1)
+  //
+  // This function now derives the role from boolean flags:
+  //   if member.isCoach is true, role = "Coach"
+  //   else if member.isCox is true, role = "Cox"
+  //   else role defaults to "Rower"
+  function computePersonStats() {
+    const roles: string[] = ["Rower", "Cox", "Coach"];
+    const roleCounts: Record<string, number> = { Rower: 0, Cox: 0, Coach: 0 };
+    const totalWins: Record<string, number> = { Rower: 0, Cox: 0, Coach: 0 };
+  
+    const currentPerson = person.value as Person;
+    if (!currentPerson || !currentPerson.tournaments) return;
+  
+    for (const tournament of currentPerson.tournaments) {
+      if (!tournament.races) continue;
+      for (const race of tournament.races) {
+        // Process main race participation
+        if (race.raceTeams) {
+          for (const team of race.raceTeams) {
+            if (team.teamVersion && team.teamVersion.teamMembers) {
+              for (const member of team.teamVersion.teamMembers) {
+                if (member.person && member.person.personId === currentPerson.personId) {
+                  // Derive the role from boolean flags
+                  let role = "Rower";
+                  if (member.isCoach) {
+                    role = "Coach";
+                  } else if (member.isCox) {
+                    role = "Cox";
+                  }
+                  roleCounts[role] += 1;
+                  if (race.raceName === "A-finale" && race.position === 1) {
+                    totalWins[role] += 1;
+                  }
+                }
+              }
+            }
+          }
+        }
+        // Process participation in preliminary races, if any
+        if (race.preliminaries) {
+          for (const preliminaryRace of race.preliminaries) {
+            if (preliminaryRace.raceTeams) {
+              for (const team of preliminaryRace.raceTeams) {
+                if (team.teamVersion && team.teamVersion.teamMembers) {
+                  for (const member of team.teamVersion.teamMembers) {
+                    if (member.person && member.person.personId === currentPerson.personId) {
+                      // Derive the role from boolean flags
+                      let role = "Rower";
+                      if (member.isCoach) {
+                        role = "Coach";
+                      } else if (member.isCox) {
+                        role = "Cox";
+                      }
+                      roleCounts[role] += 1;
+                      if (preliminaryRace.raceName === "A-finale" && preliminaryRace.position === 1) {
+                        totalWins[role] += 1;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  
+    (currentPerson as any).roleCounts = roleCounts;
+    (currentPerson as any).totalWins = totalWins;
   }
   
   return { loading, error, results, person, search, getRower, getRound, getLimitedPerson, currentPage, calledLimitedPersons };

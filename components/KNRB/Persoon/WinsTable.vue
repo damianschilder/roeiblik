@@ -2,36 +2,31 @@
 .component-wrapper 
   .element-wrapper
     .element-body
-      table(v-if="rowerStore.rower")
+      table(v-if="person")
         tr
           th
           th Winsten
           th Totaal
         tr
           td Roeier
-          td {{rowerStore.rower.totalWins.Rower}}
-          td {{rowerStore.rower.roleCounts.Rower}}
+          td {{person.totalWins.Rower}}
+          td {{person.roleCounts.Rower}}
         tr
           td Stuur
-          td {{rowerStore.rower.totalWins.Cox}}
-          td {{rowerStore.rower.roleCounts.Cox}}
+          td {{person.totalWins.Cox}}
+          td {{person.roleCounts.Cox}}
         tr
           td Coach
-          td {{rowerStore.rower.totalWins.Coach}}
-          td {{rowerStore.rower.roleCounts.Coach}}
+          td {{person.totalWins.Coach}}
+          td {{person.roleCounts.Coach}}
             
 
 </template>
 
 <script setup lang="ts">
-const KNRBStore = useKNRBStore();
-const person = ref({});
-
-onMounted(async () => {
-  if (KNRBStore.person.personId !== "") {
-    person.value = KNRBStore.person;
-  }
-});
+const props = defineProps<{
+  person: Person;
+}>();
 
 </script>
 

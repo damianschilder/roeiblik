@@ -17,8 +17,8 @@
         tbody
           //- Wrap both rows in a template so each iteration gets its own index and club data
           template(v-for="(club, index) in filteredPositions" :key="index")
-            tr(ref="target" class="observed-element")
-              td.expand(@click="toggleClub(index)" v-if="!preliminary")
+            tr.row(ref="target" class="observed-element" @click="!preliminary && toggleClub(index)")
+              td.expand( v-if="!preliminary")
                 nuxt-icon(:name="expandedLineups.includes(index) ? 'less' : 'more'")
               td(v-else)
               td.left {{ club.endPosition }}
@@ -156,7 +156,7 @@ td {
   display: flex;
   flex: 1;
   font-size: 0.8rem;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
   cursor: pointer;
   color: $black50;
   text-decoration: underline;
@@ -220,14 +220,25 @@ td {
 
 tr {
   position: relative;
+  cursor: pointer;
   td {
     width: fit-content;
   }
 }
 
+.row {
+  &:hover {
+    :deep(svg) {
+    color: red;
+  }
+  }
+
+}
+
 .lineup {
   display: flex;
   column-gap: 2rem;
+  margin-top: 0.5rem;
   margin-bottom: 1rem;
   > .rowers,
   .coaches {

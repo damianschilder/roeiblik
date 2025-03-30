@@ -1,6 +1,6 @@
 <template lang="pug">
 .page-wrapper
-  KNRBPersoonHeader(v-if="KNRBStore.person.personId" :fullName="KNRBStore.person.fullName")
+  KNRBPersoonHeader(v-if="KNRBStore.person.personId" :person="KNRBStore.person")
   .loader-container(v-if="loading")
     UiLoader
     span Dit kan een paar seconden duren.
