@@ -70,7 +70,7 @@
     color: $black50;
     font-size: 0.9rem;
     font-weight: bold;
-    padding-bottom: 0.1rem;
+padding: 0 0.5rem;    padding-bottom: 0.1rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   }
   </style>
