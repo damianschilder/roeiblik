@@ -81,7 +81,7 @@
   }
 
 .content {
-  margin: 1rem 1rem 0 2rem;
+  margin: 1.5rem 1rem 0 2rem;
   padding-left: 1rem;
   border-left: 1px solid $black10;
   @include mobile {

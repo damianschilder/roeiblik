@@ -2,8 +2,6 @@
 .component-wrapper(ref="target" class="observed-element")
   .content
     .tournament-event
-      .event-club
-        span {{race.teamName}}
       .event-name
         span {{race.matchName}}
         .result
@@ -79,9 +77,6 @@ watch(isVisible, (newValue) => {
 
 <style lang="scss" scoped>
 .tournament-event {
-  padding: 0.5rem 0 0;
-  .event-club {
-  }
   .event-name {
     display: flex;
     justify-content: space-between;
@@ -93,6 +88,7 @@ watch(isVisible, (newValue) => {
   }
   .event-time {
     display: flex;
+    margin-top: 0.75rem;
     justify-content: space-between;
   }
 }

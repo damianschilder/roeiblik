@@ -38,7 +38,11 @@ export const useKNRBStore = defineStore("KNRB", () => {
           params: { id },
         });
         person.value = fetchedPerson;
-        getRound(fetchedPerson.tournaments[0].races[0].tournamentId, fetchedPerson.tournaments[0].races[0].raceId);
+        // Automatically get the round for the first race of the first tournament
+        getRound(
+          fetchedPerson.tournaments[0].races[0].tournamentId,
+          fetchedPerson.tournaments[0].races[0].raceId
+        );
         error.value = false;
       } catch (e) {
         error.value = true;
@@ -58,8 +62,6 @@ export const useKNRBStore = defineStore("KNRB", () => {
         params: { tournamentId, raceId },
       });
       
-      // console.log('Fetched Round:', fetchedRound);
-  
       // Get tournaments from the person object
       const tournaments = (person.value as Person).tournaments;
   
@@ -72,13 +74,11 @@ export const useKNRBStore = defineStore("KNRB", () => {
   
       // Traverse tournaments
       for (const tournament of tournaments) {
-        // Check for a match at the top level (main races)
+        // Check for a match at the top level (final races)
         const mainRace = tournament.races.find(race => race.raceId === raceId);
   
         if (mainRace) {
-          // Update the main race
           Object.assign(mainRace, fetchedRound);
-          // console.log('Main race updated:', mainRace);
           raceUpdated = true;
           break; // Exit early since the race is found and updated
         }
@@ -89,14 +89,8 @@ export const useKNRBStore = defineStore("KNRB", () => {
             const preliminaryRace = race.preliminaries.find(prelim => prelim.raceId === raceId);
   
             if (preliminaryRace) {
-              // Update the preliminary race
+              // Update only the preliminary race with the fetched round data
               Object.assign(preliminaryRace, fetchedRound);
-              // console.log('Preliminary race updated:', preliminaryRace);
-  
-              // Update the parent race (main race) with fetched data if needed
-              Object.assign(race, fetchedRound);
-              // console.log('Parent race updated:', race);
-  
               raceUpdated = true;
               break; // Exit inner loop
             }
@@ -119,49 +113,44 @@ export const useKNRBStore = defineStore("KNRB", () => {
     }
   }
   
-  
-  
-  
-
   async function getLimitedPerson(personId: string) {
-      loading.value = true;
-      try {
-        // Fetch the limited person data
-        const fetchedLimitedPerson = await $fetch('/api/KNRB/limitedPerson', {
-          method: "GET",
-          params: { personId },
-        });
+    loading.value = true;
+    try {
+      // Fetch the limited person data
+      const fetchedLimitedPerson = await $fetch('/api/KNRB/limitedPerson', {
+        method: "GET",
+        params: { personId },
+      });
   
-        // Locate the relevant person in the raceTeams
-        const tournaments = (person.value as Person).tournaments;
-        if (tournaments) {
-          outerLoop:
-          for (const tournament of tournaments) {
-            for (const race of tournament.races) {
-              if (race.raceTeams) {
-                for (const raceTeam of race.raceTeams) {
-                  for (const teamMember of raceTeam.teamVersion.teamMembers) {
-                    if (teamMember.person.personId === personId) {
-                      teamMember.person = fetchedLimitedPerson;
-                      console.log(`Updated person ${personId} with limited data.`);
-                      break outerLoop;
-                    }
+      // Locate the relevant person in the raceTeams
+      const tournaments = (person.value as Person).tournaments;
+      if (tournaments) {
+        outerLoop:
+        for (const tournament of tournaments) {
+          for (const race of tournament.races) {
+            if (race.raceTeams) {
+              for (const raceTeam of race.raceTeams) {
+                for (const teamMember of raceTeam.teamVersion.teamMembers) {
+                  if (teamMember.person.personId === personId) {
+                    teamMember.person = fetchedLimitedPerson;
+                    console.log(`Updated person ${personId} with limited data.`);
+                    break outerLoop;
                   }
                 }
               }
             }
           }
         }
-  
-        error.value = false;
-      } catch (e) {
-        error.value = true;
-        console.error("Failed to get limited person:", e);
-      } finally {
-        loading.value = false;
       }
-  }
   
+      error.value = false;
+    } catch (e) {
+      error.value = true;
+      console.error("Failed to get limited person:", e);
+    } finally {
+      loading.value = false;
+    }
+  }
   
   return { loading, error, results, person, search, getRower, getRound, getLimitedPerson, currentPage, calledLimitedPersons };
 });

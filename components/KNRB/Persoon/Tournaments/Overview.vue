@@ -24,5 +24,6 @@ const props = defineProps<{
 .tournaments {
   display: flex;
   flex-direction: column;
+  row-gap: 2rem;
 }
 </style>

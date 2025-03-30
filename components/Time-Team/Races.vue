@@ -4,7 +4,7 @@
       .element-body
         .error(v-if="rowerStore.error") Can't connect to databank. Please try again later.
         .races(v-if="Object.keys(rowerStore.rower.allRaceCrewInfo).length")
-          .actions(v-if="hasMultipleRoles")
+          .actions(v-if="(rowerStore.rower.roleCounts.Coach + rowerStore.rower.roleCounts.Rower + rowerStore.rower.roleCounts.Cox) > 0")
             UiSort( @click="toggleSortOrder" :label="isReversed ? 'Oudste eerst' : 'Recentste eerst'")
             .right
               select(v-if="hasMultipleRoles" v-model="selectedRole")
@@ -13,7 +13,7 @@
                 option(v-if="rowerStore.rower.roleCounts.Coach > 0" value="Coach") Coach
                 option(v-if="rowerStore.rower.roleCounts.Cox > 0" value="Cox") Cox
               UiWon(
-                v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0 && hasMultipleRoles"
+                v-if="(rowerStore.rower.totalWins.Coach + rowerStore.rower.totalWins.Rower + rowerStore.rower.totalWins.Cox) > 0"
                 v-model="showOnlyWins"
               )
           .header
