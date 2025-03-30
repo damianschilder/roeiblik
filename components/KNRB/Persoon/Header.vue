@@ -2,10 +2,11 @@
 .component-wrapper
   .element-wrapper
     .element-body
-      .left
-        span {{person.yearOfBirth}}
-        .name
-          h2 {{person.fullName}}
+      .header
+        .left
+          span {{person.yearOfBirth}}
+          .name
+            h2 {{person.fullName}}
           .points
             .point
               span.header Scull
@@ -13,7 +14,7 @@
             .point
               span.header Boord
               span.digit {{person.totalScullingPoints}}
-          KNRBPersoonWinsTable( :person="person")
+        KNRBPersoonWinsTable( :person="person")
 
 </template>
 
@@ -33,6 +34,12 @@ const props = defineProps<{
   padding: 3.5rem 0 2rem;
   border-bottom: 1px solid rgba(0,0,0,.1);
   min-height: 5.875rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  column-gap: 1rem;
 }
 
 .left {
