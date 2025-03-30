@@ -3,11 +3,11 @@
     .content
       .tournament-event
         .event-name
-          //- span {{race.matchCode}}
+          span {{race.matchCode}}
           .result
             span {{formatPosition(race.position)}}, {{race.raceName}}
         .event-time(v-if="race.distance")
-          span {{race.distance}}, {{formatTime(race.endTime)}}
+          span {{race.distance}}m, {{formatTime(race.endTime)}}
         KNRBPersoonTournamentsPositions(v-if="race.raceTeams && race.raceTeams.length > 0" :positions="race.raceTeams" preliminary=true)
   </template>
   
@@ -63,11 +63,13 @@
   <style lang="scss" scoped>
   .tournament-event {
     padding: 0.5rem 0 1rem;
-    .event-club {
+    .event-details {
+      display: flex;
+      justify-content: space-evenly;
     }
     .event-name {
       display: flex;
-      /* justify-content: flex-end; */
+      justify-content: space-between;
       font-weight: bold;
       font-size: 1.15rem;
       > .result {
@@ -76,7 +78,8 @@
     }
     .event-time {
       display: flex;
-      /* justify-content: flex-end; */
+      justify-content: flex-end;
+      margin-top: 0.25rem;
     }
   }
 
