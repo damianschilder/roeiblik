@@ -13,19 +13,15 @@ import { ref, onMounted } from 'vue';
 // Use runtime config to access public variables
 const config = useRuntimeConfig();
 const gtagId = config.public.gtagId;
-console.log("CookieConsentBanner: Using gtagId:", gtagId);
 
 const cookieAccepted = ref(false);
 
 // Check if the user has already accepted cookies on component mount
 onMounted(() => {
-  console.log("CookieConsentBanner: Component mounted.");
   if (localStorage.getItem('cookieConsent') === 'true') {
     cookieAccepted.value = true;
-    console.log("CookieConsentBanner: Cookie consent already accepted. Loading gtag.");
     loadGtag();
   } else {
-    console.log("CookieConsentBanner: No cookie consent found.");
   }
 });
 
@@ -33,7 +29,6 @@ onMounted(() => {
 function acceptCookies() {
   cookieAccepted.value = true;
   localStorage.setItem('cookieConsent', 'true');
-  console.log("CookieConsentBanner: User accepted cookies. Saving consent and loading gtag.");
   loadGtag();
 }
 
@@ -41,11 +36,9 @@ function acceptCookies() {
 function loadGtag() {
   // Prevent duplicate script injection
   if (document.getElementById('gtag-script')) {
-    console.log("CookieConsentBanner: gtag script already loaded.");
     return;
   }
   
-  console.log(`CookieConsentBanner: Loading gtag with ID: ${gtagId}`);
   
   // Load the gtag.js script asynchronously
   const script = document.createElement('script');
@@ -53,7 +46,6 @@ function loadGtag() {
   script.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
   script.id = 'gtag-script';
   script.onload = () => {
-    console.log("CookieConsentBanner: gtag script loaded successfully.");
   };
   document.head.appendChild(script);
   
@@ -66,7 +58,6 @@ function loadGtag() {
     gtag('config', '${gtagId}');
   `;
   document.head.appendChild(inlineScript);
-  console.log("CookieConsentBanner: gtag initialization script injected.");
 }
 </script>
 
