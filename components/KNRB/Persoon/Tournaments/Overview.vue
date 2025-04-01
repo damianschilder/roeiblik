@@ -4,7 +4,7 @@
       .element-body
         .error
         .overview
-          .filters
+          .filters(v-if="totalWins > 0")
             //- UiWon( v-model="onlyWon" v-if="totalWins > 0")
             UiWon( v-model="onlyWon")
           .header

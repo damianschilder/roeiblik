@@ -3,6 +3,15 @@
     .content
       KNRBSearch
   </template>
+
+  <script setup lang="ts">
+  useHead({
+    title: 'FAQ',
+    meta: [
+      { name: 'description', content: 'Doorzoek de KNRB op klasserende resultaten.' },
+    ],
+  });
+  </script>
   
   <style lang="scss" scoped>
   .content {

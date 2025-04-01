@@ -17,10 +17,9 @@
         tbody
           //- Wrap both rows in a template so each iteration gets its own index and club data
           template(v-for="(club, index) in filteredPositions" :key="index")
-            tr.row(ref="target" class="observed-element" @click="!preliminary && toggleClub(index)")
-              td.expand( v-if="!preliminary")
+            tr.row(ref="target" class="observed-element" @click="toggleClub(index)")
+              td.expand
                 nuxt-icon(:name="expandedLineups.includes(index) ? 'less' : 'more'")
-              td(v-else)
               td.left {{ club.endPosition }}
               td.club.left {{ club.teamVersion.matchTeam.name }}
               td.left {{ club.teamVersion.teamMembers.find(member => member.person.personId === KNRBStore.person.personId)?.boatPosition || '' }}
@@ -30,7 +29,7 @@
                   span {{ formatTime(time.time) }}
                   //- Uncomment below if you need to show split times:
                   //- span.times-splits(v-if="time.splitTime !== 0") {{ formatTime(time.splitTime) }}, {{ time.position }}
-            tr(v-if="expandedLineups.includes(index) && !preliminary")
+            tr(v-if="expandedLineups.includes(index)")
               td
               td(colspan="8")
                 .lineup
@@ -198,6 +197,7 @@ td {
 .expand {
   text-align: center;
   text-decoration: underline;
+  width: fit-content;
   cursor: pointer;
   :deep(svg) {
     width: 1.25rem;

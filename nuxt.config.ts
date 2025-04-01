@@ -14,8 +14,8 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Zoek naar uitslagen van roeiers, stuurtjes en coaches binnen Time-Team.'},
-        { name: 'keywords', content: 'roeiblik, roei blik, taarten, roei taarten, roeien, uitslagen, time-team, time team, winsten, stuurtjes, roeiers, coaches' },
+        { name: 'description', content: 'Zoek naar uitslagen van roeiers, stuurtjes en coaches binnen Time-Team en KNRB'},
+        { name: 'keywords', content: 'roeiblik, roei blik, taarten, roei taarten, roeien, uitslagen, time-team, time team, winsten, stuurtjes, roeiers, coaches, knrb' },
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png?v=2' },
@@ -30,7 +30,7 @@ export default defineNuxtConfig({
     {
       autoImports: ['defineStore', 'acceptHMRUpdate'],
     },
-  ], 'nuxt-icons', '@nuxtjs/sitemap', '@nuxtjs/robots'],
+  ], 'nuxt-icons', '@nuxtjs/sitemap', '@nuxtjs/robots', 'nuxt-gtag'],
 
   imports: {
     dirs: ['stores', 'types'],
@@ -48,6 +48,23 @@ export default defineNuxtConfig({
           '@use "@/assets/style/_variables.scss" as *; @use "@/assets/style/_breakpoints.scss" as *;'
         },
       },
+    },
+  },
+
+  // Make the environment variable available client-side
+  runtimeConfig: {
+    public: {
+      gtagId: process.env.NUXT_PUBLIC_GTAG_ID,
+    }
+  },
+
+  gtag: {
+    id: process.env.NUXT_PUBLIC_GTAG_ID, // Use the env variable
+    initialConsent: false, // Important: Start with consent denied
+    config: {
+      // user_id: '123', // Example: If you have user IDs
+      // anonymize_ip: true, // Deprecated in GA4, handled automatically
+      // send_page_view: false, // Set to false if you want to trigger manually after consent
     },
   },
 
