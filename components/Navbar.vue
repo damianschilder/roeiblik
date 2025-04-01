@@ -7,6 +7,9 @@
         NuxtLink.big(to="/Time-Team")
           span Compobeter
           nuxt-icon(name="person search")
+        NuxtLink.big(to="/KNRB")
+          span KNRBeter
+          nuxt-icon(name="person search")
         NuxtLink.big(to="/KNRB/statistieken")
           span Statistieken
           nuxt-icon(name="leaderboard")
