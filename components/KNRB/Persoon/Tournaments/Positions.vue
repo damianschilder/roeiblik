@@ -39,7 +39,7 @@
                       :key="member.person.personId"
                       :class="{ 'active-rower': member.person.personId === KNRBStore.person.personId }")
                       NuxtLink.link(
-                      :to="`/KNRB/persoon/${member.person.personId}`"
+                      :to="`/KNRB/persoon/${member.personId}`"
                     )
                         span {{ member.boatPosition }} {{ member.fullName }}
                         nuxt-icon(
