@@ -14,7 +14,7 @@
             .point
               span.header Boord
               span.digit {{person.totalSweepingPoints}}
-        KNRBPersoonWinsTable( :person="person")
+        //- KNRBPersoonWinsTable( :person="person")
 
 </template>
 
