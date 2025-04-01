@@ -35,12 +35,16 @@
                 .lineup
                   .rowers
                     span.title Opstelling
-                    span(
-                      v-for="member in club.teamVersion.teamMembers.filter(member => !member.isCoach && !member.isCox).sort((a, b) => a.boatPosition - b.boatPosition)"
+                    .rower( v-for="member in club.teamVersion.  teamMembers.filter(member => !member.isCoach && !member.isCox).sort((a, b) => a.boatPosition - b.boatPosition)"
                       :key="member.person.personId"
-                      :class="{ 'active-rower': member.person.personId === KNRBStore.person.personId }"
+                      :class="{ 'active-rower': member.person.personId === KNRBStore.person.personId }")
+                      NuxtLink.link(
+                      :to="`/KNRB/persoon/${member.person.personId}`"
                     )
-                      | {{ member.boatPosition }} {{ member.fullName }}
+                        span {{ member.boatPosition }} {{ member.fullName }}
+                        nuxt-icon(
+                          name="link"
+                        )
                     span(v-if="club.teamVersion.teamMembers.find(member => member.isCox)")
                       | (c) {{ club.teamVersion.teamMembers.find(member => member.isCox)?.fullName || '' }}
                   .coaches
@@ -255,5 +259,15 @@ tr {
 
 .active-rower {
   font-weight: bold;
+}
+
+.link {
+  color: black;
+  display: flex;
+  text-decoration: none;
+  column-gap: 0.5rem;
+  &:hover {
+    text-decoration: underline;
+  }
 }
 </style>
