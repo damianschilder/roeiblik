@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 useHead({
-  title: 'FAQ',
+  title: 'Doorzoek Time-Team',
   meta: [
     { name: 'description', content: 'Doorzoek de Time-Team op compo- en klasserende resultaten.' },
   ],

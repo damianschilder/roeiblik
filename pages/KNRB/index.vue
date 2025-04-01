@@ -6,7 +6,7 @@
 
   <script setup lang="ts">
   useHead({
-    title: 'FAQ',
+    title: 'Doorzoek KNRB',
     meta: [
       { name: 'description', content: 'Doorzoek de KNRB op klasserende resultaten.' },
     ],
