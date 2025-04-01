@@ -15,6 +15,15 @@ const KNRBStore = useKNRBStore();
 const error = ref<boolean>(false);
 const loading = ref<boolean>(false);
 
+const pageTitle = computed(() => {
+  return KNRBStore?.person?.fullName || 'Roeiblik';
+});
+
+// Dynamically set the head title
+useHead({
+  title: pageTitle,
+});
+
 async function getRower(id: PersonResult['personId']) {
   loading.value = true;
   error.value = false;
@@ -27,6 +36,8 @@ async function getRower(id: PersonResult['personId']) {
     loading.value = false;
   }
 }
+
+
 
 onMounted(async () => {
   if (KNRBStore.results.length === 0) {

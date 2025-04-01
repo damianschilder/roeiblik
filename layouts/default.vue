@@ -5,12 +5,22 @@
       slot
     Footer
     //- Add the Cookie Consent Banner here
-    CookieConsentBanner
+    CookieConsentBanner(v-if="!cookieAccepted")
   </template>
   
   <script setup lang="ts">
   // Import the banner component (Nuxt might auto-import, but explicit is safer)
   // You can add other layout-specific logic here if needed
+  const cookieAccepted = ref(true);
+
+// Check if the user has already accepted cookies on component mount
+onMounted(() => {
+  if (localStorage.getItem('cookieConsent') === 'true') {
+    cookieAccepted.value = true;
+  } else {
+    cookieAccepted.value = false;
+  }
+});
   </script>
   
   <style lang="scss" scoped>

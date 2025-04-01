@@ -40,18 +40,33 @@ const props = defineProps<{
   display: flex;
   justify-content: space-between;
   column-gap: 1rem;
+  @include mobile {
+    flex-direction: column;
+  }
 }
 
 .left {
+  display: flex;
+  flex-direction: column;
+  @include mobile {
+    align-items: center;
+  }
   .name {
     display: flex;
     justify-content: space-between;
     column-gap: 1rem;
+    @include mobile {
+      text-align: center;
+    }
   }
   .points {
     margin-top: 0.25rem;
     display: flex;
     column-gap: 1rem;
+    @include mobile {
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
     .point {
       display: flex;
       flex-direction: column;
