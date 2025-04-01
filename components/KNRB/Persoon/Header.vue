@@ -10,10 +10,10 @@
           .points
             .point
               span.header Scull
-              span.digit {{person.totalSweepingPoints}}
+              span.digit {{person.totalScullingPoints}}
             .point
               span.header Boord
-              span.digit {{person.totalScullingPoints}}
+              span.digit {{person.totalSweepingPoints}}
         KNRBPersoonWinsTable( :person="person")
 
 </template>
