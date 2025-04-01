@@ -5,6 +5,10 @@
         .event-name
           span {{ race.matchName }}
           .result
+            nuxt-icon.trophy(
+              v-if="(race.position === 1 && race.raceName === 'A-finale')"
+              name="trophy"
+            )
             span {{ formatPosition(race.position) }}, {{ race.raceName }}
         .event-time(v-if="race.distance")
           span {{ getPosition(race) }}
@@ -94,6 +98,10 @@
       margin-top: 0.75rem;
       justify-content: space-between;
     }
+  }
+  .trophy {
+    color: $roeiblik;
+    margin-right: 0.25rem;
   }
   </style>
   

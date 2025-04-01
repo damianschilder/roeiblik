@@ -4,9 +4,8 @@
       .element-body
         .error
         .overview
-          .filters(v-if="totalWins > 0")
-            //- UiWon( v-model="onlyWon" v-if="totalWins > 0")
-            UiWon( v-model="onlyWon")
+          .filters(v-if="KNRBStore.person.totalWins.Rower > 0 || KNRBStore.person.totalWins.Cox > 0 || KNRBStore.person.totalWins.Coach > 0")
+            UiWon(v-model="onlyWon")
           .header
             span {{ Object.keys(tournaments).length }} {{ Object.keys(tournaments).length === 1 ? 'wedstrijd' : 'wedstrijden' }}
           .tournaments
@@ -22,7 +21,8 @@
   <script setup lang="ts">
   import { ref, computed } from 'vue'
   import type { Person } from '~/types/KNRB'
-  
+  const KNRBStore = useKNRBStore();
+
   const props = defineProps<{
     tournaments: Person['tournaments']
   }>()
