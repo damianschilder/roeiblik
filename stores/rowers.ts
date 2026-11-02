@@ -197,26 +197,27 @@ export const useRowersStore = defineStore("rowers", () => {
     }
   }
 
-  // Per role: how many entries, and how many of them were won.
+  // Per role: how many entries, and how many of them were won. Whether an entry was won is decided
+  // on the server (entry.won, see decide() in server/api/time-team/person.js); the table, the
+  // "Alleen winsten" filter and the list's count all use it. An entry whose role is not known
+  // (its crew could not be looked up) is counted under "unknown", so no entry or win is dropped.
   const roleCounts = computed(() => {
-    const counts: Record<TtRole, number> = { Rower: 0, Cox: 0, Coach: 0 };
+    const counts: Record<TtRole | "unknown", number> = { Rower: 0, Cox: 0, Coach: 0, unknown: 0 };
     for (const group of rower.value?.events ?? []) {
-      for (const entry of group.entries) if (entry.role) counts[entry.role] += 1;
+      for (const entry of group.entries) counts[entry.role ?? "unknown"] += 1;
     }
     return counts;
   });
 
   const totalWins = computed(() => {
-    const wins: Record<TtRole, number> = { Rower: 0, Cox: 0, Coach: 0 };
+    const wins: Record<TtRole | "unknown", number> = { Rower: 0, Cox: 0, Coach: 0, unknown: 0 };
     for (const group of rower.value?.events ?? []) {
-      for (const entry of group.entries) {
-        if (entry.role && entry.races.some((race) => race.win)) wins[entry.role] += 1;
-      }
+      for (const entry of group.entries) if (entry.won) wins[entry.role ?? "unknown"] += 1;
     }
     return wins;
   });
 
-  const anyWins = computed(() => (rower.value?.events ?? []).some((g) => g.entries.some((e) => e.races.some((r) => r.win))));
+  const anyWins = computed(() => (rower.value?.events ?? []).some((g) => g.entries.some((e) => e.won)));
 
   return {
     searchInput,

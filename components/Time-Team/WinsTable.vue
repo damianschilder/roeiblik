@@ -10,8 +10,8 @@
             th(scope="col") Winsten
             th(scope="col") Totaal
         tbody
-          tr(v-for="role in TT_ROLES_IN_TABLE" :key="role")
-            th(scope="row") {{ roleLabel(role) }}
+          tr(v-for="role in rows" :key="role")
+            th(scope="row") {{ role === 'unknown' ? 'Rol onbekend' : roleLabel(role) }}
             td {{ rowerStore.totalWins[role] }}
             td {{ rowerStore.roleCounts[role] }}
 </template>
@@ -21,8 +21,11 @@ import { roleLabel } from '@/stores/rowers';
 import type { TtRole } from '~/types/Timeteam';
 
 const rowerStore = useRowersStore();
-// The order the table has always had: Roeier, Stuur, Coach.
+// The order the table has always had: Roeier, Stuur, Coach. Entries whose role could not be
+// looked up get a row of their own, so the totals add up to every entry and every win.
 const TT_ROLES_IN_TABLE: TtRole[] = ['Rower', 'Cox', 'Coach'];
+const rows = computed<(TtRole | 'unknown')[]>(() =>
+  (rowerStore.roleCounts.unknown > 0 ? [...TT_ROLES_IN_TABLE, 'unknown'] : TT_ROLES_IN_TABLE));
 </script>
 
 <style lang="scss" scoped>

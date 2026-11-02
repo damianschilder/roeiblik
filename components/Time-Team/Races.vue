@@ -13,7 +13,7 @@
                 option(v-for="role in rolesPresent" :key="role" :value="role") {{ roleLabel(role) }}
               UiWon(v-if="rowerStore.anyWins" v-model="showOnlyWins")
           .header(aria-live="polite")
-            span {{ shown.length }} {{ shown.length === 1 ? 'vermelding' : 'vermeldingen' }}
+            span {{ countText }}
           .race(v-for="item in shown" :key="item.group.id")
             .race-event(
               v-for="{ entry, races } in item.entries"
@@ -111,20 +111,30 @@ function toggleSortOrder() {
   isReversed.value = !isReversed.value;
 }
 
-// The list as shown: role filter and "Alleen winsten" applied. Entries stay the store's own
-// objects, so a crew loaded later shows up in place.
+// The list as shown: role filter and "Alleen winsten" applied. "Alleen winsten" keeps the entries
+// that were won (entry.won, the same rule as the count in the header), each with all its rounds,
+// so the heats that led to a final stay visible. Entries stay the store's own objects, so a crew
+// loaded later shows up in place.
 const shown = computed(() => {
   const items: { group: TtEvent; entries: { entry: TtEntry; races: TtRace[] }[] }[] = [];
   for (const group of profile.value.events) {
     const entries = [];
     for (const entry of group.entries) {
       if (selectedRole.value && entry.role !== selectedRole.value) continue;
-      const races = showOnlyWins.value ? entry.races.filter((race) => race.win) : entry.races;
-      if (races.length) entries.push({ entry, races });
+      if (showOnlyWins.value && !entry.won) continue;
+      entries.push({ entry, races: entry.races });
     }
     if (entries.length) items.push({ group, entries });
   }
   return isReversed.value ? items.reverse() : items;
+});
+
+// Counted per entry (one crew in one event), like the table in the header: a coach with two
+// crews in one event has two entries.
+const countText = computed(() => {
+  const n = shown.value.reduce((sum, item) => sum + item.entries.length, 0);
+  if (showOnlyWins.value) return `${n} ${n === 1 ? 'winst' : 'winsten'}`;
+  return `${n} ${n === 1 ? 'vermelding' : 'vermeldingen'}`;
 });
 
 const isOpen = (entry: TtEntry) => expandedEntry.value === entry.id;

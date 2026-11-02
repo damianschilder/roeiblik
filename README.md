@@ -29,7 +29,9 @@ races on one page, with times per 500 m, every round of a race, and their crewma
   of every dependency, and a pass over the behaviour behind the unchanged look:
   - the server merges a person's data before it reaches the browser;
   - searches run on submit and survive the Back button;
-  - wins are decided from complete data;
+  - wins are decided on the server from complete data, by one rule on both tools: first place in
+    the race that decided the event (the A-final, or without a final the last round after which
+    nothing follows), never in a heat, repechage, semi-final or B-final;
   - two-layer caching, keyboard and screen-reader support, and AA contrast.
 
   The statistics page was removed; its address redirects to KNRBeter.

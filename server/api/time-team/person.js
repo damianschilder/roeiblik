@@ -8,7 +8,8 @@
 //
 // Shape (see types/Timeteam.ts): { person: { id, displayname }, clubs[], events[] (newest first, one per
 // event the person took part in; each with its entries and their races, latest round first),
-// firstRace, partial }.
+// firstRace, partial }. Whether an entry was won is decided here (decide(), below), so the page's
+// count, its "Alleen winsten" filter and its trophies cannot disagree.
 
 const API = 'https://api.beta.regatta.time-team.nl/api/1';
 
@@ -75,13 +76,41 @@ export function roleInCrew(apiEntry, personId, displayname) {
 }
 
 // A main final is a final round (round.is_final) that is not a lower final: FB, FC, ... or a
-// "B-finale". A straight final (one race, no heats) and a head race have no letter: also main.
+// "B-finale" / "kleine finale". A straight final (one race, no heats), a head race and a final
+// named after its distance ("2000 meter") have no letter: also main.
 function isMainFinal(round) {
   if (!round?.is_final) return false;
   const code = String(round.round_type_code ?? '').trim();
   const letter = /^F([A-Z])$/i.exec(code)?.[1];
   if (letter) return letter.toUpperCase() === 'A';
-  return !/^[B-Z]-finale$/i.test(String(round.round_type_name ?? '').trim());
+  return !/^[B-Z]-finale$|kleine[\s-]?finale/i.test(String(round.round_type_name ?? '').trim());
+}
+
+// WHEN AN ENTRY IS WON (one rule for the count, the "Alleen winsten" filter and the trophy).
+//
+// An entry (one crew in one event) is won when the crew finished first in the race that decided
+// the event:
+//  - If the crew raced a final round, that final decides (the latest, should there be two). Only
+//    the main final counts (see isMainFinal): first in a B- or C-final is not a win.
+//  - Without a final, the crew's last round decides when nothing follows it: the round has no
+//    progression rules and the crew did not go on. That is a single head race or time trial that
+//    Time-Team did not mark as a final, or the last round of a format in which every crew goes on
+//    ("alle ploegen": 1e ronde, then 2e ronde).
+//  - Several such rounds side by side, without a final (separate distances ranked one by one, such
+//    as a vierkamp of 250, 750, 2500 and 5000 m): the overall ranking is not in Time-Team's person
+//    data, so the entry is won only when the crew was first in every one of them.
+//  - A heat, repechage, quarter- or semi-final, or a time trial with progression rules never
+//    decides: other crews went on, and so did this one if it was first.
+// "First" is place 1 in the crew's own event (the round's ranking when a race mixes events, as in a
+// head race), with a time: no result yet, DNS/DNF/DSQ or out of competition (buiten mededinging) is
+// never a win. A shared first place counts for both crews. A provisional result counts, and the
+// page says it is provisional.
+function decide(races) {
+  const finals = races.filter((r) => r.final);
+  const deciding = finals.length ? [finals[0]] : races.filter((r) => r._end);
+  const won = deciding.length > 0
+    && deciding.every((r) => r.position === 1 && !r.outOfCompetition && (!r.final || r._main));
+  return { won, deciding: won ? deciding : [] };
 }
 
 const isTime = (value) => typeof value === 'string' && /^\d/.test(value.trim());
@@ -104,9 +133,8 @@ function shapeRace(raceCrew, raw) {
   const splits = (Array.isArray(ranking.times) ? ranking.times : [])
     .filter((t) => t?.location_name && t.location_name !== 'finish' && isTime(t.total?.result))
     .map((t) => ({ at: t.location_name, time: t.total.result, ...(Number.isInteger(t.total.pos) ? { pos: t.total.pos } : {}) }));
-  const rules = (Array.isArray(round.rules) && round.rules.length ? round.rules : race.rules || [])
-    .map((r) => text(r?.code))
-    .filter(Boolean);
+  const ruleList = Array.isArray(round.rules) && round.rules.length ? round.rules : (Array.isArray(race.rules) ? race.rules : []);
+  const rules = ruleList.map((r) => text(r?.code)).filter(Boolean);
   return {
     id: raceCrew.id,
     date: day(race.regatta_day?.day_date) ?? day(race.start_datetime),
@@ -128,7 +156,10 @@ function shapeRace(raceCrew, raw) {
     ...(raceCrew.penalty != null || ranking.penalty != null ? { penalty: true } : {}),
     ...(round.official === false ? { provisional: true } : {}),
     ...(splits.length ? { splits } : {}),
-    win: position === 1 && !outOfCompetition && isMainFinal(round),
+    win: false, // set per entry by decide()
+    // For decide() only; removed before the answer goes out.
+    _main: isMainFinal(round),
+    _end: ruleList.length === 0 && !raceCrew.progression,
   };
 }
 
@@ -151,23 +182,35 @@ const newestFirst = (a, b) => (b.start ?? b.date ?? '').localeCompare(a.start ??
 export function buildProfile(raw, personId, { regattas = new Map(), entries = new Map(), blocked = () => false, partial = false } = {}) {
   const person = raw?.person?.[personId] ?? Object.values(raw?.person ?? {})[0];
   const displayname = person?.displayname ?? '';
-  const byEntry = new Map();
+  const byEntry = new Map(); // entry id -> Map(race id -> shaped race)
   for (const raceCrew of Object.values(raw?.race_crew ?? {})) {
     const entry = raw.entry?.[raceCrew.entry_id];
     if (!entry || !raw.round?.[raceCrew.round_id]) continue;
-    if (!byEntry.has(entry.id)) byEntry.set(entry.id, []);
-    byEntry.get(entry.id).push(shapeRace(raceCrew, raw));
+    if (!byEntry.has(entry.id)) byEntry.set(entry.id, new Map());
+    // The same race twice for one entry (a re-row or a doubled record) is shown and counted once:
+    // the record with a result wins over one without.
+    const races = byEntry.get(entry.id);
+    const key = raceCrew.race_id ?? raceCrew.id;
+    const shaped = shapeRace(raceCrew, raw);
+    const known = races.get(key);
+    if (!known || (!known.result && shaped.result)) races.set(key, shaped);
   }
 
   const clubCounts = new Map();
   const groups = new Map();
-  for (const [entryId, races] of byEntry) {
+  for (const [entryId, raceMap] of byEntry) {
     const entry = raw.entry[entryId];
     const event = raw.event?.[entry.event_id] ?? {};
     const regattaId = event.regatta_id;
     const crewEntry = entries.get(entryId);
-    races.sort(newestFirst);
-    for (const race of races) delete race.sort;
+    const races = [...raceMap.values()].sort(newestFirst);
+    const { won, deciding } = decide(races);
+    for (const race of races) {
+      race.win = deciding.includes(race);
+      delete race.sort;
+      delete race._main;
+      delete race._end;
+    }
 
     let role = roleInCrew(crewEntry, personId, displayname);
     if (!role && !crewEntry && normalName(entry.stroke_fullname) === normalName(displayname)) role = 'Rower';
@@ -191,6 +234,7 @@ export function buildProfile(raw, personId, { regattas = new Map(), entries = ne
       ...(entry.combination ? { combination: true } : {}),
       ...(entry.club?.blades?.crop ? { blade: entry.club.blades.crop } : {}),
       ...(role ? { role } : {}),
+      won,
       crew: crewEntry ? shapeCrew(crewEntry, personId, blocked) : null,
       races,
     };

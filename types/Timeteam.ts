@@ -53,7 +53,7 @@ export interface TtRace {
   penalty?: boolean;
   provisional?: boolean;
   splits?: TtSplit[];
-  win: boolean; // first in a main final (A-final, straight final or head race)
+  win: boolean; // the race that decided a won entry (gets the trophy)
 }
 
 export interface TtEntry {
@@ -63,6 +63,7 @@ export interface TtEntry {
   combination?: boolean;
   blade?: string; // club blade image
   role?: TtRole; // undefined: not known (crew not looked up and not the stroke)
+  won: boolean; // first in the race that decided the event (see decide() in the person route)
   crew: TtCrew | null; // null: not looked up yet (see /api/time-team/entry)
   races: TtRace[]; // latest round first
 }

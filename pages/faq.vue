@@ -35,6 +35,9 @@
               h3 Hoe actueel zijn de resultaten?
               span Roeiblik haalt de resultaten op bij Time-Team en de KNRB op het moment dat je zoekt, en bewaart een opgevraagd resultaat een paar minuten. Een nieuwe uitslag staat daardoor na hooguit een kwartier ook op Roeiblik.
             .question
+              h3 Wanneer telt een race als winst?
+              span Een inschrijving telt als winst als de ploeg eerste werd in de race die het veld besliste: de A-finale, of zonder finale de laatste ronde waarna niets meer volgt, zoals een head of een tijdrace. Een eerste plaats in een voorwedstrijd, herkansing, halve finale of B-finale telt niet, net als een race zonder tijd (DNS, DNF, DSQ) of buiten mededinging; bij losse afstanden zonder eindklassement, zoals een vierkamp, alleen als de ploeg op elke afstand eerste werd.
+            .question
               h3 Ik wil niet op Roeiblik te vinden zijn.
               span Lees op de #[NuxtLink(to="/privacy") privacypagina] hoe je je persoonspagina laat verbergen.
 </template>
