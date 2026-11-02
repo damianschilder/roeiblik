@@ -5,6 +5,8 @@
 // one entry: the highest round the crew reached is the main race, the earlier rounds hang under it
 // as `preliminaries`. Whether that event was won is decided here too, from data that is complete
 // up front, so the page never depends on which race details happen to have been loaded.
+// Only what the page shows goes out: the round type, match and day ids and the lane serve the
+// grouping and the win rule here and are left out of the answer.
 
 const BASE = 'https://api.foys.io/tournament/public/api/v1';
 
@@ -33,9 +35,9 @@ export function classifyRace(raceName) {
 // plain "Finale"), or a race after which nothing followed that is not itself a heat, repechage,
 // quarter- or semi-final (a time trial or a head race such as "4500 meter"). First place in a
 // heat whose final is missing, or in a B-final, is not a win.
-export function isWin(mainRace) {
+export function isWin(mainRace, round = classifyRace(mainRace.raceName)) {
   if (Number(mainRace.position) !== 1) return false;
-  const { type, final } = mainRace.round;
+  const { type, final } = round;
   if (type === 'final') return final === 'A';
   return type === 'timetrial' || type === 'other';
 }
@@ -47,17 +49,12 @@ function raceEntry(result) {
   return {
     raceId: result.raceId,
     tournamentId: result.tournamentId,
-    tournamentDayId: result.tournamentDayId ?? null,
-    matchId: result.matchId,
-    matchNumber: result.matchNumber ?? null,
     matchCode: trim(result.matchCode) ?? '',
     matchName: trim(result.matchName) ?? '',
     raceName: trim(result.raceName) ?? '',
     teamName: trim(result.teamName) ?? '',
     position: positive(result.position),
     endTime: positive(result.endTime),
-    lane: positive(result.lane),
-    round: classifyRace(result.raceName),
   };
 }
 
@@ -66,24 +63,24 @@ export function groupTournament(tournament) {
   const results = Array.isArray(tournament.raceResults) ? tournament.raceResults : [];
   for (const result of results) {
     if (!result || result.raceId == null) continue;
-    const race = raceEntry(result);
     // One event per crew: a coach with two crews in the same match gets two entries.
-    const key = `${race.matchId ?? race.matchCode}|${race.teamName}`;
+    const key = `${result.matchId ?? trim(result.matchCode)}|${trim(result.teamName) ?? ''}`;
     if (!groups.has(key)) groups.set(key, []);
     const races = groups.get(key);
     // The same race twice for the same crew adds nothing.
-    if (!races.some((r) => r.raceId === race.raceId)) races.push(race);
+    if (!races.some((r) => r.race.raceId === result.raceId)) {
+      races.push({ race: raceEntry(result), round: classifyRace(result.raceName) });
+    }
   }
 
   const events = [];
   for (const races of groups.values()) {
     // Highest round first; equal rounds keep foys' order. The rest are the earlier rounds.
     const ordered = races
-      .map((race, index) => ({ race, index }))
-      .sort((a, b) => b.race.round.rank - a.race.round.rank || a.index - b.index)
-      .map(({ race }) => race);
+      .map((item, index) => ({ ...item, index }))
+      .sort((a, b) => b.round.rank - a.round.rank || a.index - b.index);
     const [main, ...preliminaries] = ordered;
-    events.push({ ...main, won: isWin(main), preliminaries });
+    events.push({ ...main.race, won: isWin(main.race, main.round), preliminaries: preliminaries.map((p) => p.race) });
   }
 
   const tournamentId = events[0]?.tournamentId ?? null;
@@ -103,15 +100,10 @@ export function buildPerson(info, overview) {
     // Newest first, as foys does, but explicitly: a stable sort on the start date.
     .sort((a, b) => String(b.firstTournamentDate ?? '').localeCompare(String(a.firstTournamentDate ?? '')));
 
-  let races = 0;
   let wins = 0;
   for (const tournament of tournaments) {
-    for (const event of tournament.races) {
-      races += 1 + event.preliminaries.length;
-      if (event.won) wins++;
-    }
+    for (const event of tournament.races) if (event.won) wins++;
   }
-  const events = tournaments.reduce((sum, t) => sum + t.races.length, 0);
 
   return {
     personId: info.personId,
@@ -121,13 +113,7 @@ export function buildPerson(info, overview) {
     yearOfBirth: positive(info.yearOfBirth),
     totalScullingPoints: Number(info.totalScullingPoints) || 0,
     totalSweepingPoints: Number(info.totalSweepingPoints) || 0,
-    rowingPoints: (Array.isArray(info.rowingPoints) ? info.rowingPoints : []).map((p) => ({
-      date: p.date ?? null,
-      type: p.type ?? null,
-      point: Number(p.point) || 0,
-      description: trim(p.description) ?? '',
-    })),
-    stats: { tournaments: tournaments.length, events, races, wins },
+    stats: { wins },
     tournaments,
   };
 }
@@ -136,10 +122,11 @@ export default defineEventHandler(async (event) => {
   const id = queryString(event, 'id');
 
   if (!validId(id)) {
-    return failure('Id parameter is required');
+    return invalid(event, 'The id parameter is required');
   }
+  // A hidden person gets the same answer as an unknown one.
   if (isBlocked(event, id)) {
-    return failure('Not available');
+    return notFound(event);
   }
 
   const [info, overview] = await Promise.allSettled([
@@ -150,10 +137,11 @@ export default defineEventHandler(async (event) => {
   if (info.status === 'rejected' || !info.value?.personId) {
     // foys answers an unknown id with a 500 on /persons and an empty list of results.
     const unknown = overview.status === 'fulfilled' && Array.isArray(overview.value) && overview.value.length === 0;
-    return failure(unknown ? 'Not found' : 'Failed to fetch data from external API');
+    if (unknown) return notFound(event);
+    return upstreamFailure(event, info.status === 'rejected' ? info.reason : overview.reason);
   }
   if (overview.status === 'rejected' || !Array.isArray(overview.value)) {
-    return failure('Failed to fetch data from external API');
+    return upstreamFailure(event, overview.reason);
   }
 
   // Results of finished races hardly change: the browser may keep them for five minutes.

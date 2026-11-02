@@ -9,13 +9,18 @@ import type {
 } from "~/types/Timeteam";
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { computed, ref } from "vue";
+import { API_FETCH, apiErrorKind, isAbort, type ApiErrorKind } from "~/composables/apiError";
 
 // Time-Team search and person pages. The server (server/api/time-team/*) does the merging; this
 // store only fetches, guards against stale answers and remembers what it fetched this session,
 // so Back from a person page shows the same list and a person seen before opens at once.
 
 export type SearchStatus = "idle" | "tooShort" | "loading" | "done" | "error";
-export type PersonStatus = "idle" | "loading" | "done" | "error" | "unavailable" | "notFound";
+// notFound: no such person, or someone who asked not to be shown (the server does not tell which).
+export type PersonStatus = "idle" | "loading" | "done" | "error" | "notFound";
+
+// The id shape the server accepts; anything else cannot be a person and is not sent.
+const PERSON_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 export const TT_ROLES: TtRole[] = ["Rower", "Cox", "Coach"];
 
@@ -61,17 +66,13 @@ function recall<T>(cache: Map<string, { at: number; value: T }>, key: string): T
   return hit.value;
 }
 
-const isAbort = (e: any) => e?.name === "AbortError" || e?.cause?.name === "AbortError";
-
-const byName = (a: TtPerson, b: TtPerson) =>
-  a.displayname.localeCompare(b.displayname, "nl", { sensitivity: "base" }) || a.id.localeCompare(b.id);
-
 export const useRowersStore = defineStore("rowers", () => {
   // --- Search -------------------------------------------------------------------------------
   const searchInput = ref<string>(""); // what is in the box; kept for Back
   const query = ref<string>(""); // the last query that was sent
   const results = ref<TtPerson[]>([]);
   const searchStatus = ref<SearchStatus>("idle");
+  const searchError = ref<ApiErrorKind | null>(null); // why, when searchStatus is "error"
   const storeCurrentPage = ref<number>(1);
   const searchCache = new Map<string, { at: number; value: TtPerson[] }>();
   let searchController: AbortController | null = null;
@@ -102,20 +103,24 @@ export const useRowersStore = defineStore("rowers", () => {
     const controller = new AbortController();
     searchController = controller;
     searchStatus.value = "loading";
+    searchError.value = null;
     try {
+      // Sorted by name on the server.
       const response = await $fetch<TtSearchResponse>("/api/time-team/search", {
+        ...API_FETCH,
         params: { query: q },
         signal: controller.signal,
       });
       if (seq !== searchSeq) return;
-      if (!response || response.error) throw new Error("search failed");
-      const list = Object.values(response.person ?? {}).sort(byName);
+      if (!Array.isArray(response?.person)) throw new Error("search failed");
+      const list = response.person;
       remember(searchCache, key, list, SEARCH_CACHE_MAX);
       results.value = list;
       searchStatus.value = "done";
     } catch (e) {
       if (seq !== searchSeq || isAbort(e)) return;
       results.value = [];
+      searchError.value = apiErrorKind(e);
       searchStatus.value = "error";
     } finally {
       if (searchController === controller) searchController = null;
@@ -126,6 +131,7 @@ export const useRowersStore = defineStore("rowers", () => {
   const rower = ref<TtProfile | null>(null);
   const personId = ref<string>(""); // the person personStatus is about
   const personStatus = ref<PersonStatus>("idle");
+  const personError = ref<ApiErrorKind | null>(null); // why, when personStatus is "error"
   const crewState = ref<Record<string, "loading" | "error">>({});
   const personCache = new Map<string, { at: number; value: TtProfile }>();
   let personController: AbortController | null = null;
@@ -133,11 +139,19 @@ export const useRowersStore = defineStore("rowers", () => {
 
   async function getRower(id: string, { force = false } = {}) {
     if (!id) return;
-    if (!force && personId.value === id && personStatus.value === "done") return;
+    // Already shown, and complete. An incomplete one (a lookup failed) is asked for again.
+    if (!force && personId.value === id && personStatus.value === "done" && !rower.value?.partial) return;
     personController?.abort();
     personController = null;
     const seq = ++personSeq;
     personId.value = id;
+    personError.value = null;
+
+    if (!PERSON_ID.test(id)) {
+      rower.value = null;
+      personStatus.value = "notFound";
+      return;
+    }
 
     const cached = force ? undefined : recall(personCache, id);
     if (cached) {
@@ -155,24 +169,26 @@ export const useRowersStore = defineStore("rowers", () => {
     personController = controller;
     try {
       const response = await $fetch<TtPersonResponse>("/api/time-team/person", {
+        ...API_FETCH,
         params: { id },
         signal: controller.signal,
       });
       if (seq !== personSeq) return;
-      if (response?.error === "Not available" || response?.error === "Not found") {
-        rower.value = null;
-        personStatus.value = response.error === "Not available" ? "unavailable" : "notFound";
-        return;
-      }
-      if (!response || response.error || !response.person?.id || !Array.isArray(response.events)) {
-        throw new Error("person failed");
-      }
+      if (!response?.person?.id || !Array.isArray(response.events)) throw new Error("person failed");
       const profile = response as TtProfile;
-      remember(personCache, id, profile, PERSON_CACHE_MAX);
+      // An answer with a failed lookup is shown but not kept: the next visit asks again.
+      if (!profile.partial) remember(personCache, id, profile, PERSON_CACHE_MAX);
       rower.value = profile;
       personStatus.value = "done";
     } catch (e) {
       if (seq !== personSeq || isAbort(e)) return;
+      const kind = apiErrorKind(e);
+      if (kind === "notFound" || kind === "invalid") {
+        rower.value = null;
+        personStatus.value = "notFound";
+        return;
+      }
+      personError.value = kind;
       personStatus.value = "error";
     } finally {
       if (personController === controller) personController = null;
@@ -186,9 +202,10 @@ export const useRowersStore = defineStore("rowers", () => {
     crewState.value[entry.id] = "loading";
     try {
       const response = await $fetch<TtEntryResponse>("/api/time-team/entry", {
+        ...API_FETCH,
         params: { regatta: entry.regattaId, id: entry.id, person: person.person.id },
       });
-      if (!response?.crew || response.error) throw new Error("crew failed");
+      if (!response?.crew) throw new Error("crew failed");
       entry.crew = response.crew;
       if (!entry.role && response.role) entry.role = response.role;
       delete crewState.value[entry.id];
@@ -224,11 +241,13 @@ export const useRowersStore = defineStore("rowers", () => {
     query,
     results,
     searchStatus,
+    searchError,
     storeCurrentPage,
     searchRowers,
     rower,
     personId,
     personStatus,
+    personError,
     crewState,
     getRower,
     loadCrew,

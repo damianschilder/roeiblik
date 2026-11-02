@@ -1,11 +1,14 @@
-import type { ApiError, Person, PersonResult, RaceResult, RaceTeam, Role, Round, SearchResponse } from "~/types/KNRB";
-import { defineStore } from "pinia";
+import type { Person, PersonResult, RaceResult, RaceTeam, Role, Round, SearchResponse } from "~/types/KNRB";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, shallowReactive, shallowRef } from "vue";
+import { API_FETCH, apiErrorKind, type ApiErrorKind } from "~/composables/apiError";
 
+// notfound: no such person, or someone who asked not to be shown (the server does not tell which).
 export type LoadStatus = "idle" | "loading" | "done" | "error" | "notfound";
 
 export interface RoundEntry {
-  status: "loading" | "done" | "error";
+  // missing: foys has no such race (404); trying again would not help, so no button is offered.
+  status: "loading" | "done" | "error" | "missing";
   data: Round | null;
 }
 
@@ -21,14 +24,12 @@ function remember<K, V>(cache: Map<K, V>, key: K, value: V, max: number) {
   if (cache.size > max) cache.delete(cache.keys().next().value as K);
 }
 
-const isError = (value: unknown): value is ApiError =>
-  typeof value === "object" && value !== null && "error" in value;
-
 export const useKNRBStore = defineStore("KNRB", () => {
   // --- Search ---------------------------------------------------------------------------------
   const query = ref<string>("");
   const results = shallowRef<PersonResult[]>([]);
   const searchStatus = ref<LoadStatus>("idle");
+  const searchError = ref<ApiErrorKind | null>(null); // why, when searchStatus is "error"
   const currentPage = ref<number>(1);
   const searchCache = new Map<string, PersonResult[]>();
   let searchController: AbortController | null = null;
@@ -57,20 +58,22 @@ export const useKNRBStore = defineStore("KNRB", () => {
     const controller = new AbortController();
     searchController = controller;
     searchStatus.value = "loading";
+    searchError.value = null;
     try {
-      const response = await $fetch<SearchResponse | ApiError>("/api/knrb/search", {
+      const response = await $fetch<SearchResponse>("/api/knrb/search", {
+        ...API_FETCH,
         params: { query: q },
         signal: controller.signal,
       });
       if (seq !== searchSeq) return; // a newer search took over
-      if (isError(response)) throw new Error(response.error);
-      const items = Array.isArray(response.items) ? response.items : [];
-      remember(searchCache, key, items, SEARCH_CACHE_MAX);
-      results.value = items;
+      if (!Array.isArray(response?.items)) throw new Error("search failed");
+      remember(searchCache, key, response.items, SEARCH_CACHE_MAX);
+      results.value = response.items;
       searchStatus.value = "done";
-    } catch {
+    } catch (e) {
       if (seq !== searchSeq) return; // aborted or superseded: not an error for this search
       results.value = [];
+      searchError.value = apiErrorKind(e);
       searchStatus.value = "error";
     } finally {
       if (searchController === controller) searchController = null;
@@ -81,6 +84,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
   const personId = ref<string | null>(null);
   const person = shallowRef<Person | null>(null);
   const personStatus = ref<LoadStatus>("idle");
+  const personError = ref<ApiErrorKind | null>(null); // why, when personStatus is "error"
   const personCache = new Map<string, Person>();
   let personSeq = 0;
 
@@ -88,6 +92,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
     if (!force && personId.value === id && (personStatus.value === "done" || personStatus.value === "loading")) return;
     const seq = ++personSeq;
     personId.value = id;
+    personError.value = null;
 
     // The same shape the server accepts; anything else cannot be a person.
     if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) {
@@ -107,18 +112,21 @@ export const useKNRBStore = defineStore("KNRB", () => {
     person.value = null;
     personStatus.value = "loading";
     try {
-      const response = await $fetch<Person | ApiError>("/api/knrb/person", { params: { id } });
+      const response = await $fetch<Person>("/api/knrb/person", { ...API_FETCH, params: { id } });
       if (seq !== personSeq) return; // the visitor moved on to someone else
-      if (isError(response)) {
-        // Unknown ids, bad ids and people who asked not to be shown look the same.
-        personStatus.value = response.error.startsWith("Failed") ? "error" : "notfound";
-        return;
-      }
+      if (!response?.personId || !Array.isArray(response.tournaments)) throw new Error("person failed");
       remember(personCache, id, response, PERSON_CACHE_MAX);
       person.value = response;
       personStatus.value = "done";
-    } catch {
+    } catch (e) {
       if (seq !== personSeq) return;
+      const kind = apiErrorKind(e);
+      // Unknown ids, bad ids and people who asked not to be shown look the same.
+      if (kind === "notFound" || kind === "invalid") {
+        personStatus.value = "notfound";
+        return;
+      }
+      personError.value = kind;
       personStatus.value = "error";
     }
   }
@@ -131,18 +139,18 @@ export const useKNRBStore = defineStore("KNRB", () => {
   async function loadRound(tournamentId: number, raceId: number, { retry = false } = {}) {
     const key = String(raceId);
     const entry = rounds[key];
-    if (entry && (entry.status === "loading" || entry.status === "done")) return;
-    if (entry?.status === "error" && !retry) return;
+    // Loading, done or missing: nothing to do. Failed: only when the visitor asks again.
+    if (entry && (entry.status !== "error" || !retry)) return;
 
     rounds[key] = { status: "loading", data: null };
     if (!roundOrder.includes(key)) roundOrder.push(key);
     while (roundOrder.length > ROUND_CACHE_MAX) delete rounds[roundOrder.shift() as string];
     try {
-      const response = await $fetch<Round | ApiError>("/api/knrb/round", { params: { tournamentId, raceId } });
-      if (isError(response)) throw new Error(response.error);
+      const response = await $fetch<Round>("/api/knrb/round", { ...API_FETCH, params: { tournamentId, raceId } });
+      if (!Array.isArray(response?.teams)) throw new Error("round failed");
       rounds[key] = { status: "done", data: response };
-    } catch {
-      rounds[key] = { status: "error", data: null };
+    } catch (e) {
+      rounds[key] = { status: apiErrorKind(e) === "notFound" ? "missing" : "error", data: null };
     }
   }
 
@@ -154,11 +162,13 @@ export const useKNRBStore = defineStore("KNRB", () => {
     query,
     results,
     searchStatus,
+    searchError,
     currentPage,
     search,
     personId,
     person,
     personStatus,
+    personError,
     loadPerson,
     rounds,
     loadRound,

@@ -5,9 +5,9 @@
     UiLoader
     span Dit kan een paar seconden duren.
   .message(v-else-if="status === 'error'" role="alert")
-    span Time-Team is nu niet bereikbaar. Probeer het later opnieuw.
+    span {{ apiErrorText(rowerStore.personError, 'Time-Team') }}
     button(type="button" @click="retry") Opnieuw proberen
-  .message(v-else-if="status === 'unavailable' || status === 'notFound'")
+  .message(v-else-if="status === 'notFound'")
     span Deze persoon staat niet (meer) op Roeiblik.
     NuxtLink(to="/time-team") Terug naar zoeken
   Time-TeamRaces(v-else-if="status === 'done' && current")
@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
 import { useRowersStore } from '@/stores/rowers';
+import { apiErrorText } from '~/composables/apiError';
 
 const rowerStore = useRowersStore();
 const route = useRoute();

@@ -38,6 +38,8 @@
   </template>
 
   <script setup lang="ts">
+  import { apiErrorText } from '~/composables/apiError';
+
   const rowerStore = useRowersStore();
 
   const resultsPerPage = 10;
@@ -57,7 +59,7 @@
     switch (rowerStore.searchStatus) {
       case 'loading': return 'Zoeken…';
       case 'tooShort': return 'Typ minstens 2 tekens.';
-      case 'error': return 'Te veel verzoeken achter elkaar of Time-Team is niet beschikbaar.';
+      case 'error': return apiErrorText(rowerStore.searchError, 'Time-Team');
       case 'done': return total.value === 0
         ? 'Helaas, geen resultaten.'
         : `${total.value} ${total.value === 1 ? 'resultaat' : 'resultaten'}`;

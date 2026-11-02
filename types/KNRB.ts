@@ -1,9 +1,9 @@
-// The shapes the KNRB routes in server/api/knrb send to the page (not foys' raw shapes).
+// The shapes the KNRB routes in server/api/knrb send to the page (not foys' raw shapes): only what
+// the page shows. A failure is a 4xx or 5xx status with an ApiError body.
 
-// GET /api/knrb/search?query=
+// GET /api/knrb/search?query=  (sorted by name, then id)
 export interface SearchResponse {
   items: PersonResult[];
-  totalCount: number;
 }
 
 export interface PersonResult {
@@ -20,24 +20,13 @@ export interface Person {
   yearOfBirth: number | null;
   totalScullingPoints: number;
   totalSweepingPoints: number;
-  rowingPoints: RowingPoint[];
   stats: PersonStats;
   tournaments: Tournament[];
 }
 
 export interface PersonStats {
-  tournaments: number;
-  // An event is one crew in one match: the main race plus its earlier rounds.
-  events: number;
-  races: number;
+  // Events won: one crew in one match, decided by its main race (isWin in the person route).
   wins: number;
-}
-
-export interface RowingPoint {
-  date: string | null;
-  type: "Sweeping" | "Sculling" | null;
-  point: number;
-  description: string;
 }
 
 export interface Tournament {
@@ -49,20 +38,9 @@ export interface Tournament {
   races: Race[];
 }
 
-export type RoundType = "final" | "semi" | "quarter" | "repechage" | "heat" | "timetrial" | "other";
-
-export interface RaceRound {
-  type: RoundType;
-  rank: number;
-  final?: string;
-}
-
 export interface RaceResult {
   raceId: number;
   tournamentId: number;
-  tournamentDayId: number | null;
-  matchId: number;
-  matchNumber: number | null;
   matchCode: string;
   matchName: string;
   raceName: string;
@@ -70,8 +48,6 @@ export interface RaceResult {
   // null when the crew did not start or finish, or was not ranked.
   position: number | null;
   endTime: number | null;
-  lane: number | null;
-  round: RaceRound;
 }
 
 export interface Race extends RaceResult {
@@ -82,25 +58,18 @@ export interface Race extends RaceResult {
 // GET /api/knrb/round?tournamentId=&raceId=
 export interface Round {
   raceId: number;
-  matchId: number | null;
   name: string;
-  startTime: string | null;
   distance: number | null;
-  progression: string | null;
-  isFinal: boolean;
   teams: RaceTeam[];
 }
 
 export interface RaceTeam {
   id: number | null;
   name: string;
-  club: string | null;
   lane: number | null;
   position: number | null;
+  // The corrected time when there is one (after a penalty or a bonus), else the measured time.
   time: number | null;
-  measuredTime: number | null;
-  corrected: boolean;
-  bonusTime: number | null;
   didNotStart: boolean;
   didNotFinish: boolean;
   times: RaceTeamTime[];
@@ -110,7 +79,6 @@ export interface RaceTeam {
 export interface RaceTeamTime {
   distance: number;
   time: number | null;
-  position: number | null;
 }
 
 export interface TeamMember {
@@ -122,7 +90,6 @@ export interface TeamMember {
   isCox: boolean;
   isCoach: boolean;
   isStroke: boolean;
-  isBow: boolean;
 }
 
 export type Role = "Roeier" | "Stuur" | "Coach";

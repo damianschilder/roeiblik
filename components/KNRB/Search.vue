@@ -49,6 +49,7 @@
   import { computed, ref } from 'vue';
   import type { PersonResult } from '~/types/KNRB';
   import { useKNRBStore } from '~/stores/knrb';
+  import { apiErrorText } from '~/composables/apiError';
 
   const KNRBStore = useKNRBStore();
 
@@ -86,7 +87,7 @@
     if (tooShort.value) return 'Typ minstens 2 tekens.';
     switch (KNRBStore.searchStatus) {
       case 'loading': return 'Zoeken…';
-      case 'error': return 'Te veel verzoeken achter elkaar of de KNRB is niet beschikbaar.';
+      case 'error': return apiErrorText(KNRBStore.searchError, 'De KNRB');
       case 'done': {
         const n = KNRBStore.results.length;
         return n === 0 ? 'Helaas, geen resultaten.' : `${n} ${n === 1 ? 'resultaat' : 'resultaten'}`;

@@ -8,7 +8,7 @@
     p Deze persoon is niet (meer) te vinden.
     NuxtLink.link(to="/knrb") Terug naar zoeken
   .message(v-else-if="status === 'error'" role="alert")
-    p De gegevens van de KNRB zijn nu niet bereikbaar.
+    p {{ apiErrorText(KNRBStore.personError, 'De KNRB') }}
     button.link(type="button" @click="load(true)") Opnieuw proberen
   KNRBPersoonTournamentsOverview(v-if="person" :person="person")
 </template>
@@ -17,6 +17,7 @@
 import { computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useKNRBStore } from '~/stores/knrb';
+import { apiErrorText } from '~/composables/apiError';
 
 const route = useRoute();
 const KNRBStore = useKNRBStore();

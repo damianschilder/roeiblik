@@ -11,6 +11,7 @@
         p.details-error(v-if="entry?.status === 'error'")
           | Details van deze race konden niet worden geladen.
           button(type="button" @click="retry") Opnieuw proberen
+        p.details-error(v-else-if="entry?.status === 'missing'") De KNRB heeft geen details van deze race.
         KNRBPersoonTournamentsPositions(
           v-if="round && round.teams.length > 0"
           :round="round"
@@ -37,7 +38,8 @@
   const round = computed(() => entry.value?.data ?? null);
   const team = computed(() => teamFor(round.value, props.personId, props.race));
 
-  const showDetailsLine = computed(() => entry.value?.status === 'done' || (entry.value?.status === 'error' && props.race.endTime));
+  const showDetailsLine = computed(() => entry.value?.status === 'done'
+    || ((entry.value?.status === 'error' || entry.value?.status === 'missing') && props.race.endTime));
 
   const distanceAndTime = computed(() => {
     const time = team.value?.time ?? props.race.endTime;

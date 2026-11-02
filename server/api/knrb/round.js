@@ -9,7 +9,6 @@ const BASE = 'https://api.foys.io/tournament/public/api/v1';
 
 const trim = (value) => (typeof value === 'string' ? value.trim() : value);
 const positive = (value) => (Number(value) > 0 ? Number(value) : null);
-const realDate = (value) => (typeof value === 'string' && !value.startsWith('0001-') ? value : null);
 
 function member(event, m) {
   const personId = m.personId ?? m.person?.personId ?? null;
@@ -18,7 +17,6 @@ function member(event, m) {
     isCox: Boolean(m.isCox),
     isCoach: Boolean(m.isCoach),
     isStroke: Boolean(m.isStroke),
-    isBow: Boolean(m.isBow),
   };
   if (!personId || isBlocked(event, personId)) {
     return { ...role, personId: null, fullName: null, hidden: true };
@@ -32,14 +30,10 @@ function team(event, t) {
   return {
     id: t.teamVersionId ?? matchTeam.matchRegistrationId ?? null,
     name: trim(matchTeam.name) || trim(matchTeam.teamFullName) || trim(matchTeam.organisationName) || '',
-    club: trim(matchTeam.organisationName) || null,
     lane: positive(t.lane),
     position: positive(t.endPosition),
     // A corrected time (after a penalty or a bonus) replaces the measured one.
     time: positive(t.correctedEndTime) ?? positive(t.endTime),
-    measuredTime: positive(t.endTime),
-    corrected: positive(t.correctedEndTime) != null,
-    bonusTime: Number(t.bonusTime) || null,
     didNotStart: Boolean(t.didNotStart),
     didNotFinish: Boolean(t.didNotFinish),
     times: (Array.isArray(t.raceTeamTimes) ? t.raceTeamTimes : [])
@@ -47,7 +41,6 @@ function team(event, t) {
       .map((x) => ({
         distance: Number(x.distance),
         time: positive(x.correctedTime) ?? positive(x.time),
-        position: positive(x.correctedPosition) ?? positive(x.position),
       }))
       .sort((a, b) => a.distance - b.distance),
     members: members.map((m) => member(event, m)),
@@ -59,15 +52,12 @@ function byResult(a, b) {
   return (a.position ?? Infinity) - (b.position ?? Infinity) || (a.lane ?? Infinity) - (b.lane ?? Infinity);
 }
 
+// Only what the page shows: the race's name and distance, and per crew its place, times and lineup.
 export function buildRound(event, race) {
   return {
     raceId: race.id,
-    matchId: race.matchId ?? race.match?.id ?? null,
     name: trim(race.name) ?? '',
-    startTime: realDate(race.startTime),
     distance: positive(race.distance),
-    progression: trim(race.progressionInformation) || null,
-    isFinal: Boolean(race.isFinalsRace),
     teams: (Array.isArray(race.raceTeams) ? race.raceTeams : []).map((t) => team(event, t)).sort(byResult),
   };
 }
@@ -77,19 +67,19 @@ export default defineEventHandler(async (event) => {
   const raceId = queryString(event, 'raceId');
 
   if (!validNumber(tournamentId) || !validNumber(raceId)) {
-    return failure('Both tournamentId and raceId parameters are required');
+    return invalid(event, 'Both tournamentId and raceId parameters are required');
   }
 
   let races;
   try {
     races = await upstream(`${BASE}/races?tournamentId=${tournamentId}&raceId=${raceId}`);
-  } catch {
-    return failure('Failed to fetch data from external API');
+  } catch (error) {
+    return error?.statusCode === 404 ? notFound(event) : upstreamFailure(event, error);
   }
   // Only the race that was asked for; never another race of the tournament.
   const race = Array.isArray(races) ? races.find((r) => String(r?.id) === raceId) : null;
   if (!race) {
-    return failure('Not found');
+    return notFound(event);
   }
 
   setResponseHeader(event, 'Cache-Control', 'private, max-age=300');

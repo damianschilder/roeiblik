@@ -69,12 +69,17 @@ Cloudflare Workers with static assets.
   be numeric, and a search term must be 2–100 characters. Values are URL-encoded before they reach
   an upstream URL, so the server cannot be used as a proxy to other paths on those APIs.
   Upstream errors are logged by host and path only and never sent to the browser.
+- **Errors have a real status** and a body `{ "error": "..." }`, never cached: 400 for a malformed
+  request, 404 for an unknown person or race, 502 when Time-Team or the KNRB answers with an error,
+  503 with `Retry-After` when it does not answer in time. A person on the removal list gets the
+  same 404 as an unknown one. The routes return only the fields the pages show.
 - **Security headers** on every response: `X-Content-Type-Options`, `Referrer-Policy`,
   `X-Frame-Options`, `Permissions-Policy`, HSTS and a CSP with `frame-ancestors 'none'`.
 - **Person pages are `noindex`**, via both a header and a meta tag. People can be found by searching
   on Roeiblik, not through search engines.
-- **Removal on request.** The ids in `NUXT_BLOCKED_PERSON_IDS` disappear from search results and
-  their person pages return nothing. See the [privacy page](https://roeiblik.com/privacy) (in Dutch).
+- **Removal on request.** The ids in `NUXT_BLOCKED_PERSON_IDS` disappear from search results,
+  crews and lineups, and their person pages answer as if they did not exist. See the
+  [privacy page](https://roeiblik.com/privacy) (in Dutch).
 - **Cookieless analytics**, optional: Cloudflare Web Analytics, with no cookies and no personal
   data, so no consent banner is needed.
 - **No datasets are published.** Everything shown comes live from the two APIs.

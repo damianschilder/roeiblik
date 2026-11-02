@@ -5,14 +5,14 @@ export default defineEventHandler(async (event) => {
   const query = queryString(event, 'query');
 
   if (!validSearch(query)) {
-    return failure('Query parameter is required');
+    return invalid(event, 'A search term of 2 to 100 characters is required');
   }
 
   let response;
   try {
     response = await upstream(`https://api.foys.io/tournament/public/api/v1/persons/search?searchString=${encodeURIComponent(query)}`);
-  } catch {
-    return failure('Failed to fetch data from external API');
+  } catch (error) {
+    return upstreamFailure(event, error);
   }
 
   const items = (Array.isArray(response?.items) ? response.items : [])
@@ -27,6 +27,5 @@ export default defineEventHandler(async (event) => {
       || a.personId.localeCompare(b.personId));
 
   setResponseHeader(event, 'Cache-Control', 'private, max-age=300');
-  // The count is of what is returned, so a hidden person does not show up as a difference.
-  return { totalCount: items.length, items };
+  return { items };
 });

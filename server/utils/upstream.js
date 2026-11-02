@@ -16,9 +16,34 @@ export const validId = (value) => ID.test(value);
 export const validNumber = (value) => NUMBER.test(value);
 export const validSearch = (value) => value.length >= 2 && value.length <= 100;
 
-// The frontend has always received `200 { error }` on failure; keep that shape, but never pass
-// on upstream error details.
-export const failure = (message) => ({ error: message });
+// Failures get a real HTTP status and a small JSON body { error }, never upstream details:
+//   400  the request itself is wrong (a malformed id, a search term of 1 or 101 characters)
+//   404  no such person, race or crew; also a person who asked to be hidden: the two answers are
+//        identical, so nobody can tell from the outside who is on the removal list
+//   502  the upstream API answered with an error, or with something that is not usable
+//   503  the upstream API did not answer in time, could not be reached, or asked us to slow down;
+//        Retry-After says when trying again makes sense
+// Errors are never cached (`no-store` from the /api/** route rule); only a success sets a private
+// cache time.
+export function failure(event, status, message) {
+  setResponseStatus(event, status);
+  if (status === 503) setResponseHeader(event, 'Retry-After', '30');
+  return { error: message };
+}
+
+export const invalid = (event, message = 'Invalid request') => failure(event, 400, message);
+export const notFound = (event) => failure(event, 404, 'Not found');
+
+// What upstream() threw, as 502 or 503. A route that can tell "no such person" from an upstream
+// 404 checks for that itself first.
+export function upstreamFailure(event, error) {
+  const unreachable = [429, 503, 504].includes(error?.statusCode)
+    // Timed out, or no answer at all (fetch rejects with a TypeError when it cannot connect).
+    || ['TimeoutError', 'AbortError', 'TypeError'].includes(error?.name);
+  return unreachable
+    ? failure(event, 503, 'Upstream API unavailable')
+    : failure(event, 502, 'Upstream API failed');
+}
 
 // ---------------------------------------------------------------------------------------------
 // upstream(url, { ttl }): GET a JSON document from Time-Team or foys, with three layers that keep
