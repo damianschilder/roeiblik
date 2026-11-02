@@ -1,31 +1,22 @@
-import { defineEventHandler } from 'h3';
 import pLimit from 'p-limit';
 
-// Create a limit of 18 requests per second
+// A race lineup asks for several crew members at once; at most 18 upstream calls in flight.
 const limit = pLimit(18);
 
-// Wrapper function for rate-limited fetch
-async function fetchWithRateLimit(url) {
-  return limit(() => $fetch(url));
-}
-
 export default defineEventHandler(async (event) => {
-  const { personId } = getQuery(event);
+  const personId = queryString(event, 'personId');
 
-  if (!personId) {
-    return { error: 'Id parameter is required' };
+  if (!validId(personId)) {
+    return failure('Id parameter is required');
+  }
+  if (isBlocked(personId)) {
+    return failure('Not available');
   }
 
-  const apiInfoUrl = `https://api.foys.io/tournament/public/api/v1/persons/${personId}`;
-
   try {
-    // Fetch basic person info with rate limiting
-    const infoResponse = await fetchWithRateLimit(apiInfoUrl);
-
-    return {
-      ...infoResponse
-    };
-  } catch (error) {
-    return { error: 'Failed to fetch data from external API', details: error.message };
+    const infoResponse = await limit(() => upstream(`https://api.foys.io/tournament/public/api/v1/persons/${encodeURIComponent(personId)}`));
+    return { ...infoResponse };
+  } catch {
+    return failure('Failed to fetch data from external API');
   }
 });

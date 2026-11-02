@@ -1,17 +1,17 @@
-import { defineEventHandler, useQuery } from 'h3';
-
 export default defineEventHandler(async (event) => {
-  const { query } = getQuery(event);
+  const query = queryString(event, 'query');
 
-  if (!query) {
-    return { error: 'Query parameter is required' };
+  if (!validSearch(query)) {
+    return failure('Query parameter is required');
   }
 
-  const apiUrl = `https://api.foys.io/tournament/public/api/v1/persons/search?searchString=${query}`;
   try {
-    const response = await $fetch(apiUrl);
+    const response = await upstream(`https://api.foys.io/tournament/public/api/v1/persons/search?searchString=${encodeURIComponent(query)}`);
+    if (Array.isArray(response?.items)) {
+      response.items = response.items.filter((item) => !isBlocked(item.personId));
+    }
     return response;
-  } catch (error) {
-    return { error: 'Failed to fetch data from external API', details: error.message };
+  } catch {
+    return failure('Failed to fetch data from external API');
   }
 });

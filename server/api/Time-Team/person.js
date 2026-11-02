@@ -1,18 +1,16 @@
-import { defineEventHandler, useQuery } from 'h3';
-
 export default defineEventHandler(async (event) => {
-  const { id } = getQuery(event);
+  const id = queryString(event, 'id');
 
-  if (!id) {
-    return { error: 'Id parameter is required' };
+  if (!validId(id)) {
+    return failure('Id parameter is required');
+  }
+  if (isBlocked(id)) {
+    return failure('Not available');
   }
 
-  const apiUrl = `https://api.beta.regatta.time-team.nl/api/1/person/${id}`;
-
   try {
-    const response = await $fetch(apiUrl);
-    return response;
-  } catch (error) {
-    return { error: 'Failed to fetch data from external API', details: error.message };
+    return await upstream(`https://api.beta.regatta.time-team.nl/api/1/person/${encodeURIComponent(id)}`);
+  } catch {
+    return failure('Failed to fetch data from external API');
   }
 });

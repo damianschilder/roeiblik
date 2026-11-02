@@ -1,20 +1,21 @@
-import { defineEventHandler } from 'h3';
-
 export default defineEventHandler(async (event) => {
-  const { id } = getQuery(event);
+  const id = queryString(event, 'id');
 
-  if (!id) {
-    return { error: 'Id parameter is required' };
+  if (!validId(id)) {
+    return failure('Id parameter is required');
+  }
+  if (isBlocked(id)) {
+    return failure('Not available');
   }
 
-  const apiInfoUrl = `https://api.foys.io/tournament/public/api/v1/persons/${id}`;
-  const apiRacesUrl = `https://api.foys.io/tournament/public/api/v1/races/person-overview-results/${id}`;
+  const apiInfoUrl = `https://api.foys.io/tournament/public/api/v1/persons/${encodeURIComponent(id)}`;
+  const apiRacesUrl = `https://api.foys.io/tournament/public/api/v1/races/person-overview-results/${encodeURIComponent(id)}`;
 
   try {
     // Fetch basic person info and race results
     const [infoResponse, racesResponse] = await Promise.all([
-      $fetch(apiInfoUrl),
-      $fetch(apiRacesUrl)
+      upstream(apiInfoUrl),
+      upstream(apiRacesUrl)
     ]);
 
     // Group raceResults by matchCode and structure them
@@ -54,7 +55,7 @@ export default defineEventHandler(async (event) => {
       ...infoResponse,
       tournaments: racesResponse
     };
-  } catch (error) {
-    return { error: 'Failed to fetch data from external API', details: error.message };
+  } catch {
+    return failure('Failed to fetch data from external API');
   }
 });
