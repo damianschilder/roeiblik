@@ -105,3 +105,8 @@ npm run deploy         # nuxt build, then wrangler deploy
 Results come from [Time-Team Regatta Systems](https://time-team.nl/) and the
 [KNRB](https://roeievenementen.knrb.nl/) (via Foys). Roeiblik is an independent hobby project and
 is not affiliated with either.
+
+## License
+
+The code is available under the [MIT License](LICENSE). The results shown on the site come from
+Time-Team and the KNRB and are not covered by this license.
