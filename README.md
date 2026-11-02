@@ -34,8 +34,8 @@ Roeiblik on top of them. The KNRB's results were added later.
 - **November 2024 to April 2025**, 113 commits, with Nuxt 3, Pinia, and Pug and SCSS templates.
 - **A hybrid.** The frontend (pages, components, styling, and the logic that groups a person's
   races) was written by hand. The server routes that talk to the Time-Team and KNRB APIs
-  (November 2024 to January 2025) were written with help from Gemini in the browser, at
-  gemini.google.com.
+  (November 2024 to January 2025) were written with help from AI chatbots in the browser:
+  ChatGPT, and from January 2025 also Gemini.
 - There was also a statistics page with national KNRB results per event.
 
 ### November 2026: back online, with Claude Code
