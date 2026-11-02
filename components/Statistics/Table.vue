@@ -1,52 +1,51 @@
 <template lang="pug">
   .component-wrapper
     .content
-      // Filter Button
       .actions
-        UiButton(label="Filters" icon="filter" :active="showFilters" @click="toggleFilters") {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
-        //- .button
-        //-   label
-        //-     input.checkbox(type="checkbox" v-model="headerSticky" @change="toggleSticky")
-        //-     span Sticky header
-        //- .button(v-if="winnaars")
-        //-   label
-        //-     input.checkbox(type="checkbox" v-model="showWinnerOnly" @change="updatePositionColumns")
-        //-     span Alleen winnaars
-        UiButton(label="Download" icon="download" @click="downloadFile")
-        // Search functionality
-      .filters(v-if="showFilters")
+        UiButton(label="Filters" icon="filter" :active="showFilters" :aria-expanded="showFilters ? 'true' : 'false'" :aria-controls="filtersId" @click="toggleFilters")
+        UiButton(label="Download" icon="download" :disabled="!rows.length" @click="downloadFile")
+      .filters(v-if="showFilters" :id="filtersId")
         .search
-          input(type="text" v-model="searchQuery" placeholder="Search..." @input="filterRows")
-          select(v-model="selectedSearchColumn")
-            option(value="" disabled) Select Column
-            option(v-for="header in headers" :value="header.name" :key="header.name") {{ header.name }}
-        .checkbox-container
-          label(v-for="(header, index) in headers.filter(h => !h.name.includes('Position'))" :key="index")
-            input(type="checkbox" v-model="header.visible") 
-            span {{ header.name }}
-      
-      .table-container(:class="{ 'loading': loading }")
+          input(type="text" v-model="searchQuery" placeholder="Zoeken..." aria-label="Zoeken in de tabel")
+          select(v-model="selectedSearchColumn" aria-label="Zoeken in kolom")
+            option(value="") Alle kolommen
+            option(v-for="header in headers" :value="header.name" :key="header.name") {{ header.label }}
+        fieldset.checkbox-container
+          legend.visually-hidden Zichtbare kolommen
+          label(v-for="header in headers.filter(h => !h.name.includes('Position'))" :key="header.name")
+            input(type="checkbox" v-model="header.visible")
+            span {{ header.label }}
+
+      //- The box scrolls on its own; tabindex lets keyboard users scroll it too.
+      .table-container(
+        :class="{ 'loading': loading }"
+        role="region"
+        :aria-label="caption || 'Tabel'"
+        :tabindex="filteredRows.length ? 0 : undefined"
+        :aria-busy="loading ? 'true' : 'false'"
+      )
         table(v-if="filteredRows.length")
+          caption.visually-hidden(v-if="caption") {{ caption }}
           thead
             tr
-              th(v-for="(header, index) in headers" :key="index" v-show="header.visible" :class="{ 'sticky': headerSticky }") {{ header.name }}
+              th(v-for="(header, index) in headers" :key="index" v-show="header.visible" scope="col" :class="{ 'sticky': headerSticky }") {{ header.label }}
           tbody
             tr(v-for="(row, rowIndex) in filteredRows" :key="rowIndex")
-                td(v-for="(cell, cellIndex) in row" 
-                  :key="cellIndex" 
-                  v-show="headers[cellIndex]?.visible" 
-                  :class="{ number: numberColumnArray.includes(headers[cellIndex]?.name) }") {{ cell === 'NaN:NaN.NaN' ? '' : (cell.endsWith('.0') ? cell.slice(0, -2) : cell) }}
-        p(v-else) No matching results found.
+                td(v-for="(cell, cellIndex) in row"
+                  :key="cellIndex"
+                  v-show="headers[cellIndex]?.visible") {{ display(cell) }}
+        p.status(v-else-if="loading") Laden…
+        p.status(v-else-if="failed") De gegevens konden niet worden geladen.
+        p.status(v-else) Geen resultaten gevonden.
   </template>
-  
+
   <script setup>
   import { ref, watch, computed } from 'vue';
   import { parse } from 'csv-parse/browser/esm';
   import useTimeFormatter from '@/composables/useTimeFormatter';
-  
+
   const { formatTime } = useTimeFormatter();
-  
-  // Props
+
   const props = defineProps({
     selectedFile: {
       type: String,
@@ -60,114 +59,115 @@
       type: Boolean,
       default: false,
     },
+    // Read by screen readers as the table's name.
+    caption: {
+      type: String,
+      default: '',
+    },
   });
-  
-  // Reactive variables
+
+  // The CSVs mix English and Dutch column names; show them in Dutch.
+  const LABELS = {
+    'Westrijd eerste dag': 'Wedstrijd eerste dag',
+    Location: 'Locatie',
+    Year: 'Jaar',
+    'Regatta Name': 'Wedstrijd',
+    'First Day Date': 'Datum',
+    'Winning Time': 'Winnende tijd',
+    'Winning Team': 'Winnaar',
+    'Fastest Time': 'Snelste tijd',
+    'Fastest Team': 'Snelste ploeg',
+    'Average Time': 'Gemiddelde tijd',
+    Club: 'Vereniging',
+    Wins: 'Overwinningen',
+    Entries: 'Inschrijvingen',
+    'Win Rate (%)': 'Winstpercentage (%)',
+    'Average Position': 'Gemiddelde positie',
+  };
+
   const rows = ref([]);
   const headers = ref([]);
-  const loading = ref(false);
-  const showFilters = ref(false); // Toggle visibility of the filter section
-  const showWinnerOnly = ref(false); // Toggle to show only "Position 1"
-  const headerSticky = ref(true); // Toggle to show sticky header
-  const searchQuery = ref(''); // Search input value
-  const selectedSearchColumn = ref(''); // Selected column for searching
-  
-  // Computed for filtered rows
+  // Starts as "loading" on the server too, so the server's HTML and the browser's first render match.
+  const loading = ref(Boolean(props.selectedFile));
+  const failed = ref(false);
+  const showFilters = ref(false);
+  const headerSticky = ref(true);
+  const searchQuery = ref('');
+  const selectedSearchColumn = ref('');
+  const filtersId = useId();
+
+  // Search one column, or all of them.
   const filteredRows = computed(() => {
-    if (!searchQuery.value || !selectedSearchColumn.value) return rows.value;
-  
-    const columnIndex = headers.value.findIndex(
-      header => header.name === selectedSearchColumn.value
-    );
-  
-    if (columnIndex === -1) return rows.value;
-  
-    return rows.value.filter(row =>
-      row[columnIndex]?.toString().toLowerCase().includes(searchQuery.value.toLowerCase())
+    const query = searchQuery.value.trim().toLowerCase();
+    if (!query) return rows.value;
+    const columnIndex = headers.value.findIndex((header) => header.name === selectedSearchColumn.value);
+    return rows.value.filter((row) =>
+      columnIndex === -1
+        ? row.some((cell, i) => headers.value[i]?.visible && cell.toLowerCase().includes(query))
+        : row[columnIndex]?.toLowerCase().includes(query)
     );
   });
-  
-  const numberColumnArray = ['Number of Finalists', 'Total Teams', 'Fastest Time', 'A Final Winner Time'];
-  
-  function toggleSticky() {
-    headerSticky.value = !headerSticky.value;
-  }
-  
-  // CSV loading function
+
+  // "2024.0" -> "2024"; empty times stay empty.
+  const display = (cell) => (cell === 'NaN:NaN.NaN' ? '' : cell.endsWith('.0') ? cell.slice(0, -2) : cell);
+
+  const parseCsv = (text) =>
+    new Promise((resolve, reject) => {
+      parse(text, { skip_empty_lines: true, bom: true }, (err, output) => (err ? reject(err) : resolve(output)));
+    });
+
+  let current = 0;
   const loadCSV = async () => {
+    if (!props.selectedFile || import.meta.server) return;
+    const request = ++current;
     loading.value = true;
-    if (!props.selectedFile) return;
-  
-    const fileUrl = `/${props.selectedFile}`;
-    const response = await fetch(fileUrl);
-    const csvText = await response.text();
-  
-    // Parse CSV
-    parse(csvText, { skip_empty_lines: true }, (err, output) => {
-      if (err) {
-        return;
-      }
-  
-      headers.value = output[0].map(name => ({
+    failed.value = false;
+    try {
+      const output = await parseCsv(await fetchStaticCsv(props.selectedFile));
+      if (request !== current) return; // a newer field was chosen meanwhile
+      headers.value = (output[0] || []).map((name) => ({
         name,
+        label: LABELS[name] || name,
         visible: !props.hiddenColumns.includes(name),
       }));
-  
-      rows.value = output.slice(1).map(row =>
-        row.map((cell, index) =>
-          headers.value[index]?.name.toLowerCase().includes('time')
-            ? formatTime(cell)
-            : cell
-        )
-      );
-    });
-    loading.value = false;
+      // Time columns in seconds become m:ss.cc; ones already written as m:ss.sss stay as they are.
+      const isTime = headers.value.map((h) => h.name.toLowerCase().includes('time'));
+      rows.value = output.slice(1).map((row) => row.map((cell, i) => (isTime[i] ? formatTime(cell) : cell)));
+    } catch {
+      if (request !== current) return;
+      headers.value = [];
+      rows.value = [];
+      failed.value = true;
+    } finally {
+      if (request === current) loading.value = false;
+    }
   };
-  
-  // Watch for changes in selectedFile and reload CSV
+
   watch(() => props.selectedFile, loadCSV, { immediate: true });
-  
-  // Toggle filter visibility
+
   const toggleFilters = () => {
     showFilters.value = !showFilters.value;
   };
-  
-  // Function to update position columns based on "Show Winner" toggle
-  const updatePositionColumns = () => {
-    headers.value.forEach(header => {
-      if (header.name.startsWith('Position') && header.name !== 'Position 1') {
-        header.visible = !showWinnerOnly.value; // Hide all other positions if "Show Winner" is checked
-      }
-    });
-  };
-  
-  // Function to filter rows based on search
-  const filterRows = () => {
-    if (!searchQuery.value || !selectedSearchColumn.value) return;
-  
-    const columnIndex = headers.value.findIndex(
-      header => header.name === selectedSearchColumn.value
-    );
-  
-    if (columnIndex === -1) return;
-  
-    filteredRows.value = rows.value.filter(row =>
-      row[columnIndex]?.toString().toLowerCase().includes(searchQuery.value.toLowerCase())
-    );
-  };
+
+  // RFC 4180: quote a value that holds a comma, a quote or a line break.
+  const csvValue = (value) => (/[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
 
   const downloadFile = () => {
-  const csvContent = [headers.value.map(h => h.name).join(','), ...rows.value.map(r => r.join(','))].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute('download', props.selectedFile || 'data.csv');
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
+    if (!rows.value.length) return;
+    const csvContent = [headers.value.map((h) => csvValue(h.label)), ...rows.value.map((r) => r.map(csvValue))]
+      .map((line) => line.join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', (props.selectedFile || 'data.csv').split('/').pop());
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  };
   </script>
-  
+
   <style lang="scss" scoped>
   .loading {
     opacity: 0.5;
@@ -185,13 +185,17 @@
   /* filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.05)); */
 
   }
-  
+
+  .status {
+    padding: 8px;
+  }
+
   table {
     border-collapse: collapse; /* Optional: for better table style */
     width: 100%; /* Allow table to take up full width */
     min-width: min-content; /* Ensure columns don’t squish on overflow */
   }
-  
+
   th, td {
     padding: 8px;
     border-bottom: 1px solid #ddd; /* Optional: table border styling */
@@ -199,8 +203,7 @@
   }
 th {
   filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.05));
-  color: rgba(0, 0, 0, 0.5)
-
+  color: $black50;
 }
 
 td {
@@ -208,9 +211,9 @@ td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  
+
 }
-  
+
 .search {
   margin-bottom: 1rem;
   width: min-content;
@@ -226,24 +229,23 @@ td {
     border-radius: 5px;
     cursor: initial;
   }
+  &:focus-within {
+    border-color: $black50;
+  }
 }
 
-.select-file {
-  margin-bottom: 1rem;
-}
-  
-  .checkbox-container {
+.checkbox-container {
   background-color: white;
   padding: 0.5rem 0.5rem;
   border-radius: 5px;
   row-gap: 0.25rem;
-  margin-top: 0.5rem;
+  margin: 0.5rem 0 1rem;
   display: grid;
   border: 1px solid rgba(0, 0, 0, 0.05);
   grid-template-columns: repeat(3, 1fr);
   filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.05));
-  margin-bottom: 1rem;
   max-width: max-content;
+  min-width: 0;
   column-gap: 1rem;
   transition: max-height 0.3s ease, opacity 0.3s ease;
   overflow: hidden;
@@ -273,20 +275,6 @@ option, select {
   font-family: "Mulish", sans-serif;
 }
 
-.button {
-  cursor: pointer;
-  padding: 0.5rem;
-  width: max-content;
-  height: fit-content;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  background-color: white;
-  filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.05));
-  cursor: pointer;
-  border-radius: 5px;
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-}
 :deep(svg) {
 height: 1.1rem;
 width: 1.1rem;
@@ -308,10 +296,4 @@ label {
   background-color: white; /* Set a background color to avoid transparency */
   z-index: 1; /* Ensure it stays above other elements */
 }
-.element-body {
-  margin-bottom: 4rem;
-}
-.content {
-}
-
 </style>
