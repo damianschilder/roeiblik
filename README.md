@@ -16,7 +16,7 @@ races on one page, with times per 500 m, every round of a race, and their crewma
 </p>
 <p>
   <img src="docs/screenshots/knrb-person.png" alt="A rower's KNRB results" width="76%">
-  <img src="docs/screenshots/time-team-person-phone.png" alt="A rower's Time-Team results on a phone" width="21%">
+  <img src="docs/screenshots/time-team-person-phone.png" alt="A rower's Time-Team results and wins on a phone" width="21%">
 </p>
 
 ## Why it exists
@@ -27,22 +27,44 @@ Roeiblik on top of them. The KNRB's results were added later.
 
 ## How it was built
 
+### 2024–2025: designed in Figma, a hybrid build
+
 - **Designed in Figma first**: the last of Damian's projects with a hand-made design; later ones
   were designed with AI tools.
-- **November 2024 to April 2025**, 121 commits. A hybrid: the frontend (pages, components,
-  styling, the logic that groups a person's races) was written by hand. The server routes that
-  talk to the Time-Team and KNRB APIs were written with help from browser-based Gemini.
-- **November 2026, maintenance with Claude Code**, to put the site back online safely. It covered
-  the security and privacy work below, an upgrade from Nuxt 3.14 to Nuxt 4.6 with current versions
-  of every dependency, and a pass over the behaviour behind the unchanged look:
-  - the server merges a person's data before it reaches the browser;
-  - searches run on submit and survive the Back button;
-  - wins are decided on the server from complete data, by one rule on both tools: first place in
-    the race that decided the event (the A-final, or without a final the last round after which
-    nothing follows), never in a heat, repechage, semi-final or B-final;
-  - two-layer caching, keyboard and screen-reader support, and AA contrast.
+- **November 2024 to April 2025**, 113 commits, with Nuxt 3, Pinia, and Pug and SCSS templates.
+- **A hybrid.** The frontend (pages, components, styling, and the logic that groups a person's
+  races) was written by hand. The server routes that talk to the Time-Team and KNRB APIs
+  (November 2024 to January 2025) were written with help from Gemini in the browser, at
+  gemini.google.com.
+- There was also a statistics page with national KNRB results per event.
 
-  The statistics page was removed; its address redirects to KNRBeter.
+### November 2026: back online, with Claude Code
+
+The site was put back online safely with [Claude Code](https://claude.com/claude-code), without
+changing how it looks and works.
+
+- **Safe to run.** Every API route validates its input, people can ask to be removed, person pages
+  stay out of search engines, and there are no cookies. See [Security and privacy](#security-and-privacy).
+- **Up to date.** Nuxt 3.14 became Nuxt 4.6, with current versions of every dependency, running
+  on Cloudflare Workers.
+- **Wins that add up.** Wins are decided on the server, by one rule on both tools: first place in
+  the race that decided the event. That is the A-final, or without a final the last round after
+  which nothing follows; never a heat, repechage, semi-final or B-final. The count, the
+  *Alleen winsten* filter and the trophy all use that rule.
+- **Searches that behave.** A search runs when you submit it and survives the Back button. The
+  server merges a person's data before it reaches the browser. A quick answer shows no loader.
+  Each failure gets its own message: not found, too many requests, offline, or Time-Team or the
+  KNRB not answering.
+- **Lowercase addresses.** `/time-team` and `/knrb`. The old `/Time-Team` and `/KNRB` addresses
+  redirect in one step.
+- **Faster fonts.** 340 kB of TTF became 37 kB of WOFF2, with fallbacks of the same size. On a
+  slow phone the text is in Mulish after 4.3–4.5 s instead of 11–15 s, and no longer jumps
+  when the font arrives.
+- **Phone and accessibility.** A menu on phones, AA contrast, keyboard and screen-reader support,
+  and no sideways scrolling on a person page.
+- **Findable, but not the people.** robots.txt, a sitemap, `llms.txt`, canonical addresses and
+  link previews for the public pages. Person pages are `noindex`, and AI crawlers stay off them.
+- **Removed:** the statistics page. Its address redirects to KNRBeter.
 
 ## Addresses
 
@@ -83,8 +105,9 @@ Cloudflare Workers with static assets.
   same 404 as an unknown one. The routes return only the fields the pages show.
 - **Security headers** on every response: `X-Content-Type-Options`, `Referrer-Policy`,
   `X-Frame-Options`, `Permissions-Policy`, HSTS and a CSP with `frame-ancestors 'none'`.
-- **Person pages are `noindex`**, via both a header and a meta tag. People can be found by searching
-  on Roeiblik, not through search engines.
+- **Person pages are `noindex`**, via both a header and a meta tag. Their HTML holds no names: the
+  page loads them in the browser from `/api/`, which no crawler may fetch. People can be found by
+  searching on Roeiblik, not through search engines.
 - **Removal on request.** The ids in `NUXT_BLOCKED_PERSON_IDS` disappear from search results,
   crews and lineups, and their person pages answer as if they did not exist. See the
   [privacy page](https://roeiblik.com/privacy) (in Dutch).
