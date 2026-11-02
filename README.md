@@ -40,31 +40,11 @@ Roeiblik on top of them. The KNRB's results were added later.
 
 ### November 2026: back online, with Claude Code
 
-The site was put back online safely with [Claude Code](https://claude.com/claude-code), without
-changing how it looks and works.
-
-- **Safe to run.** Every API route validates its input, people can ask to be removed, person pages
-  stay out of search engines, and there are no cookies. See [Security and privacy](#security-and-privacy).
-- **Up to date.** Nuxt 3.14 became Nuxt 4.6, with current versions of every dependency, running
-  on Cloudflare Workers.
-- **Wins that add up.** Wins are decided on the server, by one rule on both tools: first place in
-  the race that decided the event. That is the A-final, or without a final the last round after
-  which nothing follows; never a heat, repechage, semi-final or B-final. The count, the
-  *Alleen winsten* filter and the trophy all use that rule.
-- **Searches that behave.** A search runs when you submit it and survives the Back button. The
-  server merges a person's data before it reaches the browser. A quick answer shows no loader.
-  Each failure gets its own message: not found, too many requests, offline, or Time-Team or the
-  KNRB not answering.
-- **Lowercase addresses.** `/time-team` and `/knrb`. The old `/Time-Team` and `/KNRB` addresses
-  redirect in one step.
-- **Faster fonts.** 340 kB of TTF became 37 kB of WOFF2, with fallbacks of the same size. On a
-  slow phone the text is in Mulish after 4.3–4.5 s instead of 11–15 s, and no longer jumps
-  when the font arrives.
-- **Phone and accessibility.** A menu on phones, AA contrast, keyboard and screen-reader support,
-  and no sideways scrolling on a person page.
-- **Findable, but not the people.** robots.txt, a sitemap, `llms.txt`, canonical addresses and
-  link previews for the public pages. Person pages are `noindex`, and AI crawlers stay off them.
-- **Removed:** the statistics page. Its address redirects to KNRBeter.
+Put back online safely with [Claude Code](https://claude.com/claude-code), looking and working as
+before. Under the hood: Nuxt 4 on Cloudflare Workers, the
+[security and privacy](#security-and-privacy) measures below, wins counted by one rule on both
+tools, lowercase addresses, faster fonts, a menu on phones and better accessibility. The
+statistics page was removed.
 
 ## Addresses
 
