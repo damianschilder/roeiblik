@@ -9,7 +9,7 @@
         .tags
           span.tag.compo Comporoeien
           span.tag.wedstro Wedstrijdroeien
-        NuxtLink.compobeter(to="/Time-Team" aria-describedby="uitleg-compobeter")
+        NuxtLink.compobeter(to="/time-team" aria-describedby="uitleg-compobeter")
           span Compobeter
           nuxt-icon(name="person search" aria-hidden="true")
         .info
@@ -19,7 +19,7 @@
       .button.knrbeter2
         .tags
           span.tag.wedstro Wedstrijdroeien
-        NuxtLink.statistieken(to="/KNRB" aria-describedby="uitleg-knrbeter")
+        NuxtLink.statistieken(to="/knrb" aria-describedby="uitleg-knrbeter")
           span KNRBeter
           nuxt-icon(name="person search" aria-hidden="true")
         .info

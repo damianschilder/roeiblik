@@ -6,7 +6,7 @@
     span Dit kan een paar seconden duren.
   .message(v-else-if="status === 'notfound'" role="alert")
     p Deze persoon is niet (meer) te vinden.
-    NuxtLink.link(to="/KNRB") Terug naar zoeken
+    NuxtLink.link(to="/knrb") Terug naar zoeken
   .message(v-else-if="status === 'error'" role="alert")
     p De gegevens van de KNRB zijn nu niet bereikbaar.
     button.link(type="button" @click="load(true)") Opnieuw proberen

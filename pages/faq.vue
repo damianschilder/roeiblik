@@ -14,7 +14,7 @@
                 span Roeiblik haalt alle Time-Team-vermeldingen van een persoon op via Time-Team. Time-Team maakt zelf geen onderscheid tussen competitie, wedstrijd, klasserend of niet-klasserend. Deze website is afhankelijk van Time-Team en maakt daarom ook geen onderscheid.
                 br
                 br
-                span Klasserende resultaten vind je met #[NuxtLink(to="/KNRB") KNRBeter], dat de uitslagen van de KNRB doorzoekt. De KNRB heeft daarvoor ook een eigen #[a(href="https://roeievenementen.knrb.nl/person-search") website].
+                span Klasserende resultaten vind je met #[NuxtLink(to="/knrb") KNRBeter], dat de uitslagen van de KNRB doorzoekt. De KNRB heeft daarvoor ook een eigen #[a(href="https://roeievenementen.knrb.nl/person-search") website].
             .question
               h3 Waarom sta ik er twee keer in?
               span In Time-Team bestaan er dan twee verschillende versies van dezelfde persoon. Dit zijn vaak bijvoorbeeld een competitie- en een niet-competitieversie. Hoewel beide versies dezelfde naam delen, worden ze in Time-Team als twee afzonderlijke personen beschouwd, en is er geen mogelijkheid om met zekerheid vast te stellen dat het om dezelfde persoon gaat.
@@ -27,7 +27,7 @@
           .questions
             .question
               h3 Wat zijn dit voor resultaten?
-              span KNRBeter toont de klasserende wedstrijdresultaten die de KNRB via Foys publiceert: per wedstrijd de velden, ronden en plaatsen. Compo's en niet-klasserende wedstrijden staan er niet in; die vind je met #[NuxtLink(to="/Time-Team") Compobeter].
+              span KNRBeter toont de klasserende wedstrijdresultaten die de KNRB via Foys publiceert: per wedstrijd de velden, ronden en plaatsen. Compo's en niet-klasserende wedstrijden staan er niet in; die vind je met #[NuxtLink(to="/time-team") Compobeter].
         section.algemeen(aria-labelledby="faq-algemeen")
           h2.section-title#faq-algemeen Algemeen
           .questions

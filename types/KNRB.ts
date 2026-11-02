@@ -1,6 +1,6 @@
-// The shapes the KNRB routes in server/api/KNRB send to the page (not foys' raw shapes).
+// The shapes the KNRB routes in server/api/knrb send to the page (not foys' raw shapes).
 
-// GET /api/KNRB/search?query=
+// GET /api/knrb/search?query=
 export interface SearchResponse {
   items: PersonResult[];
   totalCount: number;
@@ -12,7 +12,7 @@ export interface PersonResult {
   clubName: string | null;
 }
 
-// GET /api/KNRB/person?id=
+// GET /api/knrb/person?id=
 export interface Person {
   personId: string;
   fullName: string;
@@ -79,7 +79,7 @@ export interface Race extends RaceResult {
   preliminaries: RaceResult[];
 }
 
-// GET /api/KNRB/round?tournamentId=&raceId=
+// GET /api/knrb/round?tournamentId=&raceId=
 export interface Round {
   raceId: number;
   matchId: number | null;

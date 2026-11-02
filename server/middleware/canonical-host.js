@@ -1,10 +1,10 @@
 // Roeiblik lives on one address. When NUXT_CANONICAL_HOST is set (the Worker config sets it to
 // roeiblik.com), any other host name that reaches the Worker, such as www.roeiblik.com, gets a
-// permanent redirect to the same path on that host. Local development is left alone.
+// permanent redirect to that host. Local development is left alone.
+//
+// The redirect also corrects the path (old capitalised sections, see server/utils/address.js), so
+// www plus an old address is still a single hop.
 export default defineEventHandler((event) => {
-  const canonical = useRuntimeConfig(event).canonicalHost;
-  if (!canonical) return;
-  const host = (getRequestHeader(event, 'host') || '').toLowerCase();
-  if (host === canonical || /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return;
-  return sendRedirect(event, `https://${canonical}${event.path}`, 301);
+  const target = redirectTarget(event);
+  if (target?.hostChanged) return sendRedirect(event, target.location, target.status);
 });

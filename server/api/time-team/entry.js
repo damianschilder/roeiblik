@@ -1,6 +1,6 @@
 // The crew of one Time-Team entry, for a race whose crew the person route did not look up (only
 // people with a long history; see LOOKUP_BUDGET in person.js). Called when the visitor opens it.
-//   /api/Time-Team/entry?regatta=<regatta id>&id=<entry id>&person=<person id>
+//   /api/time-team/entry?regatta=<regatta id>&id=<entry id>&person=<person id>
 // Answers { crew, role } with the same crew shape as the person route: hidden people left out.
 import { roleInCrew, shapeCrew } from './person.js';
 

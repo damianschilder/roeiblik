@@ -68,11 +68,11 @@
                       template(v-if="entry.crew")
                         span(v-for="member in entry.crew.rowers" :key="`r${member.position}${member.name}`" :class="{ 'rower': member.self }")
                           | {{ member.position != null ? `${member.position} ` : '' }}
-                          NuxtLink(v-if="member.id && !member.self" :to="`/Time-Team/persoon/${member.id}`") {{ member.name }}
+                          NuxtLink(v-if="member.id && !member.self" :to="`/time-team/persoon/${member.id}`") {{ member.name }}
                           template(v-else) {{ member.name }}
                         span(v-for="member in entry.crew.coxes" :key="`c${member.position}${member.name}`" :class="{ 'rower': member.self }")
                           | {{ '(c) ' }}
-                          NuxtLink(v-if="member.id && !member.self" :to="`/Time-Team/persoon/${member.id}`") {{ member.name }}
+                          NuxtLink(v-if="member.id && !member.self" :to="`/time-team/persoon/${member.id}`") {{ member.name }}
                           template(v-else) {{ member.name }}
                         span(v-if="!entry.crew.rowers.length && !entry.crew.coxes.length") Niet bekend
                       span(v-else-if="rowerStore.crewState[entry.id] === 'error'") Ploeg niet beschikbaar
@@ -80,7 +80,7 @@
                     .coaches(v-if="entry.crew?.coaches.length")
                       h3 Coaches
                       span(v-for="member in entry.crew.coaches" :key="`k${member.position}${member.name}`" :class="{ 'rower': member.self }")
-                        NuxtLink(v-if="member.id && !member.self" :to="`/Time-Team/persoon/${member.id}`") {{ member.name }}
+                        NuxtLink(v-if="member.id && !member.self" :to="`/time-team/persoon/${member.id}`") {{ member.name }}
                         template(v-else) {{ member.name }}
                     .boat(v-if="entry.crew?.boat")
                       h3 Boot

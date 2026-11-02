@@ -9,7 +9,7 @@
     button(type="button" @click="retry") Opnieuw proberen
   .message(v-else-if="status === 'unavailable' || status === 'notFound'")
     span Deze persoon staat niet (meer) op Roeiblik.
-    NuxtLink(to="/Time-Team") Terug naar zoeken
+    NuxtLink(to="/time-team") Terug naar zoeken
   Time-TeamRaces(v-else-if="status === 'done' && current")
 </template>
 

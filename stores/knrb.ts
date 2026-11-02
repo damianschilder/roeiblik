@@ -58,7 +58,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
     searchController = controller;
     searchStatus.value = "loading";
     try {
-      const response = await $fetch<SearchResponse | ApiError>("/api/KNRB/search", {
+      const response = await $fetch<SearchResponse | ApiError>("/api/knrb/search", {
         params: { query: q },
         signal: controller.signal,
       });
@@ -107,7 +107,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
     person.value = null;
     personStatus.value = "loading";
     try {
-      const response = await $fetch<Person | ApiError>("/api/KNRB/person", { params: { id } });
+      const response = await $fetch<Person | ApiError>("/api/knrb/person", { params: { id } });
       if (seq !== personSeq) return; // the visitor moved on to someone else
       if (isError(response)) {
         // Unknown ids, bad ids and people who asked not to be shown look the same.
@@ -138,7 +138,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
     if (!roundOrder.includes(key)) roundOrder.push(key);
     while (roundOrder.length > ROUND_CACHE_MAX) delete rounds[roundOrder.shift() as string];
     try {
-      const response = await $fetch<Round | ApiError>("/api/KNRB/round", { params: { tournamentId, raceId } });
+      const response = await $fetch<Round | ApiError>("/api/knrb/round", { params: { tournamentId, raceId } });
       if (isError(response)) throw new Error(response.error);
       rounds[key] = { status: "done", data: response };
     } catch {

@@ -4,10 +4,10 @@ header.navbar-wrapper
     nav.navbar-content(aria-label="Hoofdmenu")
       NuxtLink.title( to="/") Roeiblik
       .middle
-        NuxtLink.big(to="/Time-Team")
+        NuxtLink.big(to="/time-team")
           span Compobeter
           nuxt-icon(name="person search" aria-hidden="true")
-        NuxtLink.big(to="/KNRB")
+        NuxtLink.big(to="/knrb")
           span KNRBeter
           nuxt-icon(name="person search" aria-hidden="true")
       .right

@@ -29,7 +29,7 @@
 
   const onlyWon = ref(false);
 
-  // "Alleen winsten": the events that were won (decided on the server, see server/api/KNRB/person.js),
+  // "Alleen winsten": the events that were won (decided on the server, see server/api/knrb/person.js),
   // with the earlier rounds that led there.
   const displayTournaments = computed((): Tournament[] => {
     const all = props.person.tournaments ?? [];

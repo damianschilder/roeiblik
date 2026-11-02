@@ -32,7 +32,7 @@
           ul.result-list
             li(v-for="person in paginatedResults" :key="person.personId")
               NuxtLink.result(
-                :to="`/KNRB/persoon/${person.personId}`"
+                :to="`/knrb/persoon/${person.personId}`"
                 :class="{ 'current-rower': person.personId === KNRBStore.personId }"
               )
                 span.name

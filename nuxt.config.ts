@@ -73,18 +73,18 @@ export default defineNuxtConfig({
     },
     // Person pages show other people's names and results: findable on Roeiblik, not via search
     // engines. The pages also set <meta name="robots">, which holds for any spelling of the URL.
-    '/Time-Team/persoon/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
-    '/KNRB/persoon/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/time-team/persoon/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/knrb/persoon/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     // API answers: not stored by browsers or proxies by default. The server already caches the
     // upstream data (server/utils/upstream.js), errors are answered with HTTP 200 and must not
     // stick, and a removal request has to take effect at once. A route may still choose a short
     // private cache for itself with setResponseHeader.
     '/api/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' } },
     // (/_nuxt/* gets `public, max-age=31536000, immutable` from Nuxt itself.)
-    // The statistics page is gone (November 2026). Its address is in Google's index: send it on to
-    // KNRBeter for good instead of letting it become a 404.
-    '/KNRB/statistieken': { redirect: { to: '/KNRB', statusCode: 301 } },
-    '/KNRB/statistieken/**': { redirect: { to: '/KNRB', statusCode: 301 } },
+    // No redirects here. The old capitalised addresses (/Time-Team, /KNRB, /api/...) and the
+    // removed statistics page (/knrb/statistieken, in Google's index) are redirected by
+    // server/middleware/lowercase-sections.js, together with the host: a route rule runs before
+    // the middleware, so www plus an old address would otherwise take two hops.
   },
 
   imports: {

@@ -34,6 +34,20 @@ races on one page, with times per 500 m, every round of a race, and their crewma
 
   The statistics page was removed; its address redirects to KNRBeter.
 
+## Addresses
+
+| Page | Address |
+|---|---|
+| Compobeter (Time-Team) | `/time-team`, a person at `/time-team/persoon/<id>` |
+| KNRBeter | `/knrb`, a person at `/knrb/persoon/<id>` |
+| API | `/api/time-team/{search,person,entry}`, `/api/knrb/{search,person,round}` |
+
+Until November 2026 the sections were `/Time-Team` and `/KNRB`. Any casing of those (and of
+`/api/Time-Team`, `/api/KNRB`) is redirected to the lowercase address, keeping the rest of the
+path and the query: 301 for pages, 308 for the API. The old statistics page (`/knrb/statistieken`)
+redirects to `/knrb`. A wrong host and an old path are corrected in a single redirect
+(`server/utils/address.js`).
+
 ## Stack
 
 Nuxt 4 (Vue 3, server-side rendering), Pinia, and Pug and SCSS templates. The Nitro server runs on

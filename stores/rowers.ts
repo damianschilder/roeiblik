@@ -10,7 +10,7 @@ import type {
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { computed, ref } from "vue";
 
-// Time-Team search and person pages. The server (server/api/Time-Team/*) does the merging; this
+// Time-Team search and person pages. The server (server/api/time-team/*) does the merging; this
 // store only fetches, guards against stale answers and remembers what it fetched this session,
 // so Back from a person page shows the same list and a person seen before opens at once.
 
@@ -103,7 +103,7 @@ export const useRowersStore = defineStore("rowers", () => {
     searchController = controller;
     searchStatus.value = "loading";
     try {
-      const response = await $fetch<TtSearchResponse>("/api/Time-Team/search", {
+      const response = await $fetch<TtSearchResponse>("/api/time-team/search", {
         params: { query: q },
         signal: controller.signal,
       });
@@ -154,7 +154,7 @@ export const useRowersStore = defineStore("rowers", () => {
     const controller = new AbortController();
     personController = controller;
     try {
-      const response = await $fetch<TtPersonResponse>("/api/Time-Team/person", {
+      const response = await $fetch<TtPersonResponse>("/api/time-team/person", {
         params: { id },
         signal: controller.signal,
       });
@@ -185,7 +185,7 @@ export const useRowersStore = defineStore("rowers", () => {
     if (!person || entry.crew || crewState.value[entry.id] === "loading") return;
     crewState.value[entry.id] = "loading";
     try {
-      const response = await $fetch<TtEntryResponse>("/api/Time-Team/entry", {
+      const response = await $fetch<TtEntryResponse>("/api/time-team/entry", {
         params: { regatta: entry.regattaId, id: entry.id, person: person.person.id },
       });
       if (!response?.crew || response.error) throw new Error("crew failed");

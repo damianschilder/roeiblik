@@ -1,9 +1,9 @@
-// What Roeiblik's own Time-Team routes return (server/api/Time-Team/*). The raw Time-Team answers
+// What Roeiblik's own Time-Team routes return (server/api/time-team/*). The raw Time-Team answers
 // are reshaped on the server; the browser only ever sees these shapes.
 
 export type TtRole = 'Rower' | 'Cox' | 'Coach';
 
-// /api/Time-Team/search
+// /api/time-team/search
 export interface TtPerson {
   id: string;
   displayname: string;
@@ -14,7 +14,7 @@ export interface TtSearchResponse {
   error?: string;
 }
 
-// /api/Time-Team/person
+// /api/time-team/person
 export interface TtCrewMember {
   name: string;
   position?: number;
@@ -63,7 +63,7 @@ export interface TtEntry {
   combination?: boolean;
   blade?: string; // club blade image
   role?: TtRole; // undefined: not known (crew not looked up and not the stroke)
-  crew: TtCrew | null; // null: not looked up yet (see /api/Time-Team/entry)
+  crew: TtCrew | null; // null: not looked up yet (see /api/time-team/entry)
   races: TtRace[]; // latest round first
 }
 
@@ -95,7 +95,7 @@ export interface TtPersonResponse extends Partial<TtProfile> {
   error?: string;
 }
 
-// /api/Time-Team/entry
+// /api/time-team/entry
 export interface TtEntryResponse {
   crew?: TtCrew;
   role?: TtRole;

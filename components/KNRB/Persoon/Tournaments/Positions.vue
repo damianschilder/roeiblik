@@ -54,7 +54,7 @@
                     :key="member.personId ?? `hidden-${index}`"
                     :class="{ 'active-rower': member.personId === personId }"
                   )
-                    NuxtLink.link(v-if="!member.hidden" :to="`/KNRB/persoon/${member.personId}`")
+                    NuxtLink.link(v-if="!member.hidden" :to="`/knrb/persoon/${member.personId}`")
                       span {{ member.boatPosition }} {{ member.fullName }}
                       nuxt-icon(name="link" aria-hidden="true")
                     span.hidden(v-else) {{ member.boatPosition }} Naam afgeschermd
@@ -63,7 +63,7 @@
                     :key="member.personId ?? `hidden-cox-${index}`"
                     :class="{ 'active-rower': member.personId === personId }"
                   )
-                    NuxtLink.link(v-if="!member.hidden" :to="`/KNRB/persoon/${member.personId}`")
+                    NuxtLink.link(v-if="!member.hidden" :to="`/knrb/persoon/${member.personId}`")
                       span (c) {{ member.fullName }}
                       nuxt-icon(name="link" aria-hidden="true")
                     span.hidden(v-else) (c) Naam afgeschermd
@@ -74,7 +74,7 @@
                     :key="member.personId ?? `hidden-coach-${index}`"
                     :class="{ 'active-rower': member.personId === personId }"
                   )
-                    NuxtLink.link(v-if="!member.hidden" :to="`/KNRB/persoon/${member.personId}`")
+                    NuxtLink.link(v-if="!member.hidden" :to="`/knrb/persoon/${member.personId}`")
                       span {{ member.fullName }}
                       nuxt-icon(name="link" aria-hidden="true")
                     span.hidden(v-else) Naam afgeschermd

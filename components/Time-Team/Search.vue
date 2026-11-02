@@ -26,7 +26,7 @@
           ul.result-list
             li(v-for="rower in paginatedResults" :key="rower.id")
               NuxtLink.result(
-                :to="`/Time-Team/persoon/${rower.id}`"
+                :to="`/time-team/persoon/${rower.id}`"
                 :class="{ 'current-rower': rower.id === rowerStore.rower?.person.id }"
               )
                 span {{ rower.displayname }}
