@@ -49,8 +49,9 @@ export async function upstream(url) {
 }
 
 // People who asked not to be shown (privacy page): comma-separated ids in the environment
-// variable NUXT_BLOCKED_PERSON_IDS, Time-Team and KNRB ids alike.
-export function isBlocked(id) {
-  const raw = useRuntimeConfig().blockedPersonIds || '';
+// variable NUXT_BLOCKED_PERSON_IDS, Time-Team and KNRB ids alike. On Cloudflare the variables
+// reach the runtime config per request, so it needs the event.
+export function isBlocked(event, id) {
+  const raw = useRuntimeConfig(event).blockedPersonIds || '';
   return raw.split(',').map((s) => s.trim()).includes(String(id));
 }

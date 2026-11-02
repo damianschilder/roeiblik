@@ -10,10 +10,29 @@ export default defineNuxtConfig({
     cloudflare: {
       deployConfig: true,
       nodeCompat: true,
-      // Use the name of the Worker that already serves roeiblik.com (Cloudflare dashboard →
-      // Workers & Pages), so a deploy replaces it instead of creating a second Worker.
-      wrangler: { name: 'roeiblik' },
+      wrangler: {
+        name: 'roeiblik',
+        // Roeiblik is only reachable on roeiblik.com: no *.workers.dev address and no preview URL
+        // per version. www.roeiblik.com reaches the Worker too and is redirected by
+        // server/middleware/canonical-host.js. (roeiblik.nl has its own redirect rule in Cloudflare.)
+        workers_dev: false,
+        preview_urls: false,
+        routes: [
+          { pattern: 'roeiblik.com', custom_domain: true },
+          { pattern: 'www.roeiblik.com', custom_domain: true },
+        ],
+        vars: { NUXT_CANONICAL_HOST: 'roeiblik.com' },
+        // NUXT_BLOCKED_PERSON_IDS and NUXT_PUBLIC_CF_BEACON_TOKEN are set in the dashboard.
+        keep_vars: true,
+      },
     },
+  },
+
+  experimental: {
+    // The client fetched /_nuxt/builds/meta/<build>.json on start-up. When that failed (Google's
+    // renderer, or a page cached from an older deploy) Nuxt replaced the page with a 500 error,
+    // which ended up in Google's snippet. Roeiblik uses no client-side route rules, so turn it off.
+    appManifest: false,
   },
 
   site: { url: 'https://roeiblik.com/', name: 'Roeiblik' },
@@ -28,7 +47,11 @@ export default defineNuxtConfig({
         { name: 'keywords', content: 'roeiblik, roei blik, taarten, roei taarten, roeien, uitslagen, time-team, time team, winsten, stuurtjes, roeiers, coaches, knrb' },
       ],
       link: [
-        { rel: 'icon', type: 'image/png', href: '/favicon.png?v=2' },
+        // Square icons (Google shows a favicon only if it is square, 48 px or a multiple).
+        { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+        { rel: 'icon', type: 'image/png', href: '/favicon-96.png', sizes: '96x96' },
+        { rel: 'icon', type: 'image/png', href: '/favicon-192.png', sizes: '192x192' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
       ],
     },
   },
@@ -75,6 +98,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // NUXT_BLOCKED_PERSON_IDS: comma-separated Time-Team/KNRB ids of people who asked to be hidden.
     blockedPersonIds: '',
+    // NUXT_CANONICAL_HOST: the one host Roeiblik answers on; set by the Worker config above.
+    canonicalHost: '',
     public: {
       // NUXT_PUBLIC_CF_BEACON_TOKEN: Cloudflare Web Analytics (cookieless, no personal data).
       // Empty means no analytics script at all.

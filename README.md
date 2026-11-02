@@ -69,19 +69,24 @@ npm run dev        # http://127.0.0.1:3000
 |---|---|
 | `NUXT_BLOCKED_PERSON_IDS` | Comma-separated Time-Team and KNRB person ids to hide (removal requests). |
 | `NUXT_PUBLIC_CF_BEACON_TOKEN` | Cloudflare Web Analytics token. Empty means no analytics script. |
+| `NUXT_CANONICAL_HOST` | The one host the site answers on; other hosts get a 301 to it. Set to `roeiblik.com` by the Worker config. |
 
 ## Deploy (Cloudflare Workers)
 
 ```sh
-npm run build                       # writes .output/ and .output/server/wrangler.json
-npx wrangler login                  # once
-npx wrangler --cwd .output deploy
+npx wrangler login     # once
+npm run deploy         # nuxt build, then wrangler deploy
 ```
 
-- The Worker name is set in `nuxt.config.ts` (`nitro.cloudflare.wrangler.name`). Make it match the
-  Worker that already serves roeiblik.com, so a deploy replaces that Worker instead of adding a
-  second one. Attach the custom domain in the dashboard: Workers & Pages → roeiblik → Domains.
-- Set the variables above as Worker variables (Settings → Variables).
+- The build writes the Worker config (`.output/server/wrangler.json`) from `nuxt.config.ts`
+  (`nitro.cloudflare.wrangler`): Worker `roeiblik` on the custom domains `roeiblik.com` and
+  `www.roeiblik.com`, with the `*.workers.dev` address and preview URLs switched off. The site is
+  only reachable on roeiblik.com; www and any other host get a 301 there. roeiblik.nl has its own
+  redirect rule in Cloudflare.
+- A custom domain can't be created on a hostname that still has a CNAME record: delete that record
+  in Cloudflare DNS before the first deploy.
+- Set `NUXT_BLOCKED_PERSON_IDS` and `NUXT_PUBLIC_CF_BEACON_TOKEN` as Worker variables (Settings →
+  Variables). `keep_vars` makes deploys leave them alone.
 - Recommended: a Cloudflare rate-limiting rule on `/api/*` (Security → WAF → Rate limiting rules),
   e.g. 60 requests per minute per IP. It stops anyone from scraping Time-Team or the KNRB through
   Roeiblik.

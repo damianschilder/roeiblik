@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   if (!validId(id)) {
     return failure('Id parameter is required');
   }
-  if (isBlocked(id)) {
+  if (isBlocked(event, id)) {
     return failure('Not available');
   }
 

@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   try {
     const response = await upstream(`https://api.foys.io/tournament/public/api/v1/persons/search?searchString=${encodeURIComponent(query)}`);
     if (Array.isArray(response?.items)) {
-      response.items = response.items.filter((item) => !isBlocked(item.personId));
+      response.items = response.items.filter((item) => !isBlocked(event, item.personId));
     }
     return response;
   } catch {

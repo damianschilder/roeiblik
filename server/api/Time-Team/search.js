@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   try {
     const response = await upstream(`https://api.beta.regatta.time-team.nl/api/1/search?query=${encodeURIComponent(query)}`);
     for (const id of Object.keys(response?.person || {})) {
-      if (isBlocked(id)) delete response.person[id];
+      if (isBlocked(event, id)) delete response.person[id];
     }
     return response;
   } catch {
