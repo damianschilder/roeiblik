@@ -10,15 +10,13 @@ races on one page, with times per 500 m, every round of a race, and their crewma
 |---|---|
 | **Compobeter** | Search Time-Team for anyone's competition and regatta results. |
 | **KNRBeter** | Search the KNRB's classified results: every race, heat and final, with positions and split times. |
-| **Statistieken** | National KNRB statistics per event: winning and average times per year, and club win rates. |
 
 <p>
   <img src="docs/screenshots/home.png" alt="Roeiblik start page" width="100%">
 </p>
 <p>
-  <img src="docs/screenshots/knrb-person.png" alt="A rower's KNRB results" width="64%">
-  <img src="docs/screenshots/time-team-person-phone.png" alt="A rower's Time-Team results on a phone" width="17%">
-  <img src="docs/screenshots/statistics-phone.png" alt="Event statistics on a phone" width="17%">
+  <img src="docs/screenshots/knrb-person.png" alt="A rower's KNRB results" width="76%">
+  <img src="docs/screenshots/time-team-person-phone.png" alt="A rower's Time-Team results on a phone" width="21%">
 </p>
 
 ## How it was built
@@ -27,19 +25,30 @@ races on one page, with times per 500 m, every round of a race, and their crewma
   styling, the logic that groups a person's races) was written by hand. The server routes that
   talk to the Time-Team and KNRB APIs were written with help from browser-based Gemini.
 - **November 2026, maintenance with Claude Code**, to put the site back online safely. It covered
-  the security and privacy work below, plus an upgrade from Nuxt 3.14 to Nuxt 4.6 and current
-  versions of every dependency. The look and the way the site works did not change.
+  the security and privacy work below, an upgrade from Nuxt 3.14 to Nuxt 4.6 with current versions
+  of every dependency, and a pass over the behaviour behind the unchanged look:
+  - the server merges a person's data before it reaches the browser;
+  - searches run on submit and survive the Back button;
+  - wins are decided from complete data;
+  - two-layer caching, keyboard and screen-reader support, and AA contrast.
+
+  The statistics page was removed; its address redirects to KNRBeter.
 
 ## Stack
 
-Nuxt 4 (Vue 3, server-side rendering), Pinia, Pug and SCSS templates, Chart.js, and csv-parse for
-the statistics. The Nitro server runs on Cloudflare Workers with static assets.
+Nuxt 4 (Vue 3, server-side rendering), Pinia, and Pug and SCSS templates. The Nitro server runs on
+Cloudflare Workers with static assets.
 
 ## Security and privacy
 
 - **No database, no accounts, no cookies.** The server passes each search on to Time-Team or the
-  KNRB (via Foys) and keeps the answer for at most ten minutes in a small in-memory cache, capped
-  at 500 entries.
+  KNRB (via Foys). It keeps the raw answer for five minutes (Time-Team) or ten (KNRB), never
+  longer, in two places:
+  - an in-memory cache capped at 500 entries and 8 MB;
+  - Cloudflare's cache in the same data centre.
+
+  Identical requests in flight share a single upstream call. Removal requests are applied after
+  the cache, on every request.
 - **Every API route validates its input.** An id must match `[A-Za-z0-9_-]{1,64}`, a race id must
   be numeric, and a search term must be 2–100 characters. Values are URL-encoded before they reach
   an upstream URL, so the server cannot be used as a proxy to other paths on those APIs.
@@ -52,7 +61,7 @@ the statistics. The Nitro server runs on Cloudflare Workers with static assets.
   their person pages return nothing. See the [privacy page](https://roeiblik.com/privacy) (in Dutch).
 - **Cookieless analytics**, optional: Cloudflare Web Analytics, with no cookies and no personal
   data, so no consent banner is needed.
-- The statistics only use aggregate CSVs per event and club. Per-rower datasets are not published.
+- **No datasets are published.** Everything shown comes live from the two APIs.
 
 ## Run it locally
 
