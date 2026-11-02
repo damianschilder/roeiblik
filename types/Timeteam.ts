@@ -1,151 +1,103 @@
-export interface SearchResponse {
-  timestamp: number;
-  regatta: object[];
-  country: object[];
-  club: object[];
-  person: Record<string, Person>;
-}
+// What Roeiblik's own Time-Team routes return (server/api/Time-Team/*). The raw Time-Team answers
+// are reshaped on the server; the browser only ever sees these shapes.
 
-export interface PersonResponse {
-  timestamp: number;
-  person: Record<string, Person>;
-  event: Event[];
-  entry: Entry[];
-  round: Record<string, Person>;
-  race: Record<string, Person>;
-  round_crew: Record<string, Person>;
-  race_crew: Record<string, Person>;
-}
+export type TtRole = 'Rower' | 'Cox' | 'Coach';
 
-export interface RowerPerson {
-  displayname: Person['displayname'];
-  id: Person['id'];
-  entry: Entry[];
-  round: Record<string, Person>;
-  race: Record<string, Person>;
-  round_crew: Record<string, Person>;
-  race_Crew: Record<string, Person>;
-}
-
-export interface Person {
+// /api/Time-Team/search
+export interface TtPerson {
   id: string;
   displayname: string;
 }
 
-interface RegattaDay {
-  id: string;
-  day_date: string;
+export interface TtSearchResponse {
+  person?: Record<string, TtPerson>;
+  error?: string;
 }
 
-interface Event {
-  id: string;
-  number: string;
-  code: string;
+// /api/Time-Team/person
+export interface TtCrewMember {
   name: string;
-  status: number;
-  remarks: string | null;
-  string: string;
-  sort_order: number;
-  stroke_pos: number;
-  regatta_days: RegattaDay[];
-  current_round: string;
+  position?: number;
+  id?: string; // Time-Team person id: links to that person's page
+  self?: boolean; // the person whose page this is
 }
 
-interface Club {
+export interface TtCrew {
+  rowers: TtCrewMember[];
+  coxes: TtCrewMember[];
+  coaches: TtCrewMember[];
+  boat?: string;
+}
+
+export interface TtSplit {
+  at: string; // "500m", "1000m", or a place name on a head race ("Rozenoord")
+  time: string;
+  pos?: number;
+}
+
+export interface TtRace {
   id: string;
-  code: string;
+  date?: string; // YYYY-MM-DD, the regatta day (no time zone involved)
+  round: string; // round code: "FA", "E", "R1", "TT", "2000m", or "" for a straight final
+  roundName: string; // "A-finale", "voorwedstrijd", ...
+  final: boolean;
+  distance?: number; // metres
+  course?: string; // Time-Team's name for the course ("2000m", "B4 8000")
+  position?: number; // place within the person's own event in this round
+  result?: string; // a time, or a status code such as DNS when there is no time
+  margin?: string; // behind the winner: "+1.68"
+  lane?: string;
+  rules: string[]; // progression rules: "1e en 2e" (door)
+  progressed?: boolean; // the crew went on to a later round from here
+  outOfCompetition?: boolean; // buiten mededinging
+  penalty?: boolean;
+  provisional?: boolean;
+  splits?: TtSplit[];
+  win: boolean; // first in a main final (A-final, straight final or head race)
+}
+
+export interface TtEntry {
+  id: string;
+  regattaId: string;
   name: string;
-  federation: string;
+  combination?: boolean;
+  blade?: string; // club blade image
+  role?: TtRole; // undefined: not known (crew not looked up and not the stroke)
+  crew: TtCrew | null; // null: not looked up yet (see /api/Time-Team/entry)
+  races: TtRace[]; // latest round first
 }
 
-interface Blade {
-  crop: string;
-  full: string;
-}
-
-interface Rower {
+export interface TtEvent {
   id: string;
-  position: number;
-  firstname: string;
-  lastname: string;
-  fullname: string;
-  club_member_id: string;
+  code: string; // "HOnerv C4+"
+  name: string; // "Heren onervaren C-vier"
+  regatta?: string; // "Northwave Regatta"
+  city?: string; // "Zevenhuizen"
+  date?: string;
+  entries: TtEntry[];
 }
 
-interface Boat {
-  id: string;
-  position: number;
-  name: string;
-}
-
-interface Entry {
-  id: string;
-  code: string;
-  name: string;
-  shortname: string;
-  string: string;
-  combination: boolean;
-  club_id: string;
-  event_id: string;
-  status: number;
-  blades: Blade;
-  club: Club;
-  country: string | null;
-  rowers: Rower[];
-  coxes: Rower[];
-  coaches: Rower[];
-  boats: Boat[];
-}
-
-interface Round {
-  id: string;
-  name: string;
-  number: number;
-  code: string;
-  event_id: string;
-}
-
-interface Race {
+export interface TtClub {
   id: string;
   name: string;
-  number: number;
-  code: string;
-  round_id: string;
-  start_time: string; // Assuming ISO string format for time
-  status: number;
+  blade?: string;
 }
 
-interface CrewMember {
-  id: string;
-  position: number;
-  role: string; // e.g., 'rower', 'cox', 'coach'
-  person_id: string;
-  fullname: string;
+export interface TtProfile {
+  person: TtPerson;
+  clubs: TtClub[];
+  events: TtEvent[]; // newest first
+  firstRace?: { date?: string; entry: string; event: string };
+  partial?: boolean; // some regatta names or crews could not be looked up
 }
 
-interface RoundCrew {
-  id: string;
-  entry_id: string;
-  round_id: string;
-  status: number;
-  crew_members: CrewMember[];
+export interface TtPersonResponse extends Partial<TtProfile> {
+  error?: string;
 }
 
-interface RaceCrew {
-  id: string;
-  entry_id: string;
-  race_id: string;
-  status: number;
-  crew_members: CrewMember[];
-}
-
-interface Root {
-  timestamp: number;
-  person: Record<string, Person>;
-  event: Record<string, Event>;
-  entry: Record<string, Entry>;
-  round: Record<string, Round>;
-  race: Record<string, Race>;
-  round_crew: Record<string, RoundCrew>;
-  race_crew: Record<string, RaceCrew>;
+// /api/Time-Team/entry
+export interface TtEntryResponse {
+  crew?: TtCrew;
+  role?: TtRole;
+  error?: string;
 }
