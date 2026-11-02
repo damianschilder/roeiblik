@@ -1,10 +1,16 @@
 <template lang="pug">
 .page-wrapper
-  Time-TeamHeader(v-if="rowerStore && rowerStore.rower.displayname")
-  .loader-container(v-if="!rowerStore || rowerStore.loading")
+  Time-TeamHeader(v-if="current && rowerStore.rower?.person.displayname")
+  .loader-container(v-if="status === 'loading'" role="status" aria-live="polite")
     UiLoader
     span Dit kan een paar seconden duren.
-  Time-TeamRaces(v-if="rowerStore && rowerStore.rower?.allRaceCrewInfo")
+  .message(v-else-if="status === 'error'" role="alert")
+    span Time-Team is nu niet bereikbaar. Probeer het later opnieuw.
+    button(type="button" @click="retry") Opnieuw proberen
+  .message(v-else-if="status === 'unavailable' || status === 'notFound'")
+    span Deze persoon staat niet (meer) op Roeiblik.
+    NuxtLink(to="/Time-Team") Terug naar zoeken
+  Time-TeamRaces(v-else-if="status === 'done' && current")
 </template>
 
 <script setup lang="ts">
@@ -12,47 +18,29 @@ import { useRoute } from 'vue-router';
 import { useRowersStore } from '@/stores/rowers';
 
 const rowerStore = useRowersStore();
-const runtimeConfig = useRuntimeConfig();
+const route = useRoute();
 
-const pageTitle = computed(() => {
-  return rowerStore?.rower?.displayname || 'Roeiblik';
-});
+const id = computed(() => String(route.params.id ?? ''));
+// The store may still hold the previous person for a moment: show only what belongs to this id.
+const current = computed(() => rowerStore.rower?.person.id === id.value);
+const status = computed(() => (rowerStore.personId === id.value && rowerStore.personStatus !== 'idle'
+  ? rowerStore.personStatus
+  : 'loading'));
 
-// Dynamically set the head title
 useHead({
-  title: pageTitle,
+  title: computed(() => (current.value && rowerStore.rower?.person.displayname) || 'Time-Team'),
   // Other people's names and results: findable on Roeiblik, not via search engines.
   meta: [{ name: 'robots', content: 'noindex, nofollow' }],
 });
 
-
-const route = useRoute();
-
-const isLoading = computed(() => rowerStore.loading);
-
-const pageLoading = ref<boolean>(false);
-  const pageError = ref<boolean>(false);
-
-async function getRower(id: Person['id']) {
-  pageLoading.value = true;
-  pageError.value = false; // Reset error state before attempting to fetch data
-  try {
-    await rowerStore.getRower(id);
-  } catch (error) {
-    console.error('Error fetching rower:', error);
-    pageError.value = true; // Set error state if an error occurs
-  } finally {
-    pageLoading.value = false;
-  }
+function retry() {
+  rowerStore.getRower(id.value, { force: true });
 }
 
-onMounted(async () => {
-  if (rowerStore.results.length === 0) {
-    const id = route.params.id;
-    if (id) {
-      await getRower(id as Person['id']);
-    }
-  }
+// Fetched in the browser: the loader shows at once instead of a blank page while Time-Team
+// answers. Watching the id also covers moving from one person to another (a crew member's link).
+onMounted(() => {
+  watch(id, (value) => rowerStore.getRower(value), { immediate: true });
 });
 </script>
 
@@ -63,7 +51,7 @@ onMounted(async () => {
   height: 100%;
 }
 
-.loader-container {
+.loader-container, .message {
   display: flex;
   justify-content: center;
   flex-direction: column;
@@ -77,8 +65,8 @@ onMounted(async () => {
     align-self: center;
     width: 2rem;
     height: 2rem;
-    border: 4px solid rgba(230, 0, 0, 0.03); /* Light grey */
-    border-top: 4px solid $seed;; /* Blue */
+    border: 4px solid rgba(230, 0, 0, 0.03);
+    border-top: 4px solid $seed;
   }
   span {
     margin-top: 0.5rem;
@@ -86,4 +74,23 @@ onMounted(async () => {
   }
 }
 
+.message {
+  align-items: center;
+  row-gap: 1rem;
+  padding: 3rem 1rem 0;
+  button, a {
+    font: bold 1rem "Lato";
+    background: $red50;
+    border: none;
+    border-radius: 5px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    color: $black50;
+    text-decoration: none;
+    &:focus-visible {
+      outline: 2px solid $red;
+      outline-offset: 2px;
+    }
+  }
+}
 </style>

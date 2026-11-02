@@ -5,64 +5,47 @@
         .element-body
           .content
             .left
-              h2 {{ rowerStore.rower.displayname }}
+              h1 {{ profile.person.displayname }}
               .clubs
                 transition-group(name="fade" tag="div" class="club-group")
-                  .club(v-if="rowerStore.rower.unique_clubs" v-for="club in rowerStore.rower.unique_clubs" :key="club.id" )
+                  .club(v-for="club in profile.clubs" :key="club.id")
                     img(
-                      :src="`https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`"
+                      :src="club.blade || `https://cdn.time-team.nl/assets/club_blade/img/crop/${club.id}.png`"
+                      alt=""
                       @error="handleImageError($event)")
                     span {{ club.name }}
-              .first-sign( v-if="rowerStore.rower.firstRace")
-                span Eerste race: 
-                span.date  {{formatDate(rowerStore.rower.firstRace.date)}}, 
-                span {{rowerStore.rower.firstRace.entry_name}} | 
-                span {{rowerStore.rower.firstRace.event_code}}, 
-                //- NuxtLink( to="/faq")
-                //-   UiInfo( v-if="rowerStore.rower.unique_clubs && rowerStore.rower.unique_clubs.length > 1")
+              p.first-sign(v-if="profile.firstRace") {{ firstRaceText }}
             .right
               transition(name="fade")
-                Time-TeamWinsTable(v-if="rowerStore && rowerStore.rower.roleCounts")
+                Time-TeamWinsTable(v-if="rowerStore.personStatus === 'done'")
   </template>
-  
+
   <script setup lang="ts">
+  import { formatRaceDate } from '@/stores/rowers';
+  import type { TtProfile } from '~/types/Timeteam';
+
   const rowerStore = useRowersStore();
-  const runtimeConfig = useRuntimeConfig();
+  const profile = computed(() => rowerStore.rower as TtProfile);
 
-// Handle broken image error
-function handleImageError(event: Event): void {
-  const imgElement = event.target as HTMLImageElement;
-  imgElement.style.visibility = 'hidden'; // Hide the broken image
-}
-
-  // Function to format the date to "5 June 2022"
-  function formatDate(dateInput: string | string[]): string {
-  let dateString: string;
-  if (Array.isArray(dateInput) && dateInput.length > 0) {
-    dateString = dateInput[0];
-  } else if (typeof dateInput === 'string') {
-    dateString = dateInput;
-  } else {
-    return undefined;
-  }
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) {
-    return undefined;
-  }
-  return date.toLocaleDateString('nl-NL', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+  // One text line, so the spaces between its parts survive the template compiler.
+  const firstRaceText = computed(() => {
+    const first = profile.value.firstRace;
+    if (!first) return '';
+    const date = formatRaceDate(first.date) || 'datum onbekend';
+    return `Eerste race: ${date}, ${[first.entry, first.event].filter(Boolean).join(' | ')}`;
   });
-}
+
+  // A club without a blade image: hide the broken image, keep the name.
+  function handleImageError(event: Event): void {
+    (event.target as HTMLImageElement).style.visibility = 'hidden';
+  }
   </script>
-  
+
   <style lang="scss" scoped>
   .component-wrapper {
     .background {
       padding: 3.5rem 0 2rem;
       min-height: 5.875rem;
-      /* background-color: rgba(230, 0, 0, 0.05); */
       border-bottom: 1px solid $black10;
       .element-wrapper {
         .element-body {
@@ -81,8 +64,14 @@ function handleImageError(event: Event): void {
             .left {
               display: flex;
               flex-direction: column;
-              h2 {
+              // The person's name is the page's main heading, at the size it always had.
+              h1 {
+                font-size: 2.5rem;
+                @include tablet-small {
+                  font-size: 2rem;
+                }
                 @include mobile {
+                  font-size: 2.5rem;
                   text-align: center;
                   margin-bottom: 0.2rem;
                 }
@@ -92,7 +81,6 @@ function handleImageError(event: Event): void {
                 margin-bottom: 1rem;
                 @include mobile {
                   justify-content: center;
-
                 }
                 .club-group {
                   @include mobile {
@@ -119,7 +107,6 @@ function handleImageError(event: Event): void {
                     text-transform: uppercase;
                     font-weight: bold;
                     letter-spacing: .2rem;
-                    color: black50;
                     @include tablet-small {
                       font-size: 1rem;
                     }
@@ -132,49 +119,16 @@ function handleImageError(event: Event): void {
       }
     }
   }
-  
 
-.help {
-  text-align: left;
-  display: flex;
-  width: 30rem;
-  row-gap: 0.25rem;
-  font-weight: normal;
-  color: black;
-  flex-direction: column;
-  @include tablet-small {
-    width: 20rem;
-  }
-  @include mobile {
-    width: 13rem;
-  }
-  >:first-child {
-    font-weight: bold;
-    color: $black50;
-  }
-}
-
-.info {
-  right: 0;
-}
-
-  .title {
-    display: flex;
-    align-items: center;
-    column-gap: 0.5rem;
-  }
-  
-  /* Transition CSS */
   .fade-enter-active, .fade-leave-active {
     transition: opacity 0.5s ease-in-out;
   }
-  
+
   .fade-enter-from, .fade-leave-to {
     opacity: 0;
   }
 
   .first-sign {
-    /* font-weight: bold; */
     opacity: 0.5;
     @include mobile {
       text-align: center;
@@ -182,4 +136,3 @@ function handleImageError(event: Event): void {
     }
   }
   </style>
-  
