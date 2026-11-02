@@ -111,8 +111,43 @@ input {
   -moz-box-shadow: none;
   box-shadow: none;
   font: normal 1.125rem/1.5625rem "Lato";
-  &:focus {
+  // Text fields show focus with their own border (the search boxes); checkboxes keep the ring.
+  &:not([type="checkbox"]):not([type="radio"]):focus {
     outline: none;
+  }
+}
+
+// Keyboard focus: a ring on every link, button and control, only when the focus came from the
+// keyboard, so nothing changes for mouse and touch. Brand red: 4.2:1 against the beige.
+:focus-visible {
+  outline: 2px solid $roeiblik;
+  outline-offset: 2px;
+}
+
+// For screen readers only (labels of icon buttons, the loader's text).
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Less movement for people who asked their system for it. The loader keeps turning, slowly,
+// because a still ring would no longer say that something is loading.
+@media (prefers-reduced-motion: reduce) {
+  *:not(.loader),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

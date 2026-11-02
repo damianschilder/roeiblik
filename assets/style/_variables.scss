@@ -38,7 +38,9 @@ $black10: rgba(0, 0, 0, 0.1);
 $black20: rgba(0, 0, 0, 0.2);
 $black30: rgba(0, 0, 0, 0.3);
 $black40: rgba(0, 0, 0, 0.4);
-$black50: rgba(0, 0, 0, 0.5);
+// The grey of secondary text everywhere. At 0.5 it reached 3.87:1 on the beige background and
+// 3.98:1 on white, under the 4.5:1 of WCAG AA; 0.55 gives 4.6:1 and 4.8:1 and looks the same.
+$black50: rgba(0, 0, 0, 0.55);
 $black60: rgba(0, 0, 0, 0.6);
 $black70: rgba(0, 0, 0, 0.7);
 $black80: rgba(0, 0, 0, 0.8);
