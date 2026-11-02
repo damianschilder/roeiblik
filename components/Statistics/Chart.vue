@@ -69,6 +69,8 @@
   };
 
   const createChart = async () => {
+    // The file list loads in the browser; before that (and during server rendering) there is no file.
+    if (!props.selectedFile || import.meta.server) return;
     const data = await fetchAndParseCSV();
     if (!data || data.length === 0) return;
 

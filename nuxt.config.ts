@@ -1,12 +1,22 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   pages: true,
-  ssr: true, // Enable Server-Side Rendering
+  ssr: true,
+
   nitro: {
-    preset: 'cloudflare', // Targets Cloudflare Workers
+    // Cloudflare Workers with static assets (Workers Sites, the old `cloudflare` preset, is deprecated).
+    // `deployConfig` writes .output/server/wrangler.json, so `npx wrangler deploy` needs no extra file.
+    preset: 'cloudflare-module',
+    cloudflare: {
+      deployConfig: true,
+      nodeCompat: true,
+      // Use the name of the Worker that already serves roeiblik.com (Cloudflare dashboard →
+      // Workers & Pages), so a deploy replaces it instead of creating a second Worker.
+      wrangler: { name: 'roeiblik' },
+    },
   },
 
-  site: {  url: 'https://roeiblik.com/',  name: 'Roeiblik'  },
+  site: { url: 'https://roeiblik.com/', name: 'Roeiblik' },
 
   app: {
     head: {
@@ -19,25 +29,36 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png?v=2' },
-        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Mulish/Mulish-VariableFont.ttf', crossorigin: 'anonymous' },
-        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/assets/fonts/Racing-Sans-One/RacingSansOne-Regular.ttf', crossorigin: 'anonymous' }
       ],
     },
   },
 
-  modules: [[
-    '@pinia/nuxt',
-    {
-      autoImports: ['defineStore', 'acceptHMRUpdate'],
+  modules: ['@pinia/nuxt', 'nuxt-icons', '@nuxtjs/sitemap', '@nuxtjs/robots'],
+
+  routeRules: {
+    '/**': {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'X-Frame-Options': 'DENY',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+        'Strict-Transport-Security': 'max-age=31536000',
+        'Content-Security-Policy': "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests",
+      },
     },
-  ], 'nuxt-icons', '@nuxtjs/sitemap', '@nuxtjs/robots', 'nuxt-gtag'],
+    // Person pages show other people's names and results: findable on Roeiblik, not via search
+    // engines. The pages also set <meta name="robots">, which holds for any spelling of the URL.
+    '/Time-Team/persoon/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/KNRB/persoon/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/api/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+  },
 
   imports: {
     dirs: ['stores', 'types'],
   },
 
   css: [
-    "@/assets/style/app.scss", 
+    "@/assets/style/app.scss",
   ],
 
   vite: {
@@ -51,23 +72,16 @@ export default defineNuxtConfig({
     },
   },
 
-  // Make the environment variable available client-side
   runtimeConfig: {
+    // NUXT_BLOCKED_PERSON_IDS: comma-separated Time-Team/KNRB ids of people who asked to be hidden.
+    blockedPersonIds: '',
     public: {
-      gtagId: process.env.NUXT_PUBLIC_GTAG_ID,
-    }
-  },
-
-  gtag: {
-    id: process.env.NUXT_PUBLIC_GTAG_ID, // Use the env variable
-    initialConsent: false, // Important: Start with consent denied
-    config: {
-      // user_id: '123', // Example: If you have user IDs
-      // anonymize_ip: true, // Deprecated in GA4, handled automatically
-      // send_page_view: false, // Set to false if you want to trigger manually after consent
+      // NUXT_PUBLIC_CF_BEACON_TOKEN: Cloudflare Web Analytics (cookieless, no personal data).
+      // Empty means no analytics script at all.
+      cfBeaconToken: '',
     },
   },
 
   devtools: { enabled: true },
-  compatibilityDate: '2024-11-20',
+  compatibilityDate: '2026-11-01',
 })
