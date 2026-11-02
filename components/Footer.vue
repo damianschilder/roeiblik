@@ -1,9 +1,9 @@
 <template lang="pug">
-.footer-wrapper
+footer.footer-wrapper
   .element-wrapper
     .element-body
       .footer-content
-        NuxtLink.title Roeiblik
+        NuxtLink.title(to="/") Roeiblik
         .source
           | Bron: Time-Team Regatta Systems #[a(href="https://time-team.nl/") https://time-team.nl/] en de KNRB. #[NuxtLink(to="/privacy") Privacy]
 </template>
@@ -35,6 +35,9 @@
   font-size: 13px;
   > a {
     color: $black50;
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 }

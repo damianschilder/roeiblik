@@ -1,7 +1,9 @@
 <template lang="pug">
   .layout-wrapper
+    //- First stop for keyboard users: jump past the menu. Only visible while it has focus.
+    a.skip-link(href="#inhoud") Naar de inhoud
     Navbar
-    .slot-wrapper
+    main#inhoud.slot-wrapper
       slot
     Footer
   </template>
@@ -23,5 +25,21 @@
     grid-area: nuxt;
     padding-bottom: 5rem; // Optional spacing before footer
     height: 100%; // Ensure it takes up the available space
+    min-width: 0; // let wide tables scroll inside their own box instead of widening the page
+  }
+
+  // Absolutely positioned, so it takes no row in the grid.
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -10rem;
+    z-index: 1000;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    background-color: white;
+    color: $black;
+    &:focus {
+      top: 1rem;
+    }
   }
   </style>

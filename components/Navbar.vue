@@ -1,22 +1,20 @@
 <template lang="pug">
-.navbar-wrapper
+header.navbar-wrapper
   .element-wrapper
-    .navbar-content
+    nav.navbar-content(aria-label="Hoofdmenu")
       NuxtLink.title( to="/") Roeiblik
       .middle
         NuxtLink.big(to="/Time-Team")
           span Compobeter
-          nuxt-icon(name="person search")
+          nuxt-icon(name="person search" aria-hidden="true")
         NuxtLink.big(to="/KNRB")
           span KNRBeter
-          nuxt-icon(name="person search")
+          nuxt-icon(name="person search" aria-hidden="true")
         NuxtLink.big(to="/KNRB/statistieken")
           span Statistieken
-          nuxt-icon(name="leaderboard")
+          nuxt-icon(name="leaderboard" aria-hidden="true")
       .right
         NuxtLink.small(to="/faq") FAQ
-        //- span |
-        //- NuxtLink.small(to="/contact") Contact
 </template>
 
 <style lang="scss" scoped>
@@ -25,7 +23,6 @@
   height: 70px;
   position: sticky;
   top: 0;
-  // background-color: rgba(15, 0, 0, .15);  
   z-index: 999;
   backdrop-filter: blur(7px);
 

@@ -39,6 +39,8 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      htmlAttrs: { lang: 'nl' },
+      // Pages set a short title; plugins/title.js turns it into "<title> · Roeiblik".
       title: "Roeiblik",
       meta: [
         { charset: 'utf-8' },
@@ -73,7 +75,17 @@ export default defineNuxtConfig({
     // engines. The pages also set <meta name="robots">, which holds for any spelling of the URL.
     '/Time-Team/persoon/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/KNRB/persoon/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
-    '/api/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    // API answers: not stored by browsers or proxies by default. The server already caches the
+    // upstream data (server/utils/upstream.js), errors are answered with HTTP 200 and must not
+    // stick, and a removal request has to take effect at once. A route may still choose a short
+    // private cache for itself with setResponseHeader.
+    '/api/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' } },
+    // The statistics are static files that change only with a deploy: an hour in the browser.
+    // (/_nuxt/* already gets `public, max-age=31536000, immutable` from Nuxt.)
+    '/event_results/**': { headers: { 'Cache-Control': 'public, max-age=3600' } },
+    '/event_times/**': { headers: { 'Cache-Control': 'public, max-age=3600' } },
+    '/event_statistics/**': { headers: { 'Cache-Control': 'public, max-age=3600' } },
+    '/event_statistics_by_year/**': { headers: { 'Cache-Control': 'public, max-age=3600' } },
   },
 
   imports: {
