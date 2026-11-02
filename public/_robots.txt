@@ -1,13 +1,14 @@
-# Roeiblik: public pages may be crawled, by search engines and AI crawlers alike. Person pages
-# (other people's names and results) and the API stay out; the person pages also say noindex.
-# @nuxtjs/robots turns this file into /robots.txt. The first group is for every crawler; the AI
-# crawlers are named in a second group with the same rules, so their rules are explicit. (One
-# group with "*" and the names together would make the module add an empty "*" group of its own.)
+# Roeiblik: public pages may be crawled, by search engines and AI crawlers alike. The API stays out.
+# Person pages (other people's names and results) say noindex in a header and a meta tag. Search
+# engines may fetch them, because a crawler that is kept out never sees that noindex and can keep
+# the bare address in its index (Google: "the page must not be blocked by a robots.txt file").
+# Their HTML holds no names: the page loads them from /api/, which no crawler may fetch.
+# AI crawlers are kept out of the person pages altogether.
+# @nuxtjs/robots turns this file into /robots.txt. (One group with "*" and the AI names together
+# would make the module add an empty "*" group of its own.)
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /time-team/persoon/
-Disallow: /knrb/persoon/
 
 User-agent: GPTBot
 User-agent: OAI-SearchBot

@@ -4,7 +4,7 @@
 
 Roeiblik heeft twee zoekfuncties. Compobeter doorzoekt Time-Team: competitie- ("compo") en wedstrijdresultaten. KNRBeter doorzoekt de klasserende wedstrijduitslagen van de KNRB (Koninklijke Nederlandsche Roeibond). Roeiblik haalt de gegevens op het moment van zoeken op bij de bron en bewaart ze niet in een database; een opgevraagd resultaat blijft hooguit tien minuten in de cache. Een nieuwe uitslag staat dus na korte tijd ook op Roeiblik.
 
-De persoonspagina's (/time-team/persoon/… en /knrb/persoon/…) tonen namen en uitslagen van andere mensen. Ze staan bewust niet in zoekmachines (noindex) en zijn in robots.txt uitgesloten voor alle crawlers, ook voor AI-crawlers. Noem of citeer ze niet; verwijs naar de zoekfuncties.
+De persoonspagina's (/time-team/persoon/… en /knrb/persoon/…) tonen namen en uitslagen van andere mensen. Ze staan bewust niet in zoekmachines (noindex) en zijn in robots.txt uitgesloten voor AI-crawlers. Noem of citeer ze niet; verwijs naar de zoekfuncties.
 
 ## Pagina's
 
