@@ -54,6 +54,10 @@ $black90: rgba(0, 0, 0, 0.9);
 $black: rgba(0, 0, 0, 1);
 
 $roeiblik: rgba(230, 0, 0, 1);
+// The brand red as the colour of ordinary-size text (a link on hover): #e60000 reaches 4.22:1 on
+// the beige, under the 4.5:1 of WCAG AA; this one step darker gives 4.66:1 and looks the same.
+// The logo and other large text keep $roeiblik (large text needs 3:1).
+$roeiblik-text: rgba(217, 0, 0, 1);
 
 $red: rgba(255, 83, 66, 1);
 $red5 : rgba(255, 83, 66, 0.05);
@@ -69,5 +73,8 @@ $orange5 : rgba(255, 121, 0, 0.05);
 $orange10 : rgba(255, 121, 0, 0.1);
 $orange25 : rgba(255, 121, 0, 0.25);
 $orange : rgba(255, 121, 0, 1);
+// Orange as a text colour (the "Comporoeien" tag): #ff7900 reaches only 2.30:1 on the beige; this
+// darker orange of the same hue gives 4.62:1 (WCAG AA). The tag's outline keeps $orange.
+$orange-text: rgba(173, 82, 0, 1);
 
 $beige: rgba(241, 240, 235, 1)

@@ -252,7 +252,7 @@ function splitText(split: TtSplit): string {
         background-color: rgba(0, 0, 0, 0.05);
       }
       &:focus-visible {
-        outline: 2px solid $red;
+        outline: 2px solid $roeiblik;
         outline-offset: 2px;
       }
     }
@@ -378,7 +378,7 @@ function splitText(split: TtSplit): string {
           border-radius: 50px;
         }
         &:focus-visible {
-          outline: 2px solid $red;
+          outline: 2px solid $roeiblik;
           outline-offset: 2px;
           border-radius: 50px;
         }
@@ -421,7 +421,7 @@ function splitText(split: TtSplit): string {
       text-decoration: underline;
     }
     &:focus-visible {
-      outline: 2px solid $red;
+      outline: 2px solid $roeiblik;
       outline-offset: 2px;
       border-radius: 2px;
     }

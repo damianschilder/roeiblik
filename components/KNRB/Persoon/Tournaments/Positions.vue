@@ -217,7 +217,7 @@ abbr {
     }
   }
   &:focus-visible {
-    outline: 2px solid $red;
+    outline: 2px solid $roeiblik;
     outline-offset: 2px;
   }
 }
@@ -252,7 +252,7 @@ abbr {
     cursor: pointer;
     border-radius: 3px;
     &:focus-visible {
-      outline: 2px solid $red;
+      outline: 2px solid $roeiblik;
       outline-offset: 1px;
     }
   }
@@ -327,7 +327,7 @@ tr {
     text-decoration: underline;
   }
   &:focus-visible {
-    outline: 2px solid $red;
+    outline: 2px solid $roeiblik;
     outline-offset: 2px;
   }
 }

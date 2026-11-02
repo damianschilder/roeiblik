@@ -109,7 +109,7 @@
 }
 .compo {
   outline: 1px solid $orange;
-  color: $orange;
+  color: $orange-text;
 }
 
 .wedstro {

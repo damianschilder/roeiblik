@@ -173,7 +173,7 @@
           color: $black50;
         }
         &:focus-visible {
-          outline: 2px solid $red;
+          outline: 2px solid $roeiblik;
           outline-offset: 2px;
         }
         // Where the loader always sat: 3px from the top, 6px from the right.
@@ -262,7 +262,7 @@
         border-radius: 0.25rem;
       }
       &:focus-visible {
-        outline: 2px solid $red;
+        outline: 2px solid $roeiblik;
         outline-offset: 0;
       }
     }
@@ -286,7 +286,7 @@
           color: $black20;
         }
         &:focus-visible {
-          outline: 2px solid $red;
+          outline: 2px solid $roeiblik;
           outline-offset: 2px;
         }
       }

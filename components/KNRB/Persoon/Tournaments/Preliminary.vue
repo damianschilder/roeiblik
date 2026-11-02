@@ -114,7 +114,7 @@
         color: $black;
       }
       &:focus-visible {
-        outline: 2px solid $red;
+        outline: 2px solid $roeiblik;
         outline-offset: 2px;
       }
     }

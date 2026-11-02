@@ -59,6 +59,7 @@ useHead({
 // The sizes these headings had as h2 and h3.
 .page-title {
   font-size: 2.5rem;
+  margin-bottom: 1.5rem; // the first section title sat right against it; as the intro on /privacy
   @include tablet-small {
     font-size: 2rem;
   }

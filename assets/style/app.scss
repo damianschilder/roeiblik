@@ -213,6 +213,10 @@ input {
   > .element-body {
     width: 100%;
     max-width: 1128px;
+    // A flex item does not shrink below its content by default: a race table with split times
+    // made it 406 px wide on a 390 px phone, so the whole page scrolled sideways. With 0 the
+    // table scrolls inside its own box.
+    min-width: 0;
     padding: 0 1rem;
   }
 }

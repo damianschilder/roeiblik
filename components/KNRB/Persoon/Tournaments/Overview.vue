@@ -53,7 +53,8 @@
   </script>
 
   <style lang="scss" scoped>
-  $black50: rgba(0, 0, 0, 0.5);
+  // (A local $black50 of 0.5 used to override the shared one here: 3.87:1, under WCAG AA. The
+  // shared $black50 from _variables.scss gives 4.6:1.)
 
   @mixin mobile {
     @media (max-width: 768px) {

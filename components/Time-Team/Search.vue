@@ -130,7 +130,7 @@
         color: $black50;
         cursor: pointer;
         &:focus-visible {
-          outline: 2px solid $red;
+          outline: 2px solid $roeiblik;
           outline-offset: 2px;
         }
         :deep(.nuxt-icon svg) {
@@ -225,7 +225,7 @@
       &:focus-visible {
         background-color: $red25;
         border-radius: 0.25rem;
-        outline: 2px solid $red;
+        outline: 2px solid $roeiblik;
         outline-offset: 0;
       }
     }
@@ -249,7 +249,7 @@
           color: $black20;
         }
         &:focus-visible {
-          outline: 2px solid $red;
+          outline: 2px solid $roeiblik;
           outline-offset: 2px;
         }
       }
