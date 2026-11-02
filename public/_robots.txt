@@ -1,2 +1,27 @@
+# Roeiblik: public pages may be crawled, by search engines and AI crawlers alike. Person pages
+# (other people's names and results) and the API stay out; the person pages also say noindex.
+# @nuxtjs/robots turns this file into /robots.txt. The first group is for every crawler; the AI
+# crawlers are named in a second group with the same rules, so their rules are explicit. (One
+# group with "*" and the names together would make the module add an empty "*" group of its own.)
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /api/
+Disallow: /time-team/persoon/
+Disallow: /knrb/persoon/
+
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+Allow: /
+Disallow: /api/
+Disallow: /time-team/persoon/
+Disallow: /knrb/persoon/
+
+Sitemap: https://roeiblik.com/sitemap.xml

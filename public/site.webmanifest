@@ -1,0 +1,16 @@
+{
+  "name": "Roeiblik",
+  "short_name": "Roeiblik",
+  "description": "Roeiuitslagen per persoon, van Time-Team en de KNRB.",
+  "lang": "nl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#f1f0eb",
+  "theme_color": "#f1f0eb",
+  "icons": [
+    { "src": "/favicon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}

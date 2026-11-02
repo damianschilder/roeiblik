@@ -45,8 +45,10 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Zoek naar uitslagen van roeiers, stuurtjes en coaches binnen Time-Team en KNRB'},
+        { name: 'description', content: 'Zoek op naam de uitslagen van roeiers, stuurtjes en coaches: compo- en wedstrijdresultaten uit Time-Team en klasserende uitslagen van de KNRB.' },
         { name: 'keywords', content: 'roeiblik, roei blik, taarten, roei taarten, roeien, uitslagen, time-team, time team, winsten, stuurtjes, roeiers, coaches, knrb' },
+        // The browser bar on phones in the page's beige. Canonical, Open Graph and JSON-LD: plugins/seo.js.
+        { name: 'theme-color', content: '#f1f0eb' },
       ],
       link: [
         // Square icons (Google shows a favicon only if it is square, 48 px or a multiple).
@@ -54,11 +56,21 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', href: '/favicon-96.png', sizes: '96x96' },
         { rel: 'icon', type: 'image/png', href: '/favicon-192.png', sizes: '192x192' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/site.webmanifest' },
       ],
     },
   },
 
   modules: ['@pinia/nuxt', 'nuxt-icons', '@nuxtjs/sitemap', '@nuxtjs/robots'],
+
+  // The sitemap names the public pages itself, in their one (lowercase) spelling, instead of
+  // deriving them from the page files. Person pages never go in: they are noindex, and robots.txt
+  // (public/_robots.txt) keeps crawlers out of them and out of /api/. plugins/seo.js gives the same
+  // five pages a canonical address.
+  sitemap: {
+    excludeAppSources: true,
+    urls: ['/', '/time-team', '/knrb', '/faq', '/privacy'],
+  },
 
   routeRules: {
     '/**': {

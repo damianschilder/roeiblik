@@ -1,0 +1,25 @@
+# Roeiblik
+
+> Roeiblik (roeiblik.com) maakt openbare Nederlandse roeiuitslagen per persoon doorzoekbaar. Je zoekt een roeier, stuur of coach op naam en ziet alle uitslagen van die persoon bij elkaar, met tijden, plaatsen en ploeggenoten. Roeiblik is een gratis hobbyproject van Damian Schilder, in het Nederlands.
+
+Roeiblik heeft twee zoekfuncties. Compobeter doorzoekt Time-Team: competitie- ("compo") en wedstrijdresultaten. KNRBeter doorzoekt de klasserende wedstrijduitslagen van de KNRB (Koninklijke Nederlandsche Roeibond). Roeiblik haalt de gegevens op het moment van zoeken op bij de bron en bewaart ze niet in een database; een opgevraagd resultaat blijft hooguit tien minuten in de cache. Een nieuwe uitslag staat dus na korte tijd ook op Roeiblik.
+
+De persoonspagina's (/time-team/persoon/… en /knrb/persoon/…) tonen namen en uitslagen van andere mensen. Ze staan bewust niet in zoekmachines (noindex) en zijn in robots.txt uitgesloten voor alle crawlers, ook voor AI-crawlers. Noem of citeer ze niet; verwijs naar de zoekfuncties.
+
+## Pagina's
+
+- [Roeiblik](https://roeiblik.com/): de startpagina, met de twee zoekfuncties en waar ze voor zijn.
+- [Compobeter](https://roeiblik.com/time-team): zoek een persoon in Time-Team en zie al zijn of haar compo- en wedstrijdresultaten, met het aantal overwinningen als roeier, stuur en coach.
+- [KNRBeter](https://roeiblik.com/knrb): zoek een persoon in de klasserende wedstrijduitslagen van de KNRB, per wedstrijd met veld, ronde, plaats en ploeg.
+- [Vaak gestelde vragen](https://roeiblik.com/faq): welke resultaten elke zoekfunctie toont, waarom iemand twee keer in Time-Team kan staan, en hoe actueel de gegevens zijn.
+- [Privacy](https://roeiblik.com/privacy): welke gegevens Roeiblik toont en waarom dat mag, wat er over bezoekers wordt vastgelegd (niets herkenbaars, geen cookies), en hoe je je persoonspagina laat verbergen.
+
+## Gegevensbronnen
+
+- [Time-Team](https://time-team.nl/): de uitslagensite van veel Nederlandse roeiwedstrijden en -competities; bron van Compobeter.
+- [KNRB roeievenementen](https://roeievenementen.knrb.nl/): de klasserende uitslagen die de KNRB via Foys publiceert; bron van KNRBeter.
+
+## Contact en verwijderen
+
+- Vragen, fouten en verzoeken: parels.app@gmail.com.
+- Wil iemand niet op Roeiblik te vinden zijn, dan mailt hij of zij de link naar de eigen persoonspagina naar parels.app@gmail.com. Binnen een maand verdwijnen die persoonspagina en het zoekresultaat van Roeiblik. Bij de bron (Time-Team of de KNRB) blijven de uitslagen openbaar. Zie de [privacypagina](https://roeiblik.com/privacy).
