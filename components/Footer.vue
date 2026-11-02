@@ -1,13 +1,11 @@
 <template lang="pug">
-.footer-wrapper 
+.footer-wrapper
   .element-wrapper
-    .element-body 
+    .element-body
       .footer-content
         NuxtLink.title Roeiblik
-        .source 
-          span Bron: Time-Team Regatta Systems 
-          a(href="https://time-team.nl/") https://time-team.nl/
-          span .
+        .source
+          | Bron: Time-Team Regatta Systems #[a(href="https://time-team.nl/") https://time-team.nl/] en de KNRB. #[NuxtLink(to="/privacy") Privacy]
 </template>
 
 <style lang="scss" scoped>

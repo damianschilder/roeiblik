@@ -24,6 +24,9 @@
               span Er staan meerdere verenigingen bij mijn naam, ook als ik daar niet lid van ben.
               span Time-Team registreert niet van welke vereniging iemand lid is, maar alleen voor welke vereniging er wordt gestart.
               span Om te verduidelijken of de juiste persoon is gevonden, worden deze verenigingen onder de naam weergegeven.
+            .question
+              span Ik wil niet op Roeiblik te vinden zijn.
+              span Lees op de #[NuxtLink(to="/privacy") privacypagina] hoe je je persoonspagina laat verbergen.
 </template>
 
 <script setup lang="ts">

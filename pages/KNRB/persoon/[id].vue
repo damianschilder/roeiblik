@@ -22,6 +22,8 @@ const pageTitle = computed(() => {
 // Dynamically set the head title
 useHead({
   title: pageTitle,
+  // Other people's names and results: findable on Roeiblik, not via search engines.
+  meta: [{ name: 'robots', content: 'noindex, nofollow' }],
 });
 
 async function getRower(id: PersonResult['personId']) {
