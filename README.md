@@ -22,9 +22,10 @@ HoeSnelWasIk or RaceClocker, are not included.
 
 ## Why it exists
 
-Time-Team shows results per race, not per person. To see one rower's races together, Damian
-looked in the browser's developer tools at the endpoints Time-Team's own site uses, and built
-Roeiblik on top of them. The KNRB's results were added later.
+When Roeiblik was started in November 2024, Time-Team showed results per regatta (by field, race
+or club), but had no way to bring one person's results from different regattas together. To get
+that view, Damian looked in the browser's developer tools at the endpoints Time-Team's own site
+uses, and built Roeiblik on top of them. The KNRB's results were added later.
 
 ## How it was built
 
