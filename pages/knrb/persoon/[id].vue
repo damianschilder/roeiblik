@@ -1,7 +1,8 @@
 <template lang="pug">
 .page-wrapper
   KNRBPersoonHeader(v-if="person" :person="person")
-  .loader-container(v-if="status === 'loading'" role="status")
+  //- While loading and the loader is not shown yet (the first 200 ms), the area stays empty.
+  .loader-container(v-if="status === 'loading' && showLoader" role="status")
     UiLoader(aria-hidden="true")
     span Dit kan een paar seconden duren.
   .message(v-else-if="status === 'notfound'" role="alert")
@@ -28,6 +29,8 @@ const id = computed(() => String(route.params.id ?? ''));
 const person = computed(() => (KNRBStore.person?.personId === id.value ? KNRBStore.person : null));
 // Until this page's own request has started, show the loader rather than an older outcome.
 const status = computed(() => (KNRBStore.personId === id.value ? KNRBStore.personStatus : 'loading'));
+// No loader flash for a quick answer (a person seen before, or one from the edge cache).
+const showLoader = useDelayedFlag(() => status.value === 'loading');
 
 useHead({
   title: computed(() => person.value?.fullName || 'KNRB-uitslagen'),

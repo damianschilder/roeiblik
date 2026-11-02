@@ -15,10 +15,10 @@
             maxlength="100"
           )
           button.search-button(type="submit" aria-label="Zoeken" :aria-busy="loading ? 'true' : 'false'")
-            UiLoader.loading(v-if="loading")
+            UiLoader.loading(v-if="slow")
             nuxt-icon(v-else name="search" aria-hidden="true")
         .status(role="status" aria-live="polite" :class="{ 'visually-hidden': !statusVisible }") {{ statusText }}
-        .results(:class="{ 'loading-results': loading }" v-if="paginatedResults.length > 0")
+        .results(:class="{ 'loading-results': slow }" v-if="paginatedResults.length > 0")
           .headers(aria-hidden="true")
             .name
               span Naam
@@ -45,6 +45,9 @@
   const resultsPerPage = 10;
 
   const loading = computed(() => rowerStore.searchStatus === 'loading');
+  // The spinner and the dimmed list only for a search that takes longer than 200 ms; aria-busy
+  // and the status line follow `loading` at once.
+  const slow = useDelayedFlag(() => loading.value);
   const total = computed(() => rowerStore.results.length);
   const totalPages = computed(() => Math.max(1, Math.ceil(total.value / resultsPerPage)));
   // The page lives in the store, so Back from a person returns to the same page of results.

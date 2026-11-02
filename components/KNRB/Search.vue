@@ -18,13 +18,13 @@
             @keydown.esc="clear"
           )
           //- The button stays while searching (keyboard focus stays on it); only its icon changes.
-          button.search-button(type="submit" aria-label="Zoeken" :aria-busy="loading ? 'true' : 'false'" :class="{ busy: loading }")
-            UiLoader.loading(v-if="loading" aria-hidden="true")
+          button.search-button(type="submit" aria-label="Zoeken" :aria-busy="loading ? 'true' : 'false'" :class="{ busy: slow }")
+            UiLoader.loading(v-if="slow" aria-hidden="true")
             nuxt-icon(v-else name="search" aria-hidden="true")
         //- One status line, as on the Time-Team search: screen readers hear every state, sighted
         //- visitors see only the messages they need ("Zoeken…" and the count stay hidden).
         .status#knrb-search-status(role="status" aria-live="polite" :class="{ 'sr-only': !statusVisible }") {{ announcement }}
-        .results(:class="{ 'loading-results': loading }" v-if="paginatedResults.length > 0" :aria-busy="loading ? 'true' : 'false'")
+        .results(:class="{ 'loading-results': slow }" v-if="paginatedResults.length > 0" :aria-busy="loading ? 'true' : 'false'")
           .headers(aria-hidden="true")
             .name
               span Naam
@@ -59,6 +59,9 @@
   const resultsPerPage = 10;
 
   const loading = computed(() => KNRBStore.searchStatus === 'loading');
+  // The spinner and the dimmed list only for a search that takes longer than 200 ms; aria-busy
+  // and the status line follow `loading` at once.
+  const slow = useDelayedFlag(() => loading.value);
   const empty = computed(() => KNRBStore.searchStatus === 'done' && KNRBStore.results.length === 0);
 
   // Letters with accents ("Daniël"), apostrophes ("van 't Hof"), dots and hyphens are part of names:

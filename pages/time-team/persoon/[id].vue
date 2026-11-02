@@ -1,7 +1,8 @@
 <template lang="pug">
 .page-wrapper
   Time-TeamHeader(v-if="current && rowerStore.rower?.person.displayname")
-  .loader-container(v-if="status === 'loading'" role="status" aria-live="polite")
+  //- While loading and the loader is not shown yet (the first 200 ms), the area stays empty.
+  .loader-container(v-if="status === 'loading' && showLoader" role="status" aria-live="polite")
     UiLoader
     span Dit kan een paar seconden duren.
   .message(v-else-if="status === 'error'" role="alert")
@@ -27,6 +28,8 @@ const current = computed(() => rowerStore.rower?.person.id === id.value);
 const status = computed(() => (rowerStore.personId === id.value && rowerStore.personStatus !== 'idle'
   ? rowerStore.personStatus
   : 'loading'));
+// No loader flash for a quick answer (a person seen before, or one from the edge cache).
+const showLoader = useDelayedFlag(() => status.value === 'loading');
 
 useHead({
   title: computed(() => (current.value && rowerStore.rower?.person.displayname) || 'Time-Team'),
