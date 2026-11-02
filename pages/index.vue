@@ -26,16 +26,6 @@
           nuxt-icon(name="info" aria-hidden="true")
           .info-text#uitleg-knrbeter
             | Doorzoek de #[span.bold KNRB] op klasserende wedstrijdresultaten van personen.
-      .button.statistieken2
-        .tags
-          span.tag.wedstro Wedstrijdroeien
-        NuxtLink.statistieken(to="/KNRB/statistieken" aria-describedby="uitleg-statistieken")
-          span Statistieken
-          nuxt-icon(name="leaderboard" aria-hidden="true")
-        .info
-          nuxt-icon(name="info" aria-hidden="true")
-          .info-text#uitleg-statistieken
-            | Landelijke statistieken van de #[span.bold KNRB] per veld.
 //- No title of its own: the tab reads just "Roeiblik" (title and description from nuxt.config).
 </template>
 
@@ -90,10 +80,6 @@
 
 .bold {
   font-weight: bold;
-}
-
-.statistieken2 {
-  max-width: 255.627px
 }
 
 .tags {

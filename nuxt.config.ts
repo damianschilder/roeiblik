@@ -80,12 +80,11 @@ export default defineNuxtConfig({
     // stick, and a removal request has to take effect at once. A route may still choose a short
     // private cache for itself with setResponseHeader.
     '/api/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' } },
-    // The statistics are static files that change only with a deploy: an hour in the browser.
-    // (/_nuxt/* already gets `public, max-age=31536000, immutable` from Nuxt.)
-    '/event_results/**': { headers: { 'Cache-Control': 'public, max-age=3600' } },
-    '/event_times/**': { headers: { 'Cache-Control': 'public, max-age=3600' } },
-    '/event_statistics/**': { headers: { 'Cache-Control': 'public, max-age=3600' } },
-    '/event_statistics_by_year/**': { headers: { 'Cache-Control': 'public, max-age=3600' } },
+    // (/_nuxt/* gets `public, max-age=31536000, immutable` from Nuxt itself.)
+    // The statistics page is gone (November 2026). Its address is in Google's index: send it on to
+    // KNRBeter for good instead of letting it become a 404.
+    '/KNRB/statistieken': { redirect: { to: '/KNRB', statusCode: 301 } },
+    '/KNRB/statistieken/**': { redirect: { to: '/KNRB', statusCode: 301 } },
   },
 
   imports: {

@@ -10,9 +10,6 @@ header.navbar-wrapper
         NuxtLink.big(to="/KNRB")
           span KNRBeter
           nuxt-icon(name="person search" aria-hidden="true")
-        NuxtLink.big(to="/KNRB/statistieken")
-          span Statistieken
-          nuxt-icon(name="leaderboard" aria-hidden="true")
       .right
         NuxtLink.small(to="/faq") FAQ
 </template>

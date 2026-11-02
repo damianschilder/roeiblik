@@ -12,10 +12,7 @@
   },
   "dependencies": {
     "@pinia/nuxt": "^1.0.3",
-    "chart.js": "^4.6.1",
-    "csv-parse": "^7.0.3",
     "nuxt-icons": "^4.0.0",
-    "p-limit": "^7.3.3",
     "pinia": "^4.1.0",
     "vue": "^3.5.44"
   },

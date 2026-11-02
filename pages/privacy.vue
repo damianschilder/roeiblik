@@ -12,7 +12,7 @@
             span Roeiblik is een hobbyproject van Damian Schilder. Vragen en verzoeken kun je mailen naar #[a(href="mailto:parels.app@gmail.com") parels.app@gmail.com].
           .question
             h2 Welke gegevens toont Roeiblik?
-            span Namen, verenigingen, geboortejaren (alleen bij de KNRB), uitslagen, tijden en ploeggenoten van roeiers, stuurlieden en coaches, zoals Time-Team en de KNRB die zelf openbaar publiceren. Roeiblik haalt ze op het moment dat je zoekt op bij Time-Team (time-team.nl) en bij de KNRB (via Foys) en bewaart ze niet in een database: een opgevraagd resultaat blijft hooguit tien minuten in de tijdelijke opslag (cache) van de server, bij Cloudflare. De statistiekenpagina toont uitslagen per veld en per vereniging.
+            span Namen, verenigingen, geboortejaren (alleen bij de KNRB), uitslagen, tijden en ploeggenoten van roeiers, stuurlieden en coaches, zoals Time-Team en de KNRB die zelf openbaar publiceren. Roeiblik haalt ze op het moment dat je zoekt op bij Time-Team (time-team.nl) en bij de KNRB (via Foys) en bewaart ze niet in een database: een opgevraagd resultaat blijft hooguit tien minuten in de tijdelijke opslag (cache) van de server, bij Cloudflare.
           .question
             h2 Waarom mag dat?
             span Op grond van gerechtvaardigd belang (artikel 6 lid 1 onder f AVG): roeiers, stuurlieden en coaches hun eigen en elkaars openbare wedstrijdresultaten overzichtelijk laten terugvinden. Roeiblik voegt geen gegevens toe aan wat de bron al openbaar maakt. Persoonspagina's worden niet door zoekmachines geïndexeerd, zodat je ze alleen vindt door op Roeiblik zelf te zoeken.
