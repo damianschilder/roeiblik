@@ -4,32 +4,29 @@
     .element-body
       .header
         .left
-          span {{person.yearOfBirth}}
+          span.meta(v-if="person.yearOfBirth || person.club")
+            span(v-if="person.yearOfBirth") {{ person.yearOfBirth }}
+            span.club(v-if="person.club") {{ person.club }}
           .name
-            h2 {{person.fullName}}
-          .points
+            h1 {{ person.fullName }}
+          dl.points
             .point
-              span.header Scull
-              span.digit {{person.totalScullingPoints}}
+              dt.header Scull
+              dd.digit {{ person.totalScullingPoints }}
             .point
-              span.header Boord
-              span.digit {{person.totalSweepingPoints}}
-        //- KNRBPersoonWinsTable( :person="person")
-
+              dt.header Boord
+              dd.digit {{ person.totalSweepingPoints }}
 </template>
 
 <script setup lang="ts">
 import type { Person } from "~/types/KNRB";
 
-const props = defineProps<{
+defineProps<{
   person: Person;
 }>();
 </script>
 
 <style lang="scss" scoped>
-.component-wrapper {
-}
-
 .element-wrapper {
   padding: 3.5rem 0 2rem;
   border-bottom: 1px solid rgba(0,0,0,.1);
@@ -51,6 +48,13 @@ const props = defineProps<{
   @include mobile {
     align-items: center;
   }
+  .meta {
+    display: flex;
+    column-gap: 0.5rem;
+    .club {
+      color: $black50;
+    }
+  }
   .name {
     display: flex;
     justify-content: space-between;
@@ -58,9 +62,19 @@ const props = defineProps<{
     @include mobile {
       text-align: center;
     }
+    // The page's one h1, at the size the name always had (the h2 sizes from app.scss).
+    h1 {
+      font-size: 2.5rem;
+      @include tablet-small {
+        font-size: 2rem;
+      }
+      @include mobile {
+        font-size: 2.5rem;
+      }
+    }
   }
   .points {
-    margin-top: 0.25rem;
+    margin: 0.25rem 0 0;
     display: flex;
     column-gap: 1rem;
     @include mobile {
@@ -76,6 +90,7 @@ const props = defineProps<{
         color: $black50;
       }
       .digit {
+        margin: 0;
         font-size: 1.25rem;
       }
     }

@@ -3,113 +3,123 @@
     .element-wrapper
       .element-body
         h1 Zoek naar roeiers, stuurtjes, coaches binnen de KNRB.
-        .search(:class="{ 'searchable': searchQuery && searchQuery.length > 0 }")
-          input(placeholder="Naam..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
-          UiLoader.loading(v-if="loading")
-          nuxt-icon(v-else name="search" @click="searchRowers()")
-        //- .error(v-if="rowerStore.error") Te veel verzoeken achter elkaar of time-team is niet beschikbaar.
-        //- .empty(v-if="empty") Helaas, geen resultaten.
-        //- .results(:class="{ 'loading-results': loading }" v-if="rowerStore && !rowerStore.error && paginatedResults.length > 0")
-        .results(:class="{ 'loading-results': loading }" v-if="paginatedResults.length > 0")
-          .headers
+        form.search(role="search" :class="{ 'searchable': searchQuery.length > 0 }" @submit.prevent="submit")
+          label.sr-only(for="knrb-search") Naam van een roeier, stuur of coach
+          input#knrb-search(
+            v-model="searchQuery"
+            type="text"
+            placeholder="Naam..."
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="search"
+            maxlength="100"
+            aria-describedby="knrb-search-status"
+            @input="sanitizeInput"
+            @keydown.esc="clear"
+          )
+          //- The button stays while searching (keyboard focus stays on it); only its icon changes.
+          button.submit(type="submit" aria-label="Zoeken" :class="{ busy: loading }")
+            UiLoader.loading(v-if="loading" aria-hidden="true")
+            nuxt-icon(v-else name="search" aria-hidden="true")
+        p#knrb-search-status.sr-only(role="status" aria-live="polite") {{ announcement }}
+        p.message(v-if="tooShort") Typ minstens 2 tekens.
+        p.message(v-else-if="KNRBStore.searchStatus === 'error'") Te veel verzoeken achter elkaar of de KNRB is niet beschikbaar.
+        p.message(v-else-if="empty") Helaas, geen resultaten.
+        .results(:class="{ 'loading-results': loading }" v-if="paginatedResults.length > 0" :aria-busy="loading")
+          .headers(aria-hidden="true")
             .name
               span Naam
             span.id ID
-          .result(v-for="person, index in paginatedResults" :key="person.personId" :class="{ 'current-rower': person.personId === KNRBStore.person.personId }" @click="selectRower(person.personId, ((currentPage -1 ) * resultsPerPage) + index)")
-            span {{ person.fullName }}
-            span.id {{ person.personId }}
-          .pagination(v-if="KNRBStore.results.length > resultsPerPage")
-            button(@click="prevPage" :disabled="currentPage === 1") Previous
-            span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, KNRBStore.results.length) }} of {{ KNRBStore.results.length }} {{ KNRBStore.results.length === 1 ? 'result' : 'results' }}
-            button(@click="nextPage" :disabled="currentPage === totalPages") Next
-  </template> 
-  
+          ul.list
+            li(v-for="person in paginatedResults" :key="person.personId")
+              NuxtLink.result(
+                :to="`/KNRB/persoon/${person.personId}`"
+                :class="{ 'current-rower': person.personId === KNRBStore.personId }"
+              )
+                span.name
+                  | {{ person.fullName }}
+                  span.club(v-if="person.clubName") {{ person.clubName }}
+                span.id {{ person.personId }}
+          nav.pagination(v-if="KNRBStore.results.length > resultsPerPage" aria-label="Resultaatpagina's")
+            button(type="button" @click="prevPage" :disabled="currentPage === 1") Vorige
+            span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, KNRBStore.results.length) }} van {{ KNRBStore.results.length }} {{ KNRBStore.results.length === 1 ? 'resultaat' : 'resultaten' }}
+            button(type="button" @click="nextPage" :disabled="currentPage === totalPages") Volgende
+  </template>
+
   <script setup lang="ts">
+  import { computed, ref } from 'vue';
+  import type { PersonResult } from '~/types/KNRB';
+  import { useKNRBStore } from '~/stores/knrb';
+
   const KNRBStore = useKNRBStore();
-  // const runtimeConfig = useRuntimeConfig()
-  const router = useRouter();
-  
-  const searchQuery = ref<string>('');
-  const loading = ref<Boolean>(false);
-  const error = ref<Boolean>(false);
-  const empty = ref<Boolean>(false);
-  const hover = ref<Boolean>(false);
-  
-  // // Pagination state
-  const currentPage = ref<number>(1);
+
+  // The last search stays in the store: back from a person page, the same list is still here.
+  const searchQuery = ref<string>(KNRBStore.query);
+  const tooShort = ref<boolean>(false);
   const resultsPerPage = 10;
-  
+
+  const loading = computed(() => KNRBStore.searchStatus === 'loading');
+  const empty = computed(() => KNRBStore.searchStatus === 'done' && KNRBStore.results.length === 0);
+
+  // Letters with accents ("Daniël"), apostrophes ("van 't Hof"), dots and hyphens are part of names:
+  // foys finds "Daniël Kruk" but not "Daniel Kruk" or "Danil Kruk".
   function sanitizeInput() {
-    searchQuery.value = searchQuery.value.replace(/[^a-zA-Z0-9 \-]/g, "");
+    const clean = searchQuery.value.replace(/[^\p{L}\p{M}\p{N} '’.\-]/gu, '');
+    if (clean !== searchQuery.value) searchQuery.value = clean;
+    tooShort.value = false;
   }
-  
-  async function searchRowers() {
-    if (searchQuery.value) {
-      loading.value = true;
-      try {
-        await KNRBStore.search(searchQuery.value);
-      } catch (e) {
-        error.value = true;
-      } finally {
-        KNRBStore.results = KNRBStore.results.sort((a, b) => {
-          if (a.fullName.toLowerCase() < b.fullName.toLowerCase()) return -1;
-          if (a.fullName.toLowerCase() > b.fullName.toLowerCase()) return 1;
-          return a.personId.localeCompare(b.personId);
-        });
-        if (KNRBStore.results.length === 0) {
-          empty.value = true;
-        } else {
-          empty.value = false;
-        }
-        currentPage.value = 1;
-      }
+
+  function submit() {
+    const q = searchQuery.value.trim();
+    if (q.length < 2) {
+      tooShort.value = q.length > 0;
+      return;
     }
-    loading.value = false;
+    KNRBStore.search(q);
   }
-  
-  function selectRower(personId: string, index: number) {
-    if (!(personId === KNRBStore.person?.personId)) KNRBStore.getRower(personId);
-    router.push({ name: 'KNRB-persoon-id', params: { id: KNRBStore.results[index].personId } });
+
+  function clear() {
+    searchQuery.value = '';
+    tooShort.value = false;
   }
-  
-  // // Computed properties for pagination
+
+  const announcement = computed(() => {
+    if (tooShort.value) return 'Typ minstens 2 tekens.';
+    switch (KNRBStore.searchStatus) {
+      case 'loading': return 'Zoeken…';
+      case 'error': return 'Te veel verzoeken achter elkaar of de KNRB is niet beschikbaar.';
+      case 'done': {
+        const n = KNRBStore.results.length;
+        return n === 0 ? 'Helaas, geen resultaten.' : `${n} ${n === 1 ? 'resultaat' : 'resultaten'} gevonden.`;
+      }
+      default: return '';
+    }
+  });
+
+  // Pagination: the page lives in the store as well.
+  const currentPage = computed({
+    get: () => KNRBStore.currentPage || 1,
+    set: (page: number) => { KNRBStore.currentPage = page; },
+  });
   const totalPages = computed(() => Math.ceil(KNRBStore.results.length / resultsPerPage));
 
   const paginatedResults = computed((): PersonResult[] => {
     const start = (currentPage.value - 1) * resultsPerPage;
-    const end = start + resultsPerPage;
-    return KNRBStore.results.slice(start, end);
+    return KNRBStore.results.slice(start, start + resultsPerPage);
   });
-  
+
   function nextPage(): void {
-    if (currentPage.value < totalPages.value) {
-      currentPage.value++;
-    }
+    if (currentPage.value < totalPages.value) currentPage.value++;
   }
-  
+
   function prevPage(): void {
-    if (currentPage.value > 1) {
-      currentPage.value--;
-    }
+    if (currentPage.value > 1) currentPage.value--;
   }
-  
-  onMounted(() => {
-    currentPage.value = KNRBStore.currentPage || 1;
-  });
-  
-  onBeforeUnmount(() => {
-    KNRBStore.currentPage = currentPage.value;
-  });
   </script>
-  
+
   <style lang="scss" scoped>
-  .component-wrapper {
-    /* align-self: center; */
-  }
-  
   .element-body {
     display: flex;
-    /* align-self: center; */
     flex-direction: column;
     align-items: center;
     h1 {
@@ -124,7 +134,7 @@
       display: flex;
       justify-content: center;
       margin-bottom: 2rem;
-  
+
       > input {
         border-bottom: 1px solid $red;
         width: 30rem;
@@ -139,24 +149,44 @@
           margin-bottom: initial;
         }
       }
-      >:deep(.nuxt-icon svg) {
+      > .submit {
         position: absolute;
-        height: fit-content;
-        margin-bottom: 0;
-        width: 1.8rem;
         right: 0;
         top: 0;
-        color: $black50;
-      }
-      > .loading {
-        position: absolute;
-        top: 3px;
-        right: 6px;
+        padding: 0;
+        border: none;
+        background: none;
+        line-height: 0;
+        cursor: pointer;
+        border-radius: 4px;
+        :deep(.nuxt-icon) {
+          display: block;
+        }
+        :deep(svg) {
+          height: fit-content;
+          margin-bottom: 0;
+          width: 1.8rem;
+          color: $black50;
+        }
+        &:focus-visible {
+          outline: 2px solid $red;
+          outline-offset: 2px;
+        }
+        // Where the loader always sat: 3px from the top, 6px from the right.
+        &.busy {
+          padding: 3px 6px 0 0;
+          cursor: progress;
+        }
       }
     }
   }
-  
-  
+
+  .message {
+    text-align: center;
+    color: $black70;
+    margin-bottom: 1rem;
+  }
+
   .results {
     display: flex;
     flex-direction: column;
@@ -166,14 +196,9 @@
     width: 62%;
     @include tablet-small {
       width: 100%;
-      .id {
-      }
     }
     @include mobile {
       width: 100%;
-      .id {
-        // display: none;
-      }
     }
     &.loading-results {
       opacity: 0.5;
@@ -190,28 +215,19 @@
       .name {
         display: flex;
         column-gap: 0.1rem;
-        & .help {
-          text-align: left;
-          display: flex;
-          width: 20rem;
-          row-gap: 0.25rem;
-          font-weight: normal;
-          color: black;
-          flex-direction: column;
-          @include mobile {
-            width: 13rem;
-          }
-          >:first-child {
-            font-weight: bold;
-            color: $neutral50;
-          }
-        }
       }
       @include tablet-small {
         .id {
           display: none;
         }
       }
+    }
+    .list {
+      display: flex;
+      flex-direction: column;
+      list-style: none;
+      margin: 0;
+      padding: 0;
     }
     .result {
       font-size: 1.1rem;
@@ -222,10 +238,16 @@
       column-gap: 6rem;
       cursor: pointer;
       white-space: nowrap;
+      color: inherit;
+      text-decoration: none;
+      .club {
+        margin-left: 0.5rem;
+        font-size: 0.95rem;
+        opacity: 0.5;
+      }
       .id {
         font-size: 0.95rem;
         opacity: 0.5;
-
       }
       @include tablet-small {
         flex-direction: column;
@@ -235,9 +257,14 @@
           color: $black50;
         }
       }
-      &:hover {
+      &:hover,
+      &:focus-visible {
         background-color: $red25;
         border-radius: 0.25rem;
+      }
+      &:focus-visible {
+        outline: 2px solid $red;
+        outline-offset: 1px;
       }
     }
     .pagination {
@@ -259,6 +286,10 @@
           cursor: initial;
           color: $black20;
         }
+        &:focus-visible {
+          outline: 2px solid $red;
+          outline-offset: 2px;
+        }
       }
       span {
         color: $black50;
@@ -266,36 +297,26 @@
       }
     }
   }
-  
-  .help {
-    text-align: left;
-    display: flex;
-    width: 20rem;
-    row-gap: 0.25rem;
-    font-weight: normal;
-    color: black;
-    flex-direction: column;
-    .link {
-      text-align: left;
-    }
-    @include mobile {
-      width: 13rem;
-    }
-    >:first-child {
-      font-weight: bold;
-      color: $neutral50;
+
+  .current-rower {
+    background-color: $red5!important;
+  }
+
+  .searchable {
+    .submit :deep(svg) {
+      color: $red!important;
     }
   }
 
-.current-rower {
-  background-color: $red5!important;
-}
-
-.searchable {
-  &:deep(.nuxt-icon svg) {
-    cursor: pointer;
-    color: $red!important;
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
-}
-</style>
-  
+  </style>

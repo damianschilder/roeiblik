@@ -1,124 +1,158 @@
 <template lang="pug">
-  .component-wrapper
-    .content
-      .checkbox(@click="toggleView")
-        nuxt-icon(:name="showAllPositions ? 'less' : 'more'")
-        span {{ showAllPositions ? `Toon alleen ${KNRBStore.person.fullName}` : `Alle posities` }}
-    .table-wrapper
-      table
-        thead
-          tr
-            th
-            th ⚑
-            th Vereniging
-            th.left #
-            th.mobile Slag
-            th.right(v-for="(distance, dIndex) in positions[0].raceTeamTimes" :key="dIndex") {{ distance.distance }}m
-        tbody
-          //- Wrap both rows in a template so each iteration gets its own index and club data
-          template(v-for="(club, index) in filteredPositions" :key="index")
-            tr.row(ref="target" class="observed-element" @click="toggleClub(index)")
-              td.expand
-                nuxt-icon(:name="expandedLineups.includes(index) ? 'less' : 'more'")
-              td.left {{ club.endPosition }}
-              td.club.left {{ club.teamVersion.matchTeam.name }}
-              td.left {{ club.teamVersion.teamMembers.find(member => member.person.personId === KNRBStore.person.personId)?.boatPosition || '' }}
-              td.mobile {{ club.teamVersion.teamMembers.find(member => member.isStroke).person.fullName }}
-              td.right(v-for="(time, tIndex) in club.raceTeamTimes" :key="tIndex")
-                .times
-                  span {{ formatTime(time.time) }}
-                  //- Uncomment below if you need to show split times:
-                  //- span.times-splits(v-if="time.splitTime !== 0") {{ formatTime(time.splitTime) }}, {{ time.position }}
-            tr(v-if="expandedLineups.includes(index)")
-              td
-              td(colspan="8")
-                .lineup
-                  .rowers
-                    span.title Opstelling
-                    .rower( v-for="member in club.teamVersion.  teamMembers.filter(member => !member.isCoach && !member.isCox).sort((a, b) => a.boatPosition - b.boatPosition)"
-                      :key="member.person.personId"
-                      :class="{ 'active-rower': member.person.personId === KNRBStore.person.personId }")
-                      NuxtLink.link(
-                      :to="`/KNRB/persoon/${member.personId}`"
-                    )
-                        span {{ member.boatPosition }} {{ member.fullName }}
-                        nuxt-icon(
-                          name="link"
-                        )
-                    span(v-if="club.teamVersion.teamMembers.find(member => member.isCox)")
-                      | (c) {{ club.teamVersion.teamMembers.find(member => member.isCox)?.fullName || '' }}
-                  .coaches
-                    span.title Coaches
-                    span(v-for="member in club.teamVersion.teamMembers.filter(member => member.isCoach)" :key="member.person.personId" :class="{ 'active-rower': member.person.personId === KNRBStore.person.personId }")
-                      | {{ member.fullName }}
+.component-wrapper
+  .content
+    button.checkbox(type="button" :aria-pressed="showAllPositions" @click="showAllPositions = !showAllPositions")
+      nuxt-icon(:name="showAllPositions ? 'less' : 'more'" aria-hidden="true")
+      span {{ showAllPositions ? `Toon alleen ${personName}` : `Alle posities` }}
+  .table-wrapper
+    table
+      caption.sr-only Uitslag {{ round.name || race.raceName }}
+      thead
+        tr
+          th
+            span.sr-only Opstelling
+          th(scope="col")
+            span(aria-hidden="true") ⚑
+            span.sr-only Positie
+          th(scope="col") Vereniging
+          th.left(scope="col")
+            span(aria-hidden="true") #
+            span.sr-only Plaats in de boot
+          th.mobile(scope="col") Slag
+          th.right(v-for="distance in distances" :key="distance" scope="col") {{ distance }}m
+      tbody
+        template(v-for="team in visibleTeams" :key="teamKey(team)")
+          tr.row(@click="toggleTeam(team)")
+            td.expand
+              button(
+                type="button"
+                :aria-expanded="isOpen(team)"
+                :aria-controls="lineupId(team)"
+                :aria-label="`Opstelling van ${team.name || 'deze ploeg'}`"
+                @click.stop="toggleTeam(team)"
+              )
+                nuxt-icon(:name="isOpen(team) ? 'less' : 'more'" aria-hidden="true")
+            td.left
+              template(v-if="team.position") {{ team.position }}
+              abbr(v-else-if="team.didNotStart" title="Niet gestart") DNS
+              abbr(v-else-if="team.didNotFinish" title="Niet gefinisht") DNF
+              template(v-else) –
+            td.club.left {{ team.name }}
+            td.left {{ seatOf(team) }}
+            td.mobile {{ strokeOf(team) }}
+            td.right(v-for="distance in distances" :key="distance")
+              .times
+                span {{ timeAt(team, distance) }}
+          tr(v-if="isOpen(team)" :id="lineupId(team)")
+            td
+            td(:colspan="4 + distances.length")
+              .lineup
+                .rowers
+                  span.title Opstelling
+                  .rower(
+                    v-for="(member, index) in rowersOf(team)"
+                    :key="member.personId ?? `hidden-${index}`"
+                    :class="{ 'active-rower': member.personId === personId }"
+                  )
+                    NuxtLink.link(v-if="!member.hidden" :to="`/KNRB/persoon/${member.personId}`")
+                      span {{ member.boatPosition }} {{ member.fullName }}
+                      nuxt-icon(name="link" aria-hidden="true")
+                    span.hidden(v-else) {{ member.boatPosition }} Naam afgeschermd
+                  .rower(
+                    v-for="(member, index) in coxesOf(team)"
+                    :key="member.personId ?? `hidden-cox-${index}`"
+                    :class="{ 'active-rower': member.personId === personId }"
+                  )
+                    NuxtLink.link(v-if="!member.hidden" :to="`/KNRB/persoon/${member.personId}`")
+                      span (c) {{ member.fullName }}
+                      nuxt-icon(name="link" aria-hidden="true")
+                    span.hidden(v-else) (c) Naam afgeschermd
+                .coaches(v-if="coachesOf(team).length > 0")
+                  span.title Coaches
+                  .rower(
+                    v-for="(member, index) in coachesOf(team)"
+                    :key="member.personId ?? `hidden-coach-${index}`"
+                    :class="{ 'active-rower': member.personId === personId }"
+                  )
+                    NuxtLink.link(v-if="!member.hidden" :to="`/KNRB/persoon/${member.personId}`")
+                      span {{ member.fullName }}
+                      nuxt-icon(name="link" aria-hidden="true")
+                    span.hidden(v-else) Naam afgeschermd
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
+import type { RaceResult, RaceTeam, Round, TeamMember } from '~/types/KNRB';
+import { useKNRBStore } from '~/stores/knrb';
 import useTimeFormatter from '@/composables/useTimeFormatter';
 
-// Access your store (make sure the store is set up accordingly)
+const props = defineProps<{
+  round: Round;
+  race: RaceResult;
+  personId: string;
+}>();
+
 const KNRBStore = useKNRBStore();
 const { formatTime } = useTimeFormatter();
 
-const props = defineProps<{
-  positions: RaceTeam[]; // Adjust the type to match your data (e.g., array of clubs)
-  preliminary: boolean;
-}>();
+const personName = computed(() => KNRBStore.person?.fullName ?? '');
 
-// State for toggling between all positions and only active rower positions
+// By default only the crew(s) of this person; "Alle posities" shows the whole race.
 const showAllPositions = ref(false);
-// Track which club rows are expanded
-const expandedLineups = ref<number[]>([]);
+const expanded = ref<string[]>([]);
 
-function toggleView() {
-  showAllPositions.value = !showAllPositions.value;
-}
+const hasPerson = (team: RaceTeam) => team.members.some((m) => m.personId === props.personId);
 
-function toggleClub(index: number) {
-  const clubIndex = expandedLineups.value.indexOf(index);
-  if (clubIndex === -1) {
-    expandedLineups.value.push(index);
-  } else {
-    expandedLineups.value.splice(clubIndex, 1);
-  }
-}
-
-function checkActiveRower(club: RaceTeam) {
-  // Returns true if the active user is found in the club's team
-  return club.teamVersion.teamMembers.some(
-    (member) => KNRBStore.person.personId === member.person.personId
-  );
-}
-
-function getLimitedPerson(personId: string) {
-  // Call your store function to load additional person details
-  KNRBStore.getLimitedPerson(personId);
-}
-
-const filteredPositions = computed(() => {
-  const positions = showAllPositions.value
-    ? props.positions
-    : props.positions.filter((club: RaceTeam) => checkActiveRower(club));
-
-  // Request additional person data for each club
-  positions.forEach((club: RaceTeam) => {
-    club.teamVersion.teamMembers.forEach((member) => {
-      if (
-        !member.isCoach &&
-        !member.isCox &&
-        !KNRBStore.calledLimitedPersons.some((p) => p.personId === member.person.personId)
-      ) {
-        KNRBStore.calledLimitedPersons.push({
-          fullName: member.person.fullName,
-          personId: member.person.personId,
-        });
-        getLimitedPerson(member.person.personId);
-      }
-    });
-  });
-  return positions;
+const visibleTeams = computed(() => {
+  const own = props.round.teams.filter(hasPerson);
+  return showAllPositions.value || own.length === 0 ? props.round.teams : own;
 });
+
+// Columns for every distance any crew has a time at, so a crew that stopped early stays aligned.
+const distances = computed(() => {
+  const all = new Set<number>();
+  for (const team of props.round.teams) for (const t of team.times) all.add(t.distance);
+  return [...all].sort((a, b) => a - b);
+});
+
+function teamKey(team: RaceTeam) {
+  return String(team.id ?? `${team.name}|${team.lane}`);
+}
+
+function lineupId(team: RaceTeam) {
+  return `lineup-${props.round.raceId}-${teamKey(team)}`.replace(/[^A-Za-z0-9_-]/g, '-');
+}
+
+const isOpen = (team: RaceTeam) => expanded.value.includes(teamKey(team));
+
+function toggleTeam(team: RaceTeam) {
+  const key = teamKey(team);
+  expanded.value = isOpen(team) ? expanded.value.filter((k) => k !== key) : [...expanded.value, key];
+}
+
+function seatOf(team: RaceTeam) {
+  const member = team.members.find((m) => m.personId === props.personId);
+  if (!member || member.isCoach) return '';
+  if (member.isCox) return 'c';
+  return member.boatPosition ?? '';
+}
+
+function strokeOf(team: RaceTeam) {
+  const stroke = team.members.find((m) => m.isStroke);
+  if (!stroke) return '';
+  return stroke.hidden ? 'Naam afgeschermd' : stroke.fullName;
+}
+
+function timeAt(team: RaceTeam, distance: number) {
+  const time = team.times.find((t) => t.distance === distance)?.time;
+  return time ? formatTime(time) : '';
+}
+
+const rowersOf = (team: RaceTeam): TeamMember[] => team.members
+  .filter((m) => !m.isCoach && !m.isCox)
+  .sort((a, b) => (a.boatPosition ?? 99) - (b.boatPosition ?? 99));
+const coxesOf = (team: RaceTeam): TeamMember[] => team.members.filter((m) => m.isCox);
+const coachesOf = (team: RaceTeam): TeamMember[] => team.members.filter((m) => m.isCoach);
 </script>
 
 <style lang="scss" scoped>
@@ -148,6 +182,10 @@ td {
   white-space: nowrap;
 }
 
+abbr {
+  text-decoration: none;
+}
+
 .content {
   margin-top: 1rem;
   display: flex;
@@ -158,8 +196,13 @@ td {
 .checkbox {
   display: flex;
   flex: 1;
+  align-self: flex-start;
+  font: inherit;
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
   cursor: pointer;
   color: $black50;
   text-decoration: underline;
@@ -172,6 +215,10 @@ td {
     :deep(svg) {
       color: $black;
     }
+  }
+  &:focus-visible {
+    outline: 2px solid $red;
+    outline-offset: 2px;
   }
 }
 
@@ -192,17 +239,23 @@ td {
   display: grid;
   grid-template-columns: 1fr;
   width: min-content;
-  > .times-splits {
-    font-size: 0.75rem;
-    color: $black60;
-  }
 }
 
 .expand {
   text-align: center;
-  text-decoration: underline;
   width: fit-content;
-  cursor: pointer;
+  button {
+    display: flex;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 3px;
+    &:focus-visible {
+      outline: 2px solid $red;
+      outline-offset: 1px;
+    }
+  }
   :deep(svg) {
     width: 1.25rem;
     height: 1.25rem;
@@ -236,7 +289,6 @@ tr {
     color: red;
   }
   }
-
 }
 
 .lineup {
@@ -261,6 +313,11 @@ tr {
   font-weight: bold;
 }
 
+.hidden {
+  color: $black50;
+  font-style: italic;
+}
+
 .link {
   color: black;
   display: flex;
@@ -269,5 +326,21 @@ tr {
   &:hover {
     text-decoration: underline;
   }
+  &:focus-visible {
+    outline: 2px solid $red;
+    outline-offset: 2px;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

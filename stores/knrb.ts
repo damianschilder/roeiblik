@@ -1,251 +1,205 @@
-import type { Person, PersonResult, SearchResponse } from "~/types/KNRB";
+import type { ApiError, Person, PersonResult, RaceResult, RaceTeam, Role, Round, SearchResponse } from "~/types/KNRB";
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, shallowReactive, shallowRef } from "vue";
+
+export type LoadStatus = "idle" | "loading" | "done" | "error" | "notfound";
+
+export interface RoundEntry {
+  status: "loading" | "done" | "error";
+  data: Round | null;
+}
+
+// Client-side caches: going back to a search or a person shows it at once, without a new request.
+// Capped, oldest out first; a person or a round of a finished race does not change in a visit.
+const SEARCH_CACHE_MAX = 30;
+const PERSON_CACHE_MAX = 20;
+const ROUND_CACHE_MAX = 400;
+
+function remember<K, V>(cache: Map<K, V>, key: K, value: V, max: number) {
+  cache.delete(key);
+  cache.set(key, value);
+  if (cache.size > max) cache.delete(cache.keys().next().value as K);
+}
+
+const isError = (value: unknown): value is ApiError =>
+  typeof value === "object" && value !== null && "error" in value;
 
 export const useKNRBStore = defineStore("KNRB", () => {
-  const loading = ref<boolean>(false);
-  const error = ref<boolean>(false);
-  const results = ref<PersonResult[]>([]);
-  const person = ref<Person | {}>({});
+  // --- Search ---------------------------------------------------------------------------------
+  const query = ref<string>("");
+  const results = shallowRef<PersonResult[]>([]);
+  const searchStatus = ref<LoadStatus>("idle");
   const currentPage = ref<number>(1);
-  const calledLimitedPersons = ref<object[]>([]);
+  const searchCache = new Map<string, PersonResult[]>();
+  let searchController: AbortController | null = null;
+  let searchSeq = 0;
 
-  async function search(query: string) {
-    if (!loading.value) {
-      loading.value = true;
-      try {
-        const response: SearchResponse = await $fetch("/api/KNRB/search", {
-          method: "GET",
-          params: { query },
-        });
-        results.value = response.items ? Object.values(response.items) : [];
-        error.value = false;
-      } catch (e) {
-        error.value = true;
-        console.error("Failed to search for persons:", e);
-      } finally {
-        loading.value = false;
-      }
+  async function search(text: string) {
+    const q = text.trim();
+    if (q.length < 2) return;
+    const key = q.toLowerCase();
+    // The same search again while it is still running: nothing to do.
+    if (searchStatus.value === "loading" && query.value.toLowerCase() === key) return;
+
+    query.value = q;
+    currentPage.value = 1;
+    const seq = ++searchSeq;
+    searchController?.abort();
+    searchController = null;
+
+    const cached = searchCache.get(key);
+    if (cached) {
+      results.value = cached;
+      searchStatus.value = "done";
+      return;
     }
-  }
 
-  async function getRower(id: string) {
-    if (!loading.value) {
-      loading.value = true;
-      try {
-        const fetchedPerson = await $fetch("/api/KNRB/person", {
-          method: "GET",
-          params: { id },
-        });
-        person.value = fetchedPerson;
-        // Compute statistics based on tournaments and races
-        computePersonStats();
-        // Automatically get the round for the first race of the first tournament, if available
-        if (
-          fetchedPerson.tournaments &&
-          fetchedPerson.tournaments.length > 0 &&
-          fetchedPerson.tournaments[0].races &&
-          fetchedPerson.tournaments[0].races.length > 0
-        ) {
-          getRound(
-            fetchedPerson.tournaments[0].races[0].tournamentId,
-            fetchedPerson.tournaments[0].races[0].raceId
-          );
-        }
-        error.value = false;
-      } catch (e) {
-        error.value = true;
-        console.error("Failed to fetch rower:", e);
-      } finally {
-        loading.value = false;
-      }
-    }
-  }
-
-  async function getRound(tournamentId: number, raceId: number) {
-    loading.value = true;
+    const controller = new AbortController();
+    searchController = controller;
+    searchStatus.value = "loading";
     try {
-      // Fetch the round data from the API
-      const fetchedRound = await $fetch("/api/KNRB/round", {
-        method: "GET",
-        params: { tournamentId, raceId },
+      const response = await $fetch<SearchResponse | ApiError>("/api/KNRB/search", {
+        params: { query: q },
+        signal: controller.signal,
       });
+      if (seq !== searchSeq) return; // a newer search took over
+      if (isError(response)) throw new Error(response.error);
+      const items = Array.isArray(response.items) ? response.items : [];
+      remember(searchCache, key, items, SEARCH_CACHE_MAX);
+      results.value = items;
+      searchStatus.value = "done";
+    } catch {
+      if (seq !== searchSeq) return; // aborted or superseded: not an error for this search
+      results.value = [];
+      searchStatus.value = "error";
+    } finally {
+      if (searchController === controller) searchController = null;
+    }
+  }
 
-      // Get tournaments from the person object
-      const tournaments = (person.value as Person).tournaments;
+  // --- Person ---------------------------------------------------------------------------------
+  const personId = ref<string | null>(null);
+  const person = shallowRef<Person | null>(null);
+  const personStatus = ref<LoadStatus>("idle");
+  const personCache = new Map<string, Person>();
+  let personSeq = 0;
 
-      if (!tournaments || tournaments.length === 0) {
-        console.warn("No tournaments found.");
+  async function loadPerson(id: string, { force = false } = {}) {
+    if (!force && personId.value === id && (personStatus.value === "done" || personStatus.value === "loading")) return;
+    const seq = ++personSeq;
+    personId.value = id;
+
+    // The same shape the server accepts; anything else cannot be a person.
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) {
+      person.value = null;
+      personStatus.value = "notfound";
+      return;
+    }
+
+    const cached = force ? undefined : personCache.get(id);
+    if (cached) {
+      person.value = cached;
+      personStatus.value = "done";
+      return;
+    }
+
+    // Never show the previous person while the next one loads.
+    person.value = null;
+    personStatus.value = "loading";
+    try {
+      const response = await $fetch<Person | ApiError>("/api/KNRB/person", { params: { id } });
+      if (seq !== personSeq) return; // the visitor moved on to someone else
+      if (isError(response)) {
+        // Unknown ids, bad ids and people who asked not to be shown look the same.
+        personStatus.value = response.error.startsWith("Failed") ? "error" : "notfound";
         return;
       }
-
-      let raceUpdated = false;
-
-      // Traverse tournaments
-      for (const tournament of tournaments) {
-        // Check for a match at the top level (final races)
-        const mainRace = tournament.races.find(
-          (race) => race.raceId === raceId
-        );
-
-        if (mainRace) {
-          Object.assign(mainRace, fetchedRound);
-          raceUpdated = true;
-          break; // Exit early since the race is found and updated
-        }
-
-        // If no match is found in main races, check preliminaries
-        for (const race of tournament.races) {
-          if (race.preliminaries) {
-            const preliminaryRace = race.preliminaries.find(
-              (prelim) => prelim.raceId === raceId
-            );
-
-            if (preliminaryRace) {
-              // Update only the preliminary race with the fetched round data
-              Object.assign(preliminaryRace, fetchedRound);
-              raceUpdated = true;
-              break; // Exit inner loop
-            }
-          }
-        }
-
-        if (raceUpdated) break; // Exit outer loop if race is updated
-      }
-
-      if (!raceUpdated) {
-        console.warn(
-          "No race or preliminary race found with the provided raceId:",
-          raceId
-        );
-      }
-
-      // Recompute statistics after race data update
-      computePersonStats();
-      error.value = false; // Reset error state on success
-    } catch (e) {
-      error.value = true; // Set error state on failure
-      console.error("Failed to get round:", e);
-    } finally {
-      loading.value = false; // Ensure loading state is reset
+      remember(personCache, id, response, PERSON_CACHE_MAX);
+      person.value = response;
+      personStatus.value = "done";
+    } catch {
+      if (seq !== personSeq) return;
+      personStatus.value = "error";
     }
   }
 
-  async function getLimitedPerson(personId: string) {
-    loading.value = true;
+  // --- Race details (one request per race, when it scrolls into view) --------------------------
+  // Keyed by race id, shared by all people: a crew mate's page reuses what is already here.
+  const rounds = shallowReactive<Record<string, RoundEntry>>({});
+  const roundOrder: string[] = [];
+
+  async function loadRound(tournamentId: number, raceId: number, { retry = false } = {}) {
+    const key = String(raceId);
+    const entry = rounds[key];
+    if (entry && (entry.status === "loading" || entry.status === "done")) return;
+    if (entry?.status === "error" && !retry) return;
+
+    rounds[key] = { status: "loading", data: null };
+    if (!roundOrder.includes(key)) roundOrder.push(key);
+    while (roundOrder.length > ROUND_CACHE_MAX) delete rounds[roundOrder.shift() as string];
     try {
-      // Fetch the limited person data
-      const fetchedLimitedPerson = await $fetch("/api/KNRB/limitedPerson", {
-        method: "GET",
-        params: { personId },
-      });
-
-      // Locate the relevant person in the raceTeams
-      const tournaments = (person.value as Person).tournaments;
-      if (tournaments) {
-        outerLoop: for (const tournament of tournaments) {
-          for (const race of tournament.races) {
-            if (race.raceTeams) {
-              for (const raceTeam of race.raceTeams) {
-                for (const teamMember of raceTeam.teamVersion.teamMembers) {
-                  if (teamMember.person.personId === personId) {
-                    teamMember.person = fetchedLimitedPerson;
-                    console.log(
-                      `Updated person ${personId} with limited data.`
-                    );
-                    break outerLoop;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      // Recompute statistics after updating limited person data
-      computePersonStats();
-      error.value = false;
-    } catch (e) {
-      error.value = true;
-      console.error("Failed to get limited person:", e);
-    } finally {
-      loading.value = false;
+      const response = await $fetch<Round | ApiError>("/api/KNRB/round", { params: { tournamentId, raceId } });
+      if (isError(response)) throw new Error(response.error);
+      rounds[key] = { status: "done", data: response };
+    } catch {
+      rounds[key] = { status: "error", data: null };
     }
   }
 
-  // Computes statistics for the person:
-  // - roleCounts: number of races participated in for each role
-  // - totalWins: number of races won for each role (win = raceName is "A-finale" and position is 1)
-  //
-  // This function derives the role from boolean flags:
-  //   if member.isCoach is true, role = "Coach"
-  //   else if member.isCox is true, role = "Cox"
-  //   else role defaults to "Rower"
-  function computePersonStats() {
-    const currentPerson = person.value as Person;
-    if (!currentPerson || !currentPerson.tournaments) return;
-
-    // Reset counts
-    const roleCounts: Record<string, number> = { Rower: 0, Cox: 0, Coach: 0 };
-    const totalWins: Record<string, number> = { Rower: 0, Cox: 0, Coach: 0 };
-
-    // Helper to process a race (can be main or preliminary)
-    const processRace = (race: any) => {
-      if (!race.raceTeams) return;
-      for (const team of race.raceTeams) {
-        const members = team.teamVersion?.teamMembers || [];
-        for (const member of members) {
-          // Compare IDs as strings for safety
-          if (String(member.person?.personId) === String(currentPerson.personId)) {
-            // Derive the role
-            let role = "Rower";
-            if (member.isCoach) {
-              role = "Coach";
-            } else if (member.isCox) {
-              role = "Cox";
-            }
-            // Increment race count
-            roleCounts[role]++;
-
-            // Count win if the race is an "A-finale" and the finishing position is 1.
-            if (race.raceName === "A-finale" && Number(race.position) === 1) {
-              totalWins[role]++;
-            }
-          }
-        }
-      }
-    };
-
-    // Process each race in all tournaments
-    for (const tournament of currentPerson.tournaments) {
-      if (!tournament.races) continue;
-      for (const race of tournament.races) {
-        processRace(race);
-        if (Array.isArray(race.preliminaries)) {
-          for (const preliminaryRace of race.preliminaries) {
-            processRace(preliminaryRace);
-          }
-        }
-      }
-    }
-
-    // Update the person with computed statistics
-    currentPerson.roleCounts = roleCounts;
-    currentPerson.totalWins = totalWins;
+  function roundFor(raceId: number): RoundEntry | undefined {
+    return rounds[String(raceId)];
   }
 
   return {
-    loading,
-    error,
+    query,
     results,
-    person,
-    search,
-    getRower,
-    getRound,
-    getLimitedPerson,
+    searchStatus,
     currentPage,
-    calledLimitedPersons,
+    search,
+    personId,
+    person,
+    personStatus,
+    loadPerson,
+    rounds,
+    loadRound,
+    roundFor,
   };
 });
+
+// --- Helpers for the person page -----------------------------------------------------------------
+
+// The crews in a race that this person was part of (a coach can have more than one).
+export function teamsWith(round: Round | null | undefined, id: string | null | undefined): RaceTeam[] {
+  if (!round || !id) return [];
+  return round.teams.filter((team) => team.members.some((m) => m.personId === id));
+}
+
+// The person's crew for this race entry: the one with the entry's team name when there are several.
+export function teamFor(round: Round | null | undefined, id: string | null | undefined, race: RaceResult): RaceTeam | null {
+  const teams = teamsWith(round, id);
+  return teams.find((t) => t.name === race.teamName) ?? teams[0] ?? null;
+}
+
+export function roleIn(team: RaceTeam | null, id: string | null | undefined): Role | "" {
+  const member = team?.members.find((m) => m.personId === id);
+  if (!member) return "";
+  if (member.isCoach) return "Coach";
+  if (member.isCox) return "Stuur";
+  return "Roeier";
+}
+
+export function formatPosition(position: number | null | undefined): string {
+  if (!position) return "";
+  return position + (position === 1 ? "ste" : "de");
+}
+
+// "5de, A-finale"; "Niet gestart, A-finale" when the race details say so; "A-finale" otherwise.
+export function resultText(race: RaceResult, team: RaceTeam | null): string {
+  let place = formatPosition(race.position);
+  if (!place && team?.didNotStart) place = "Niet gestart";
+  else if (!place && team?.didNotFinish) place = "Niet gefinisht";
+  return place ? `${place}, ${race.raceName}` : race.raceName;
+}
 
 if (import.meta.hot) {
   import.meta.hot.accept(acceptHMRUpdate(useKNRBStore, import.meta.hot));

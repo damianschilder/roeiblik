@@ -1,3 +1,6 @@
+// The shapes the KNRB routes in server/api/KNRB send to the page (not foys' raw shapes).
+
+// GET /api/KNRB/search?query=
 export interface SearchResponse {
   items: PersonResult[];
   totalCount: number;
@@ -5,197 +8,125 @@ export interface SearchResponse {
 
 export interface PersonResult {
   personId: string;
-  fullName: string
-  federationMembershipIdentifier: string;
-  clubName: string;
+  fullName: string;
+  clubName: string | null;
 }
 
+// GET /api/KNRB/person?id=
 export interface Person {
-  clubNames: string | null;
-  rowingPoints: RowingPoint[];
+  personId: string;
+  fullName: string;
+  club: string | null;
+  yearOfBirth: number | null;
   totalScullingPoints: number;
   totalSweepingPoints: number;
-  personId: string;
+  rowingPoints: RowingPoint[];
+  stats: PersonStats;
   tournaments: Tournament[];
-  fullName: string;
-  federationMembershipIdentifier: string | null;
-  organisationName: string | null;
-  yearOfBirth: number;
 }
 
-interface RowingPoint {
-  personId: string;
-  id: number;
-  date: string;
-  type: "Sweeping" | "Sculling";
+export interface PersonStats {
+  tournaments: number;
+  // An event is one crew in one match: the main race plus its earlier rounds.
+  events: number;
+  races: number;
+  wins: number;
+}
+
+export interface RowingPoint {
+  date: string | null;
+  type: "Sweeping" | "Sculling" | null;
   point: number;
   description: string;
 }
 
-interface RaceTeamTime {
-  id: number;
-  time: number;
-  position: number;
-  isFinishTime: boolean;
+export interface Tournament {
+  tournamentId: number | null;
+  tournamentName: string;
+  firstTournamentDate: string | null;
+  lastTournamentDate: string | null;
+  // One entry per event, its highest round first.
+  races: Race[];
+}
+
+export type RoundType = "final" | "semi" | "quarter" | "repechage" | "heat" | "timetrial" | "other";
+
+export interface RaceRound {
+  type: RoundType;
+  rank: number;
+  final?: string;
+}
+
+export interface RaceResult {
+  raceId: number;
+  tournamentId: number;
+  tournamentDayId: number | null;
+  matchId: number;
+  matchNumber: number | null;
+  matchCode: string;
+  matchName: string;
+  raceName: string;
+  teamName: string;
+  // null when the crew did not start or finish, or was not ranked.
+  position: number | null;
+  endTime: number | null;
+  lane: number | null;
+  round: RaceRound;
+}
+
+export interface Race extends RaceResult {
+  won: boolean;
+  preliminaries: RaceResult[];
+}
+
+// GET /api/KNRB/round?tournamentId=&raceId=
+export interface Round {
+  raceId: number;
+  matchId: number | null;
+  name: string;
+  startTime: string | null;
+  distance: number | null;
+  progression: string | null;
+  isFinal: boolean;
+  teams: RaceTeam[];
+}
+
+export interface RaceTeam {
+  id: number | null;
+  name: string;
+  club: string | null;
+  lane: number | null;
+  position: number | null;
+  time: number | null;
+  measuredTime: number | null;
+  corrected: boolean;
+  bonusTime: number | null;
+  didNotStart: boolean;
+  didNotFinish: boolean;
+  times: RaceTeamTime[];
+  members: TeamMember[];
+}
+
+export interface RaceTeamTime {
   distance: number;
-  splitTime: number;
+  time: number | null;
+  position: number | null;
 }
 
 export interface TeamMember {
+  // null and `hidden` for people who asked not to be shown.
+  personId: string | null;
+  fullName: string | null;
+  hidden: boolean;
   boatPosition: number | null;
-  fullName: string;
   isCox: boolean;
   isCoach: boolean;
   isStroke: boolean;
   isBow: boolean;
-  person: Person;
 }
 
-interface TeamVersion {
-  isActive: boolean;
-  teamMembers: TeamMember[];
-  matchTeam: MatchTeam;
-}
+export type Role = "Roeier" | "Stuur" | "Coach";
 
-interface MatchTeam {
-  matchRegistrationId: number;
-  matchRegistration: null;
-  name: string | null;
-  organisationName: string | null;
-  teamVersions: unknown[]; // Replace `unknown` if needed
-  boatName: string | null;
+export interface ApiError {
+  error: string;
 }
-
-export interface RaceTeam {
-  id: number;
-  name: string | null;
-  code: string | null;
-  number: number | null;
-  lane: number;
-  endTime: number;
-  correctedEndTime: number | null;
-  endPosition: number;
-  bonusTime: number;
-  didNotStart: boolean;
-  didNotFinish: boolean;
-  raceTeamTimes: RaceTeamTime[];
-  oarBladeUrl: string | null;
-  teamVersionId: number;
-  teamVersion: TeamVersion;
-  boatName: string | null;
-}
-
-interface Preliminaries {
-  tournamentName: string | null;
-  firstTournamentDate: string | null;
-  lastTournamentDate: string | null;
-  position: number;
-  matchCode: string;
-  matchNumber: number;
-  matchName: string;
-  teamName: string;
-  stroke: Person;
-  raceName: string;
-  bow: string | null;
-  endTime: number;
-  matchId: number;
-  tournamentId: number;
-  raceId: number;
-  lane: number;
-  tournamentDayId: number;
-}
-
-export interface Race {
-  tournamentName: string | null;
-  firstTournamentDate: string | null;
-  lastTournamentDate: string | null;
-  position: number;
-  matchCode: string;
-  matchNumber: number;
-  matchName: string;
-  teamName: string;
-  stroke: Person;
-  raceName: string;
-  bow: string | null;
-  endTime: number;
-  matchId: number;
-  tournamentId: number;
-  raceId: number;
-  lane: number;
-  tournamentDayId: number;
-  preliminaries: Preliminaries[];
-  id: number;
-  name: string;
-  startTime: string;
-  progressionInformation: string | null;
-  environmentInformation: string | null;
-  distance: number;
-  raceTeams: RaceTeam[];
-  match: Match;
-}
-
-interface Match {
-  id: number;
-  matchCategoryName: string | null;
-  boatCategoryName: string | null;
-  tournamentCostGroupName: string | null;
-  tournamentCostGroupPrice: number;
-  regulationName: string | null;
-  tournamentTimeBlockNumber: string;
-  date: string;
-  registrationCount: number;
-  matchRankingIds: number[];
-  races: unknown[]; // Replace `unknown` if needed
-  matchGeneratedCode: string;
-  matchBoatCategoryCode: string;
-  matchBoatCategoryCodePosition: number;
-  matchFullName: string;
-  matchFullNameWithAddition: string;
-  matchNameWithAddition: string;
-  matchCodeWithAddition: string;
-  registrations: unknown[]; // Replace `unknown` if needed
-  boatName: string;
-  tournamentId: number;
-  tournamentDayId: number;
-  matchCategoryId: number;
-  boatCategoryId: number;
-  position: number;
-  tournamentCostGroupId: number;
-  tournamentTimeBlockId: number | null;
-  regulationId: number;
-  number: number;
-  weightType: string;
-  genderType: string;
-  name: string;
-  nameAddition: string | null;
-  alternativeName: string | null;
-  code: string;
-  codeAddition: string | null;
-  alternativeCode: string | null;
-  remark: string | null;
-  isClassifing: boolean;
-  allowIndividualRegistration: boolean;
-  allowRegistrations: boolean;
-  matchDeviation: string | null;
-}
-
-export interface Tournament {
-  tournamentName: string;
-  firstTournamentDate: string;
-  lastTournamentDate: string;
-  races: Race[];
-}
-
-interface Root {
-  clubNames: string | null;
-  rowingPoints: RowingPoint[];
-  totalScullingPoints: number;
-  totalSweepingPoints: number;
-  personId: string;
-  fullName: string;
-  federationMembershipIdentifier: string;
-  organisationName: string;
-  yearOfBirth: number;
-  tournaments: Tournament[];
-}
-
