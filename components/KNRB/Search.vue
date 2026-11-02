@@ -18,19 +18,18 @@
             @keydown.esc="clear"
           )
           //- The button stays while searching (keyboard focus stays on it); only its icon changes.
-          button.submit(type="submit" aria-label="Zoeken" :class="{ busy: loading }")
+          button.search-button(type="submit" aria-label="Zoeken" :aria-busy="loading ? 'true' : 'false'" :class="{ busy: loading }")
             UiLoader.loading(v-if="loading" aria-hidden="true")
             nuxt-icon(v-else name="search" aria-hidden="true")
-        p#knrb-search-status.sr-only(role="status" aria-live="polite") {{ announcement }}
-        p.message(v-if="tooShort") Typ minstens 2 tekens.
-        p.message(v-else-if="KNRBStore.searchStatus === 'error'") Te veel verzoeken achter elkaar of de KNRB is niet beschikbaar.
-        p.message(v-else-if="empty") Helaas, geen resultaten.
-        .results(:class="{ 'loading-results': loading }" v-if="paginatedResults.length > 0" :aria-busy="loading")
+        //- One status line, as on the Time-Team search: screen readers hear every state, sighted
+        //- visitors see only the messages they need ("Zoeken…" and the count stay hidden).
+        .status#knrb-search-status(role="status" aria-live="polite" :class="{ 'sr-only': !statusVisible }") {{ announcement }}
+        .results(:class="{ 'loading-results': loading }" v-if="paginatedResults.length > 0" :aria-busy="loading ? 'true' : 'false'")
           .headers(aria-hidden="true")
             .name
               span Naam
             span.id ID
-          ul.list
+          ul.result-list
             li(v-for="person in paginatedResults" :key="person.personId")
               NuxtLink.result(
                 :to="`/KNRB/persoon/${person.personId}`"
@@ -40,7 +39,7 @@
                   | {{ person.fullName }}
                   span.club(v-if="person.clubName") {{ person.clubName }}
                 span.id {{ person.personId }}
-          nav.pagination(v-if="KNRBStore.results.length > resultsPerPage" aria-label="Resultaatpagina's")
+          nav.pagination(v-if="KNRBStore.results.length > resultsPerPage" aria-label="Pagina's met resultaten")
             button(type="button" @click="prevPage" :disabled="currentPage === 1") Vorige
             span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, KNRBStore.results.length) }} van {{ KNRBStore.results.length }} {{ KNRBStore.results.length === 1 ? 'resultaat' : 'resultaten' }}
             button(type="button" @click="nextPage" :disabled="currentPage === totalPages") Volgende
@@ -90,11 +89,12 @@
       case 'error': return 'Te veel verzoeken achter elkaar of de KNRB is niet beschikbaar.';
       case 'done': {
         const n = KNRBStore.results.length;
-        return n === 0 ? 'Helaas, geen resultaten.' : `${n} ${n === 1 ? 'resultaat' : 'resultaten'} gevonden.`;
+        return n === 0 ? 'Helaas, geen resultaten.' : `${n} ${n === 1 ? 'resultaat' : 'resultaten'}`;
       }
       default: return '';
     }
   });
+  const statusVisible = computed(() => tooShort.value || KNRBStore.searchStatus === 'error' || empty.value);
 
   // Pagination: the page lives in the store as well.
   const currentPage = computed({
@@ -149,7 +149,7 @@
           margin-bottom: initial;
         }
       }
-      > .submit {
+      > .search-button {
         position: absolute;
         right: 0;
         top: 0;
@@ -181,11 +181,6 @@
     }
   }
 
-  .message {
-    text-align: center;
-    color: $black70;
-    margin-bottom: 1rem;
-  }
 
   .results {
     display: flex;
@@ -222,7 +217,7 @@
         }
       }
     }
-    .list {
+    .result-list {
       display: flex;
       flex-direction: column;
       list-style: none;
@@ -264,7 +259,7 @@
       }
       &:focus-visible {
         outline: 2px solid $red;
-        outline-offset: 1px;
+        outline-offset: 0;
       }
     }
     .pagination {
@@ -303,7 +298,7 @@
   }
 
   .searchable {
-    .submit :deep(svg) {
+    .search-button :deep(svg) {
       color: $red!important;
     }
   }
