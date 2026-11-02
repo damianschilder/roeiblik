@@ -19,8 +19,16 @@ races on one page, with times per 500 m, every round of a race, and their crewma
   <img src="docs/screenshots/time-team-person-phone.png" alt="A rower's Time-Team results on a phone" width="21%">
 </p>
 
+## Why it exists
+
+Time-Team shows results per race, not per person. To see one rower's races together, Damian
+looked in the browser's developer tools at the endpoints Time-Team's own site uses, and built
+Roeiblik on top of them. The KNRB's results were added later.
+
 ## How it was built
 
+- **Designed in Figma first**: the last of Damian's projects with a hand-made design; later ones
+  were designed with AI tools.
 - **November 2024 to April 2025**, 121 commits. A hybrid: the frontend (pages, components,
   styling, the logic that groups a person's races) was written by hand. The server routes that
   talk to the Time-Team and KNRB APIs were written with help from browser-based Gemini.
