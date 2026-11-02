@@ -1,7 +1,15 @@
 <template lang="pug">
-.component-wrapper
-  .loader
+//- role="status" makes screen readers say the label (default "Laden…") when the loader appears.
+.component-wrapper(role="status")
+  .loader(aria-hidden="true")
+  span.visually-hidden {{ label }}
 </template>
+
+<script setup lang="ts">
+defineProps({
+  label: { type: String, default: 'Laden…' },
+});
+</script>
 
 <style lang="scss">
 .loader {
@@ -11,6 +19,9 @@
   width: 15px;
   height: 15px;
   animation: spin 1.5s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 4s;
+  }
 }
 
 @keyframes spin {

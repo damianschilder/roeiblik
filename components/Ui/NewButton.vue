@@ -1,7 +1,7 @@
 <template lang="pug">
   .component-wrapper 
     .button(:class="props.style")
-      nuxt-icon(:name="icon")
+      nuxt-icon(:name="icon" aria-hidden="true")
       span {{ label }}
   </template>
         
@@ -64,5 +64,4 @@
     background-color: rgba(255, 121, 0, 0.25);
     color: white;
   }
-  </style
-  
+  </style>
