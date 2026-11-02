@@ -3,8 +3,9 @@
 **[roeiblik.com](https://roeiblik.com)**: Dutch rowing results, searchable by person.
 
 Rowers, coxes and coaches race under many club and crew names. Their results are spread over
-Time-Team (competition and regattas) and the KNRB's own results site. Roeiblik puts a person's
-races on one page, with times per 500 m, every round of a race, and their crewmates.
+Time-Team and the KNRB's own results site. Roeiblik puts a person's races on one page, with times
+per 500 m, every round of a race, and their crewmates. Races timed with other systems, such as
+HoeSnelWasIk or RaceClocker, are not included.
 
 | | |
 |---|---|
