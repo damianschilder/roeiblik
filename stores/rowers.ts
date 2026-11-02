@@ -1,367 +1,240 @@
-import type { PersonResponse, SearchResponse } from "~/types/Timeteam";
+import type {
+  TtEntry,
+  TtEntryResponse,
+  TtPerson,
+  TtPersonResponse,
+  TtProfile,
+  TtRole,
+  TtSearchResponse,
+} from "~/types/Timeteam";
 import { defineStore, acceptHMRUpdate } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
-// Helper function to format a date string in ISO format (YYYY-MM-DD).
-// If the date string is not in a format that can be parsed, return it as-is.
-function formatDateISO(dateStr: string): string {
-  const dateObj = new Date(dateStr);
-  if (isNaN(dateObj.getTime())) {
-    // The date string could not be parsed, so return it unmodified.
-    return dateStr;
-  }
-  return dateObj.toISOString().slice(0, 10);
+// Time-Team search and person pages. The server (server/api/Time-Team/*) does the merging; this
+// store only fetches, guards against stale answers and remembers what it fetched this session,
+// so Back from a person page shows the same list and a person seen before opens at once.
+
+export type SearchStatus = "idle" | "tooShort" | "loading" | "done" | "error";
+export type PersonStatus = "idle" | "loading" | "done" | "error" | "unavailable" | "notFound";
+
+export const TT_ROLES: TtRole[] = ["Rower", "Cox", "Coach"];
+
+const ROLE_LABELS: Record<TtRole, string> = { Rower: "Roeier", Cox: "Stuur", Coach: "Coach" };
+export const roleLabel = (role?: TtRole): string => (role ? ROLE_LABELS[role] : "");
+
+const MONTHS = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+
+// "2021-10-24" -> "24 oktober 2021". Read as a calendar date: no Date object, so no time zone can
+// move it a day.
+export function formatRaceDate(value?: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? "");
+  if (!match) return "";
+  const month = MONTHS[Number(match[2]) - 1];
+  return month ? `${Number(match[3])} ${month} ${match[1]}` : "";
 }
 
+// Dutch ordinals: 1ste, 2de ... 7de, 8ste, 9de ... 19de, 20ste, 21ste ... 100ste, 102de.
+export function ordinalNl(n?: number): string {
+  if (!Number.isInteger(n) || (n as number) < 1) return "";
+  const rest = (n as number) % 100;
+  const ste = rest === 1 || rest === 8 || rest >= 20 || (rest === 0 && (n as number) >= 100);
+  return `${n}${ste ? "ste" : "de"}`;
+}
+
+const CACHE_MS = 10 * 60 * 1000;
+const SEARCH_CACHE_MAX = 30;
+const PERSON_CACHE_MAX = 20;
+
+function remember<T>(cache: Map<string, { at: number; value: T }>, key: string, value: T, max: number) {
+  cache.delete(key);
+  cache.set(key, { at: Date.now(), value });
+  if (cache.size > max) cache.delete(cache.keys().next().value as string);
+}
+
+function recall<T>(cache: Map<string, { at: number; value: T }>, key: string): T | undefined {
+  const hit = cache.get(key);
+  if (!hit) return undefined;
+  if (Date.now() - hit.at > CACHE_MS) {
+    cache.delete(key);
+    return undefined;
+  }
+  return hit.value;
+}
+
+const isAbort = (e: any) => e?.name === "AbortError" || e?.cause?.name === "AbortError";
+
+const byName = (a: TtPerson, b: TtPerson) =>
+  a.displayname.localeCompare(b.displayname, "nl", { sensitivity: "base" }) || a.id.localeCompare(b.id);
+
 export const useRowersStore = defineStore("rowers", () => {
-  const loading = ref<boolean>(false);
-  const error = ref<boolean>(false);
-  const results = ref<Person[]>([]);
-  const rower = ref<Object>({});
+  // --- Search -------------------------------------------------------------------------------
+  const searchInput = ref<string>(""); // what is in the box; kept for Back
+  const query = ref<string>(""); // the last query that was sent
+  const results = ref<TtPerson[]>([]);
+  const searchStatus = ref<SearchStatus>("idle");
   const storeCurrentPage = ref<number>(1);
+  const searchCache = new Map<string, { at: number; value: TtPerson[] }>();
+  let searchController: AbortController | null = null;
+  let searchSeq = 0;
 
-  async function searchRowers(query: string) {
-    if (!loading.value) {
-      loading.value = true;
-      try {
-        const response: SearchResponse = await $fetch('/api/Time-Team/search', {
-          method: "GET",
-          params: { query },
-        });
-        results.value = response.person ? Object.values(response.person) : [];
-        error.value = false;
-      } catch (e) {
-        error.value = true;
-        console.error("Failed to fetch rowers:", e);
-      } finally {
-        loading.value = false;
-      }
+  // Submit-only: one request per Enter or click. A new search cancels the one in flight, and an
+  // answer that arrives after a newer search started is dropped.
+  async function searchRowers(input: string) {
+    const q = input.replace(/\s+/g, " ").trim();
+    searchController?.abort();
+    searchController = null;
+    const seq = ++searchSeq;
+    if (q.length < 2) {
+      searchStatus.value = "tooShort";
+      return;
     }
-  }
+    query.value = q;
+    storeCurrentPage.value = 1;
 
-  async function getRower(id: string, index: number) {
-    loading.value = true;
-
-    if (results.value && results.value[index]) {
-      rower.value = results.value[index];
+    const key = q.toLocaleLowerCase("nl");
+    const cached = recall(searchCache, key);
+    if (cached) {
+      results.value = cached;
+      searchStatus.value = "done";
+      return;
     }
 
+    const controller = new AbortController();
+    searchController = controller;
+    searchStatus.value = "loading";
     try {
-      const response = await $fetch(`/api/Time-Team/person`, {
-        method: "GET",
-        params: { id }
+      const response = await $fetch<TtSearchResponse>("/api/Time-Team/search", {
+        params: { query: q },
+        signal: controller.signal,
       });
-
-      const { person, race_crew, entry, event, round, race } = response;
-
-      if (!person || !race_crew || !entry || !event || !round) {
-        throw new Error("Incomplete response data.");
-      }
-
-      const personDetails = Object.values(person || {})[0];
-      if (!personDetails) {
-        throw new Error("Person details not found.");
-      }
-
-      let allRaceCrewInfo = {};
-      let totalWins = { Rower: 0, Coach: 0, Cox: 0 };
-      const uniqueClubs = new Map();
-
-      const roundTypePriority = ["FA", "FB", "FC", "FD", "FE", "FF", "FG", "HF", "KF", "R", "E", "H", "TT", undefined];
-
-      for (const raceCrewId in race_crew) {
-        const raceCrewEntry = race_crew[raceCrewId];
-        const roundId = raceCrewEntry.round_id;
-        const roundEntry = round?.[roundId];
-
-        if (!roundId || !roundEntry) {
-          console.warn("Skipping race crew due to missing round:", raceCrewId);
-          continue;
-        }
-
-        const raceDetails = getLocationAndDetailsByRaceCrewId(raceCrewId, response);
-        const entryId = raceCrewEntry.entry_id;
-        const entryData = entryId ? response.entry?.[entryId] : null;
-
-        if (entryData) {
-          const role = determineRole(personDetails, entryData);
-          raceDetails.role = role;
-
-          // Updated wins calculation:
-          const nonFinalRaces = ['E', 'H', 'R', 'TT', 'HF', 'KF', 'HK', 'FB', 'FC', 'FD', 'FE', 'FF', 'e', 'h', 'tt', 'hf', 'kf', 'hk', 'fb', 'fc', 'fd', 'fe', 'ff', 'race for lanes'];
-          if (raceDetails.adjusted_position === 1 && !nonFinalRaces.includes(raceDetails.round_type_code)) {
-            totalWins[role]++;
-          }
-
-          const club = entryData.club || undefined;
-          if (club && !uniqueClubs.has(club.id)) {
-            uniqueClubs.set(club.id, club);
-          }
-
-          raceDetails.event_id = entryData.event_id || undefined;
-          raceDetails.entry_name = entryData.name || undefined;
-
-          const eventEntry = event?.[raceDetails.event_id];
-          if (eventEntry) {
-            raceDetails.event_code = eventEntry.code || undefined;
-            raceDetails.event_remarks = eventEntry.remarks || undefined;
-          }
-
-          raceDetails.round_type_name = roundEntry.round_type_name || undefined;
-          raceDetails.timetrial = roundEntry.timetrial || false;
-          raceDetails.is_final = roundEntry.is_final || false;
-          raceDetails.rules = roundEntry.rules || undefined;
-          raceDetails.timing_layout = roundEntry.timing_layout || undefined;
-        }
-
-        allRaceCrewInfo[raceCrewId] = raceDetails;
-      }
-
-      allRaceCrewInfo = Object.entries(allRaceCrewInfo).reduce((acc, [key, value]) => {
-        const eventId = value.event_id || undefined;
-        const entryName = value.entry_name || undefined;
-
-        if (!acc[eventId]) {
-          acc[eventId] = {};
-        }
-        if (!acc[eventId][entryName]) {
-          acc[eventId][entryName] = [];
-        }
-
-        acc[eventId][entryName].push({ id: key, ...value });
-        return acc;
-      }, {});
-
-      for (const eventId in allRaceCrewInfo) {
-        for (const entryName in allRaceCrewInfo[eventId]) {
-          allRaceCrewInfo[eventId][entryName].sort((a, b) => {
-            const roundA = roundTypePriority.indexOf(a.round_type_code) !== -1
-              ? roundTypePriority.indexOf(a.round_type_code)
-              : roundTypePriority.length;
-            const roundB = roundTypePriority.indexOf(b.round_type_code) !== -1
-              ? roundTypePriority.indexOf(b.round_type_code)
-              : roundTypePriority.length;
-
-            return roundA - roundB;
-          });
-        }
-      }
-
-      allRaceCrewInfo = Object.keys(allRaceCrewInfo)
-        .sort((a, b) => {
-          const firstRaceDateA = getFirstRaceDate(allRaceCrewInfo[a]);
-          const firstRaceDateB = getFirstRaceDate(allRaceCrewInfo[b]);
-          return new Date(firstRaceDateB).getTime() - new Date(firstRaceDateA).getTime();
-        })
-        .reduce((acc, key) => {
-          acc[key] = allRaceCrewInfo[key];
-          return acc;
-        }, {});
-
-      // Instead of just storing the first entry date, we now create an object containing the first race.
-      const racesArray = Object.values(allRaceCrewInfo)
-        .flatMap(event => Object.values(event).flatMap(entry => entry))
-        .filter(race => race.date)
-        .map(race => ({ ...race, date: formatDateISO(race.date) }));
-
-      // Sort races by date in ascending order
-      racesArray.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      const firstRace = racesArray[0] || undefined;
-
-      // Optionally, keep the last entry date if needed.
-      const lastEntryDate = racesArray.length ? racesArray[racesArray.length - 1].date : undefined;
-
-      rower.value = {
-        id: personDetails.id,
-        displayname: personDetails.displayname,
-        allRaceCrewInfo,
-        roleCounts: calculateRoleCounts(allRaceCrewInfo),
-        totalWins,
-        firstRace,  // Changed from firstEntryDate to firstRace (an object)
-        lastEntryDate,
-        unique_clubs: Array.from(uniqueClubs.values()),
-      };
-      error.value = false;
+      if (seq !== searchSeq) return;
+      if (!response || response.error) throw new Error("search failed");
+      const list = Object.values(response.person ?? {}).sort(byName);
+      remember(searchCache, key, list, SEARCH_CACHE_MAX);
+      results.value = list;
+      searchStatus.value = "done";
     } catch (e) {
-      error.value = true;
-      console.error("Failed to fetch rower:", e);
+      if (seq !== searchSeq || isAbort(e)) return;
+      results.value = [];
+      searchStatus.value = "error";
     } finally {
-      loading.value = false;
+      if (searchController === controller) searchController = null;
     }
   }
 
-  function calculateRoleCounts(allRaceCrewInfo) {
-    let roleCounts = { Rower: 0, Coach: 0, Cox: 0, Undefined: 0 };
-    for (const eventId in allRaceCrewInfo) {
-      for (const entryName in allRaceCrewInfo[eventId]) {
-        const groupRaces = allRaceCrewInfo[eventId][entryName];
-        if (groupRaces.length > 0) {
-          // Use the role from the first race in the group
-          const role = groupRaces[0].role || "Undefined";
-          roleCounts[role] = (roleCounts[role] || 0) + 1;
-        }
+  // --- Person -------------------------------------------------------------------------------
+  const rower = ref<TtProfile | null>(null);
+  const personId = ref<string>(""); // the person personStatus is about
+  const personStatus = ref<PersonStatus>("idle");
+  const crewState = ref<Record<string, "loading" | "error">>({});
+  const personCache = new Map<string, { at: number; value: TtProfile }>();
+  let personController: AbortController | null = null;
+  let personSeq = 0;
+
+  async function getRower(id: string, { force = false } = {}) {
+    if (!id) return;
+    if (!force && personId.value === id && personStatus.value === "done") return;
+    personController?.abort();
+    personController = null;
+    const seq = ++personSeq;
+    personId.value = id;
+
+    const cached = force ? undefined : recall(personCache, id);
+    if (cached) {
+      rower.value = cached;
+      personStatus.value = "done";
+      return;
+    }
+
+    // Show the name from the search list while the rest loads.
+    const known = results.value.find((r) => r.id === id);
+    rower.value = known ? { person: { id, displayname: known.displayname }, clubs: [], events: [] } : null;
+    personStatus.value = "loading";
+
+    const controller = new AbortController();
+    personController = controller;
+    try {
+      const response = await $fetch<TtPersonResponse>("/api/Time-Team/person", {
+        params: { id },
+        signal: controller.signal,
+      });
+      if (seq !== personSeq) return;
+      if (response?.error === "Not available" || response?.error === "Not found") {
+        rower.value = null;
+        personStatus.value = response.error === "Not available" ? "unavailable" : "notFound";
+        return;
+      }
+      if (!response || response.error || !response.person?.id || !Array.isArray(response.events)) {
+        throw new Error("person failed");
+      }
+      const profile = response as TtProfile;
+      remember(personCache, id, profile, PERSON_CACHE_MAX);
+      rower.value = profile;
+      personStatus.value = "done";
+    } catch (e) {
+      if (seq !== personSeq || isAbort(e)) return;
+      personStatus.value = "error";
+    } finally {
+      if (personController === controller) personController = null;
+    }
+  }
+
+  // A crew the server did not look up (long histories only): fetched when the visitor opens it.
+  async function loadCrew(entry: TtEntry) {
+    const person = rower.value;
+    if (!person || entry.crew || crewState.value[entry.id] === "loading") return;
+    crewState.value[entry.id] = "loading";
+    try {
+      const response = await $fetch<TtEntryResponse>("/api/Time-Team/entry", {
+        params: { regatta: entry.regattaId, id: entry.id, person: person.person.id },
+      });
+      if (!response?.crew || response.error) throw new Error("crew failed");
+      entry.crew = response.crew;
+      if (!entry.role && response.role) entry.role = response.role;
+      delete crewState.value[entry.id];
+    } catch {
+      crewState.value[entry.id] = "error";
+    }
+  }
+
+  // Per role: how many entries, and how many of them were won.
+  const roleCounts = computed(() => {
+    const counts: Record<TtRole, number> = { Rower: 0, Cox: 0, Coach: 0 };
+    for (const group of rower.value?.events ?? []) {
+      for (const entry of group.entries) if (entry.role) counts[entry.role] += 1;
+    }
+    return counts;
+  });
+
+  const totalWins = computed(() => {
+    const wins: Record<TtRole, number> = { Rower: 0, Cox: 0, Coach: 0 };
+    for (const group of rower.value?.events ?? []) {
+      for (const entry of group.entries) {
+        if (entry.role && entry.races.some((race) => race.win)) wins[entry.role] += 1;
       }
     }
-    return roleCounts;
-  }
-  
+    return wins;
+  });
 
-  function getLocationAndDetailsByRaceCrewId(raceCrewId, data) {
-    const raceCrewEntry = data.race_crew?.[raceCrewId];
-    if (!raceCrewEntry) {
-      return undefined;
-    }
+  const anyWins = computed(() => (rower.value?.events ?? []).some((g) => g.entries.some((e) => e.races.some((r) => r.win))));
 
-    const roundId = raceCrewEntry.round_id;
-    if (!roundId) {
-      return undefined;
-    }
-
-    const roundEntry = data.round?.[roundId];
-    if (!roundEntry) {
-      return undefined;
-    }
-
-    let location = getEventLocationByRoundId(roundId, data);
-    if (!location) {
-      const raceId = raceCrewEntry.race_id;
-      if (raceId) {
-        location = getEventLocationByRaceId(raceId, data);
-      }
-    }
-
-    const result = raceCrewEntry.adjusted_result || undefined;
-    const adjustedPos = raceCrewEntry.adjusted_pos || undefined;
-
-    const entryId = raceCrewEntry.entry_id;
-    const entryData = entryId ? data.entry?.[entryId] : null;
-
-    const club = entryData?.club || undefined;
-    const combination = entryData?.combination || undefined;
-    const entryName = entryData?.name || undefined;
-
-    const rowers = entryData?.rowers
-      ? entryData.rowers.map(rower => ({
-          name: `${rower.firstname} ${rower.lastname}`,
-          position: rower.position,
-        }))
-      : undefined;
-
-    const coaches = entryData?.coaches
-      ? entryData.coaches.map(coach => `${coach.firstname} ${coach.lastname}`)
-      : undefined;
-
-    const coxes =
-      entryData?.coxes && Array.isArray(entryData.coxes)
-        ? entryData.coxes.map(cox => cox && `${cox.firstname} ${cox.lastname}`)
-        : undefined;
-
-    const boatName =
-      entryData?.boats && entryData.boats.length > 0
-        ? entryData.boats[0].name || undefined
-        : undefined;
-
-    const blades = entryData?.blades || undefined;
-
-    const eventData = entryData?.event_id ? data.event?.[entryData.event_id] : null;
-    let date;
-    if (raceCrewEntry.race_id) {
-      const raceObj = data.race?.[raceCrewEntry.race_id];
-      if (raceObj) {
-        if (raceObj.regatta_day && raceObj.regatta_day.day_date) {
-          date = formatDateISO(raceObj.regatta_day.day_date);
-        } else if (raceObj.start_datetime) {
-          const rawDate = raceObj.start_datetime.split(" ")[0];
-          date = formatDateISO(rawDate);
-        }
-      }
-    }
-    if (!date && eventData?.regatta_days && eventData.regatta_days.length > 0) {
-      date = formatDateISO(eventData.regatta_days[0].day_date);
-    }
-
-    const fieldName = eventData?.name || undefined;
-    const roundTypeCode = roundEntry?.round_type_code || undefined;
-
-    return {
-      location,
-      result,
-      adjusted_position: adjustedPos,
-      club,
-      combination,
-      entry_name: entryName,
-      rowers,
-      coaches,
-      coxes,
-      boat_name: boatName,
-      blades,
-      date, // now an ISO string in the format "YYYY-MM-DD"
-      field_name: fieldName,
-      round_type_code: roundTypeCode,
-    };
-  }
-
-  function getEventLocationByRoundId(roundId: string, data: any): string | undefined {
-    const roundEntry = data.round?.[roundId];
-    if (!roundEntry) {
-      return undefined;
-    }
-
-    const eventId = roundEntry.event_id;
-    if (!eventId) {
-      return undefined;
-    }
-
-    for (const raceId in data.race) {
-      const race = data.race[raceId];
-      if (race.round_id === roundId) {
-        const venueName = race.venue_layout?.name;
-        if (venueName) {
-          return venueName;
-        }
-      }
-    }
-    return undefined;
-  }
-
-  function getEventLocationByRaceId(raceId: string, data: any): string | undefined {
-    const raceEntry = data.race?.[raceId];
-    if (raceEntry) {
-      const venueName = raceEntry.venue_layout?.name;
-      if (venueName) {
-        return venueName;
-      }
-    }
-    return undefined;
-  }
-
-  function getFirstRaceDate(eventData) {
-    return Object.values(eventData)
-      .flatMap(entry => entry)
-      .map(race => race.date)
-      .filter(date => date)
-      .sort()[0] || undefined;
-  }
-
-  function determineRole(personDetails: any, entryData: any): string {
-    const displayName = personDetails.displayname;
-    if (Array.isArray(entryData.rowers) && entryData.rowers.some((r: any) => `${r.firstname} ${r.lastname}` === displayName)) {
-      return "Rower";
-    }
-    if (Array.isArray(entryData.coaches) && entryData.coaches.some((c: any) => `${c.firstname} ${c.lastname}` === displayName)) {
-      return "Coach";
-    }
-    if (entryData?.coxes && Array.isArray(entryData.coxes) && entryData.coxes.some((c: any) => c && `${c.firstname} ${c.lastname}` === displayName)) {
-      return "Cox";
-    }
-    return "Undefined";
-  }
-
-  function isFinalRound(roundTypeCode: string): boolean {
-    return roundTypeCode === "FA" || roundTypeCode === "2000m" || /^[0-9]/.test(roundTypeCode);
-  }
-
-  return { loading, error, results, searchRowers, getRower, rower, storeCurrentPage };
+  return {
+    searchInput,
+    query,
+    results,
+    searchStatus,
+    storeCurrentPage,
+    searchRowers,
+    rower,
+    personId,
+    personStatus,
+    crewState,
+    getRower,
+    loadCrew,
+    roleCounts,
+    totalWins,
+    anyWins,
+  };
 });
 
 if (import.meta.hot) {

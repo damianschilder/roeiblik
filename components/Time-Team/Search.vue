@@ -3,103 +3,86 @@
     .element-wrapper
       .element-body
         h1 Zoek naar comporoeiers, wedstrijdroeiers, stuurtjes en coaches binnen Time-Team.
-        .search(:class="{ 'searchable': searchQuery && searchQuery.length > 0 }")
-          input(placeholder="Naam..." v-model="searchQuery" @input="sanitizeInput" @keyup.enter="searchRowers()")
-          UiLoader.loading(v-if="loading")
-          nuxt-icon(v-else name="search" @click="searchRowers()")
-        .error(v-if="rowerStore.error") Te veel verzoeken achter elkaar of time-team is niet beschikbaar.
-        .empty(v-if="empty") Helaas, geen resultaten.
-        .results(:class="{ 'loading-results': loading }" v-if="rowerStore && !rowerStore.error && paginatedResults.length > 0")
-          .headers
+        form.search(role="search" :class="{ 'searchable': rowerStore.searchInput.length > 0 }" @submit.prevent="submit")
+          input(
+            v-model="rowerStore.searchInput"
+            type="text"
+            placeholder="Naam..."
+            aria-label="Naam om te zoeken in Time-Team"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="search"
+            maxlength="100"
+          )
+          button.search-button(type="submit" aria-label="Zoeken" :aria-busy="loading ? 'true' : 'false'")
+            UiLoader.loading(v-if="loading")
+            nuxt-icon(v-else name="search" aria-hidden="true")
+        .status(role="status" aria-live="polite" :class="{ 'visually-hidden': !statusVisible }") {{ statusText }}
+        .results(:class="{ 'loading-results': loading }" v-if="paginatedResults.length > 0")
+          .headers(aria-hidden="true")
             .name
               span Naam
             span.id ID
-          .result(v-for="rower, index in paginatedResults" :key="rower.id" :class="{ 'current-rower': rower.id === rowerStore.rower.id }" @click="selectRower(rower.id, ((currentPage -1 ) * resultsPerPage) + index)")
-            span {{ rower.displayname }}
-            span.id {{ rower.id }}
-          .pagination(v-if="rowerStore.results.length > resultsPerPage")
-            button(@click="prevPage" :disabled="currentPage === 1") Previous
-            span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, rowerStore.results.length) }} of {{ rowerStore.results.length }} {{ rowerStore.results.length === 1 ? 'result' : 'results' }}
-            button(@click="nextPage" :disabled="currentPage === totalPages") Next
-  </template> 
-  
+          ul.result-list
+            li(v-for="rower in paginatedResults" :key="rower.id")
+              NuxtLink.result(
+                :to="`/Time-Team/persoon/${rower.id}`"
+                :class="{ 'current-rower': rower.id === rowerStore.rower?.person.id }"
+              )
+                span {{ rower.displayname }}
+                span.id {{ rower.id }}
+          nav.pagination(v-if="total > resultsPerPage" aria-label="Pagina's met resultaten")
+            button(type="button" @click="prevPage" :disabled="currentPage === 1") Vorige
+            span {{ (currentPage - 1) * resultsPerPage + 1 }}-{{ Math.min(currentPage * resultsPerPage, total) }} van {{ total }} {{ total === 1 ? 'resultaat' : 'resultaten' }}
+            button(type="button" @click="nextPage" :disabled="currentPage === totalPages") Volgende
+  </template>
+
   <script setup lang="ts">
   const rowerStore = useRowersStore();
-  const runtimeConfig = useRuntimeConfig()
-  const router = useRouter();
-  
-  const searchQuery = ref<string>('');
-  const loading = ref<Boolean>(false);
-  const empty = ref<Boolean>(false);
-  const hover = ref<Boolean>(false);
-  
-  // Pagination state
-  const currentPage = ref<number>(1);
+
   const resultsPerPage = 10;
-  
-  function sanitizeInput() {
-    searchQuery.value = searchQuery.value.replace(/[^a-zA-Z0-9 \-]/g, "");
-  }
-  
-  async function searchRowers() {
-    loading.value = true;
-    if (searchQuery.value) await rowerStore.searchRowers(searchQuery.value);
-    rowerStore.results = rowerStore.results.sort((a, b) => {
-      if (a.displayname.toLowerCase() < b.displayname.toLowerCase()) return -1;
-      if (a.displayname.toLowerCase() > b.displayname.toLowerCase()) return 1;
-      return a.id.localeCompare(b.id);
-    });
-    if (rowerStore.results.length === 0) {
-      empty.value = true;
-    } else {
-      empty.value = false;
-    }
-    currentPage.value = 1;
-    loading.value = false;
-  }
-  
-  function selectRower(id: Person['id'], index: number) {
-    if (!(id === rowerStore.rower.id)) rowerStore.getRower(id, index);
-    router.push({ name: 'Time-Team-persoon-id', params: { id: rowerStore.results[index].id } });
-  }
-  
-  // Computed properties for pagination
-  const totalPages = computed(() => Math.ceil(rowerStore.results.length / resultsPerPage));
+
+  const loading = computed(() => rowerStore.searchStatus === 'loading');
+  const total = computed(() => rowerStore.results.length);
+  const totalPages = computed(() => Math.max(1, Math.ceil(total.value / resultsPerPage)));
+  // The page lives in the store, so Back from a person returns to the same page of results.
+  const currentPage = computed(() => Math.min(rowerStore.storeCurrentPage, totalPages.value));
   const paginatedResults = computed(() => {
     const start = (currentPage.value - 1) * resultsPerPage;
-    const end = start + resultsPerPage;
-    return rowerStore.results.slice(start, end);
+    return rowerStore.results.slice(start, start + resultsPerPage);
   });
-  
+
+  // One status line for screen readers; the same line shows the messages sighted visitors need.
+  const statusText = computed(() => {
+    switch (rowerStore.searchStatus) {
+      case 'loading': return 'Zoeken…';
+      case 'tooShort': return 'Typ minstens 2 tekens.';
+      case 'error': return 'Te veel verzoeken achter elkaar of Time-Team is niet beschikbaar.';
+      case 'done': return total.value === 0
+        ? 'Helaas, geen resultaten.'
+        : `${total.value} ${total.value === 1 ? 'resultaat' : 'resultaten'}`;
+      default: return '';
+    }
+  });
+  const statusVisible = computed(() =>
+    ['tooShort', 'error'].includes(rowerStore.searchStatus) || (rowerStore.searchStatus === 'done' && total.value === 0));
+
+  function submit() {
+    rowerStore.searchRowers(rowerStore.searchInput);
+  }
+
   function nextPage() {
-    if (currentPage.value < totalPages.value) {
-      currentPage.value++;
-    }
+    if (currentPage.value < totalPages.value) rowerStore.storeCurrentPage = currentPage.value + 1;
   }
-  
+
   function prevPage() {
-    if (currentPage.value > 1) {
-      currentPage.value--;
-    }
+    if (currentPage.value > 1) rowerStore.storeCurrentPage = currentPage.value - 1;
   }
-  
-  onMounted(() => {
-    currentPage.value = rowerStore.storeCurrentPage
-  });
-  
-  onBeforeUnmount(() => {
-    rowerStore.storeCurrentPage = currentPage.value
-  });
   </script>
-  
+
   <style lang="scss" scoped>
-  .component-wrapper {
-    /* align-self: center; */
-  }
-  
   .element-body {
     display: flex;
-    /* align-self: center; */
     flex-direction: column;
     align-items: center;
     h1 {
@@ -114,7 +97,7 @@
       display: flex;
       justify-content: center;
       margin-bottom: 2rem;
-  
+
       > input {
         border-bottom: 1px solid $red;
         width: 30rem;
@@ -129,24 +112,47 @@
           margin-bottom: initial;
         }
       }
-      >:deep(.nuxt-icon svg) {
+      > .search-button {
         position: absolute;
-        height: fit-content;
-        margin-bottom: 0;
-        width: 1.8rem;
         right: 0;
         top: 0;
+        display: flex;
+        padding: 0;
+        margin: 0;
+        border: none;
+        border-radius: 4px;
+        background: none;
         color: $black50;
-      }
-      > .loading {
-        position: absolute;
-        top: 3px;
-        right: 6px;
+        cursor: pointer;
+        &:focus-visible {
+          outline: 2px solid $red;
+          outline-offset: 2px;
+        }
+        :deep(.nuxt-icon svg) {
+          height: fit-content;
+          margin-bottom: 0;
+          width: 1.8rem;
+          color: $black50;
+        }
+        > .loading {
+          margin: 3px 6px 0 0;
+        }
       }
     }
   }
-  
-  
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .results {
     display: flex;
     flex-direction: column;
@@ -156,14 +162,6 @@
     width: 62%;
     @include tablet-small {
       width: 100%;
-      .id {
-      }
-    }
-    @include mobile {
-      width: 100%;
-      .id {
-        // display: none;
-      }
     }
     &.loading-results {
       opacity: 0.5;
@@ -180,28 +178,17 @@
       .name {
         display: flex;
         column-gap: 0.1rem;
-        & .help {
-          text-align: left;
-          display: flex;
-          width: 20rem;
-          row-gap: 0.25rem;
-          font-weight: normal;
-          color: black;
-          flex-direction: column;
-          @include mobile {
-            width: 13rem;
-          }
-          >:first-child {
-            font-weight: bold;
-            color: $neutral50;
-          }
-        }
       }
       @include tablet-small {
         .id {
           display: none;
         }
       }
+    }
+    .result-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
     }
     .result {
       font-size: 1.1rem;
@@ -212,10 +199,11 @@
       column-gap: 6rem;
       cursor: pointer;
       white-space: nowrap;
+      color: inherit;
+      text-decoration: none;
       .id {
         font-size: 0.95rem;
         opacity: 0.5;
-
       }
       @include tablet-small {
         flex-direction: column;
@@ -228,6 +216,12 @@
       &:hover {
         background-color: $red25;
         border-radius: 0.25rem;
+      }
+      &:focus-visible {
+        background-color: $red25;
+        border-radius: 0.25rem;
+        outline: 2px solid $red;
+        outline-offset: 0;
       }
     }
     .pagination {
@@ -249,6 +243,10 @@
           cursor: initial;
           color: $black20;
         }
+        &:focus-visible {
+          outline: 2px solid $red;
+          outline-offset: 2px;
+        }
       }
       span {
         color: $black50;
@@ -256,36 +254,13 @@
       }
     }
   }
-  
-  .help {
-    text-align: left;
-    display: flex;
-    width: 20rem;
-    row-gap: 0.25rem;
-    font-weight: normal;
-    color: black;
-    flex-direction: column;
-    .link {
-      text-align: left;
-    }
-    @include mobile {
-      width: 13rem;
-    }
-    >:first-child {
-      font-weight: bold;
-      color: $neutral50;
-    }
-  }
 
 .current-rower {
   background-color: $red5!important;
 }
 
-.searchable {
-  &:deep(.nuxt-icon svg) {
-    cursor: pointer;
-    color: $red!important;
-  }
+// Red once there is something to search for, as before; more specific than the grey default above.
+.element-body .search.searchable > .search-button :deep(.nuxt-icon svg) {
+  color: $red;
 }
 </style>
-  
