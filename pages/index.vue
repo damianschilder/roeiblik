@@ -1,52 +1,42 @@
 <template lang="pug">
-//- .beta
-//-   NuxtLink(to="/faq") Veel gestelde vragen
 .page-wrapper
   .presentation
-    //- UiSearch
-    //- .button 
-    //-   span Statistieken nu uit
-    //-   nuxt-icon(name="new releases")
     .text
       h1 Roeiblik
+    //- Each tool: its tags, the link, and a line about it (linked to the link by aria-describedby).
     .buttons
       .button.compobeter2
         .tags
           span.tag.compo Comporoeien
           span.tag.wedstro Wedstrijdroeien
-        NuxtLink.compobeter(to="/Time-Team")
+        NuxtLink.compobeter(to="/Time-Team" aria-describedby="uitleg-compobeter")
           span Compobeter
-          nuxt-icon(name="person search" style="style-one")
+          nuxt-icon(name="person search" aria-hidden="true")
         .info
-          nuxt-icon(name="info")
-          .info-text
-            span Doorzoek 
-            span.bold Time-Team 
-            span op compo- en wedstrijdresultaten van personen.
+          nuxt-icon(name="info" aria-hidden="true")
+          .info-text#uitleg-compobeter
+            | Doorzoek #[span.bold Time-Team] op compo- en wedstrijdresultaten van personen.
       .button.knrbeter2
         .tags
           span.tag.wedstro Wedstrijdroeien
-        NuxtLink.statistieken(to="/KNRB")
+        NuxtLink.statistieken(to="/KNRB" aria-describedby="uitleg-knrbeter")
           span KNRBeter
-          nuxt-icon(name="person search" style="style-one")
+          nuxt-icon(name="person search" aria-hidden="true")
         .info
-          nuxt-icon(name="info")
-          .info-text
-            span Doorzoek de 
-            span.bold KNRB 
-            span op klasserende wedstrijdresultaten van personen.
+          nuxt-icon(name="info" aria-hidden="true")
+          .info-text#uitleg-knrbeter
+            | Doorzoek de #[span.bold KNRB] op klasserende wedstrijdresultaten van personen.
       .button.statistieken2
         .tags
           span.tag.wedstro Wedstrijdroeien
-        NuxtLink.statistieken(to="/KNRB/statistieken")
+        NuxtLink.statistieken(to="/KNRB/statistieken" aria-describedby="uitleg-statistieken")
           span Statistieken
-          nuxt-icon(name="leaderboard")
+          nuxt-icon(name="leaderboard" aria-hidden="true")
         .info
-          nuxt-icon(name="info")
-          .info-text
-            span Landelijkse statistieken van de 
-            span.bold KNRB 
-            span per veld.
+          nuxt-icon(name="info" aria-hidden="true")
+          .info-text#uitleg-statistieken
+            | Landelijke statistieken van de #[span.bold KNRB] per veld.
+//- No title of its own: the tab reads just "Roeiblik" (title and description from nuxt.config).
 </template>
 
 <style lang="scss" scoped>
@@ -74,22 +64,6 @@
     font-size: 1.25rem;
     font-size: 5;
     max-width: 70%;
-  }
-}
-
-.beta {
-  display: none;
-  justify-content: center;
-  align-items: center;
-  padding: 0.5rem 0.5rem;
-  font-size: 0.9rem;
-  background-color: rgba(230, 0, 0, 0.10);;
-  a {
-    color: #663333;
-
-  }
-  @include mobile {
-    display: flex;
   }
 }
 
