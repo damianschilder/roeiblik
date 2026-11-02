@@ -1,4 +1,10 @@
 
+// Font stacks: the web font, then a local font resized to its proportions (app.scss), so text does
+// not move when the web font arrives.
+$font-text: 'Mulish', 'Mulish fallback', 'Mulish fallback Roboto', sans-serif;
+// 'Roeiblik Logo' holds the logo's letters, 'Racing Sans One' the rest (app.scss).
+$font-brand: 'Roeiblik Logo', 'Racing Sans One', 'Racing Sans One fallback', 'Racing Sans One fallback Roboto', sans-serif;
+
 $seed: rgba(230, 0, 0, 1);
 
 $neutral-variant0: rgba(0, 0, 0, 1);

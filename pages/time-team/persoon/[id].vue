@@ -83,7 +83,7 @@ onMounted(() => {
   row-gap: 1rem;
   padding: 3rem 1rem 0;
   button, a {
-    font: bold 1rem "Lato";
+    font: bold 1rem $font-text;
     background: $red50;
     border: none;
     border-radius: 5px;

@@ -42,7 +42,7 @@ header.navbar-wrapper
 }
 .title {
     color: $roeiblik;
-    font-family: "Racing Sans One";
+    font-family: $font-brand;
     text-decoration: none;
     font-size: 2rem;
     width: 7.625rem;

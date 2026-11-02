@@ -23,7 +23,7 @@ footer.footer-wrapper
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: "Racing Sans One";
+  font-family: $font-brand;
   color: $black50;
   text-align: center;
   font-size: 32px;

@@ -96,6 +96,12 @@ export default defineNuxtConfig({
   ],
 
   vite: {
+    build: {
+      // Fonts stay files, also the 4 kB logo font that Vite would inline: inlined it made the
+      // stylesheet, which blocks the first paint, 5 kB bigger on every page; as a file it is
+      // preloaded (plugins/fonts.js) and cached for a year.
+      assetsInlineLimit: (file: string) => (file.endsWith('.woff2') ? false : undefined),
+    },
     css: {
       preprocessorOptions: {
         scss: {

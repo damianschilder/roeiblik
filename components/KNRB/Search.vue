@@ -273,7 +273,7 @@
       background-color: initial;
       margin-top: 1rem;
       button {
-        font-family: "Lato";
+        font-family: $font-text;
         background: $red50;
         border: none;
         border-radius: 5px;

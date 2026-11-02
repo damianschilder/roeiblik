@@ -44,7 +44,7 @@
   h1 {
     text-align: center;
     color: $seed;
-    font-family: "Racing Sans One";
+    font-family: $font-brand;
     text-decoration: none;
     font-size: 5.5rem;
   }

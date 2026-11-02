@@ -50,7 +50,7 @@ const home = () => clearError({ redirect: '/' });
 
 .code {
   color: $seed;
-  font-family: "Racing Sans One";
+  font-family: $font-brand;
   font-size: 5.5rem;
   line-height: 1;
 }

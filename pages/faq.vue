@@ -67,7 +67,7 @@ useHead({
   }
 }
 .section-title {
-  font: bold 1.125rem/1.5625rem "Lato";
+  font: bold 1.125rem/1.5625rem $font-text;
 }
 section + section {
   margin-top: 3rem;

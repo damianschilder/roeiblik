@@ -242,7 +242,7 @@ function splitText(split: TtSplit): string {
       width: min-content;
       align-items: center;
       column-gap: 0.4rem;
-      font: 1rem 'Mulish', sans-serif;
+      font: 1rem $font-text;
       cursor: pointer;
       transition: background-color 0.2s ease;
       outline: initial;
@@ -412,7 +412,7 @@ function splitText(split: TtSplit): string {
     }
   }
   h3 {
-    font: bold 1rem/1.4375rem "Lato";
+    font: bold 1rem/1.4375rem $font-text;
   }
   a {
     color: inherit;
