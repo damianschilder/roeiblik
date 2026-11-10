@@ -246,6 +246,7 @@ export const useRowersStore = defineStore("rowers", () => {
     personId: string;
     byId: Map<string, TtEntry[]>; // reactive entry objects per id
     queue: string[];
+    asking: Set<string>; // ids in this fill's requests in flight
     running: number;
     controllers: Set<AbortController>;
     stopped: boolean;
@@ -253,9 +254,15 @@ export const useRowersStore = defineStore("rowers", () => {
   let fill: Fill | null = null;
   const entryAttempts = new Map<string, number>(); // per session, so a resumed fill keeps counting
 
-  // Still waiting for a crew, and nobody is asking for it right now.
-  const fillable = (f: Fill, id: string) =>
-    !crewState.value[id] && (f.byId.get(id) ?? []).some((e) => !e.crew);
+  // Still waiting for a crew, not settled as missing or failed, and not already asked by this fill.
+  // A "loading" mark from elsewhere does not count: crewmates share entry ids, and the aborted
+  // requests of the fill just stopped clear their marks only after the next fill has started, so
+  // skipping on "loading" left those entries pending for good.
+  const fillable = (f: Fill, id: string) => {
+    const state = crewState.value[id];
+    return state !== "missing" && state !== "error" && !f.asking.has(id)
+      && (f.byId.get(id) ?? []).some((e) => !e.crew);
+  };
 
   function stopFill() {
     if (!fill) return;
@@ -271,7 +278,7 @@ export const useRowersStore = defineStore("rowers", () => {
     const raw = toRaw(profile);
     if (fill && fill.profile === raw) return; // never two fills for one profile
     stopFill();
-    const f: Fill = { profile: raw, personId: profile.person.id, byId: new Map(), queue: [], running: 0, controllers: new Set(), stopped: false };
+    const f: Fill = { profile: raw, personId: profile.person.id, byId: new Map(), queue: [], asking: new Set(), running: 0, controllers: new Set(), stopped: false };
     for (const group of profile.events) {
       for (const entry of group.entries) {
         if (entry.role || entry.crew !== null) continue;
@@ -319,6 +326,7 @@ export const useRowersStore = defineStore("rowers", () => {
     for (const id of ids) {
       crewState.value[id] = "loading";
       entryAttempts.set(id, (entryAttempts.get(id) ?? 0) + 1);
+      f.asking.add(id);
     }
     const controller = new AbortController();
     f.controllers.add(controller);
@@ -353,10 +361,13 @@ export const useRowersStore = defineStore("rowers", () => {
         }
         return;
       }
+      // Released before the pause: the other request may pump the queue meanwhile.
+      for (const id of ids) f.asking.delete(id);
       for (const id of ids) retryEntry(f, id);
       await pause(DETAILS_RETRY_MS);
     } finally {
       f.controllers.delete(controller);
+      for (const id of ids) f.asking.delete(id);
     }
   }
 
