@@ -60,9 +60,15 @@ export interface TtEntry {
   regattaId: string;
   name: string;
   blade?: string; // club blade image
-  role?: TtRole; // undefined: not known (crew not looked up and not the stroke)
+  // undefined: not known yet. The person route knows it for the stroke and for the crews it could
+  // look up within its call budget; the browser fills the rest in the background from
+  // /api/time-team/details (see the store's role fill).
+  role?: TtRole;
   won: boolean; // first in the race that decided the event (see decide() in the person route)
-  crew: TtCrew | null; // null: not looked up yet (see /api/time-team/entry)
+  // null: not looked up yet. Filled by the store's background role fill (/api/time-team/details)
+  // for entries without a role, or on opening (/api/time-team/entry) for the rest. An entry
+  // Time-Team has no crew for stays null, marked "missing" in the store's crewState.
+  crew: TtCrew | null;
   races: TtRace[]; // latest round first
 }
 
@@ -70,7 +76,10 @@ export interface TtEvent {
   id: string;
   code: string; // "HOnerv C4+"
   name: string; // "Heren onervaren C-vier"
-  regatta?: string; // "Northwave Regatta"
+  // "Northwave Regatta". Missing when the person route ran out of calls before this regatta: the
+  // browser asks /api/time-team/details for it when the group comes into view. All entries of a
+  // group belong to one regatta (entries[0].regattaId).
+  regatta?: string;
   city?: string; // "Zevenhuizen"
   entries: TtEntry[];
 }
@@ -87,8 +96,9 @@ export interface TtProfile {
   events: TtEvent[]; // newest first
   firstRace?: { date?: string; entry: string; event: string };
   // A regatta or crew lookup failed or came too late: the answer is not cached, so the next visit
-  // tries again. (Lookups left out of a long history for the budget do not count: those crews
-  // load when opened.)
+  // tries again. (Lookups left out of a long history for the call budget do not count: the
+  // browser fills those roles in the background and those regatta names when they come into view,
+  // both via /api/time-team/details.)
   partial?: boolean;
 }
 
@@ -98,4 +108,27 @@ export type TtPersonResponse = Partial<TtProfile>;
 export interface TtEntryResponse {
   crew?: TtCrew;
   role?: TtRole;
+}
+
+// /api/time-team/details?id=&entries=&regattas= : the lookups the person route left out, at most
+// about 14 per request when nothing is cached on the server.
+export interface TtEntryDetails {
+  id: string;
+  name: string;
+  role?: TtRole;
+  crew: TtCrew | null; // null: Time-Team has no crew for it, so it stays missing
+}
+
+export interface TtRegatta {
+  id: string;
+  name?: string; // missing: Time-Team does not have it
+  city?: string;
+}
+
+export interface TtDetailsResponse {
+  entries: TtEntryDetails[]; // looked up this time
+  regattas: TtRegatta[]; // looked up this time
+  // Not looked up this time (out of calls or time, or failed): ask again. An id that is in none
+  // of the three lists does not belong to the person: treat it as missing.
+  rest: { entries: string[]; regattas: string[] };
 }

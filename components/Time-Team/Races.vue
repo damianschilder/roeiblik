@@ -75,7 +75,7 @@
                           NuxtLink(v-if="member.id && !member.self" :to="`/time-team/persoon/${member.id}`") {{ member.name }}
                           template(v-else) {{ member.name }}
                         span(v-if="!entry.crew.rowers.length && !entry.crew.coxes.length") Niet bekend
-                      span(v-else-if="rowerStore.crewState[entry.id] === 'error'") Ploeg niet beschikbaar
+                      span(v-else-if="crewUnavailable(entry)") Ploeg niet beschikbaar
                       span(v-else) Ploeg laden…
                     .coaches(v-if="entry.crew?.coaches.length")
                       h3 Coaches
@@ -138,6 +138,12 @@ const countText = computed(() => {
 });
 
 const isOpen = (entry: TtEntry) => expandedEntry.value === entry.id;
+
+// No crew to show: Time-Team has none ("missing"), or the lookup gave up ("error").
+function crewUnavailable(entry: TtEntry): boolean {
+  const state = rowerStore.crewState[entry.id];
+  return state === 'error' || state === 'missing';
+}
 
 function toggleExpand(entry: TtEntry) {
   expandedEntry.value = isOpen(entry) ? null : entry.id;

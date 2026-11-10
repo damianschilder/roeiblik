@@ -11,7 +11,7 @@
             th(scope="col") Totaal
         tbody
           tr(v-for="role in rows" :key="role")
-            th(scope="row") {{ role === 'unknown' ? 'Rol onbekend' : roleLabel(role) }}
+            th(scope="row") {{ rowLabel(role) }}
             td {{ rowerStore.totalWins[role] }}
             td {{ rowerStore.roleCounts[role] }}
 </template>
@@ -21,11 +21,23 @@ import { roleLabel } from '@/stores/rowers';
 import type { TtRole } from '~/types/Timeteam';
 
 const rowerStore = useRowersStore();
-// The order the table has always had: Roeier, Stuur, Coach. Entries whose role could not be
-// looked up get a row of their own, so the totals add up to every entry and every win.
+// The order the table has always had: Roeier, Stuur, Coach. Entries whose role is still being
+// looked up in the background, and entries settled without one, each get a row of their own while
+// there are any, so the totals add up to every entry and every win. The "pending" row shrinks into
+// the role rows as the fill goes on.
+type Row = TtRole | 'pending' | 'unknown';
 const TT_ROLES_IN_TABLE: TtRole[] = ['Rower', 'Cox', 'Coach'];
-const rows = computed<(TtRole | 'unknown')[]>(() =>
-  (rowerStore.roleCounts.unknown > 0 ? [...TT_ROLES_IN_TABLE, 'unknown'] : TT_ROLES_IN_TABLE));
+const rows = computed<Row[]>(() => [
+  ...TT_ROLES_IN_TABLE,
+  ...(rowerStore.roleCounts.pending > 0 ? ['pending' as const] : []),
+  ...(rowerStore.roleCounts.unknown > 0 ? ['unknown' as const] : []),
+]);
+
+function rowLabel(row: Row): string {
+  if (row === 'pending') return 'Rol laden…';
+  if (row === 'unknown') return 'Rol onbekend';
+  return roleLabel(row);
+}
 </script>
 
 <style lang="scss" scoped>

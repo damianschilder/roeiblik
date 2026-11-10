@@ -1,4 +1,5 @@
 import type {
+  TtDetailsResponse,
   TtEntry,
   TtEntryResponse,
   TtPerson,
@@ -8,7 +9,7 @@ import type {
   TtSearchResponse,
 } from "~/types/Timeteam";
 import { defineStore, acceptHMRUpdate } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, toRaw } from "vue";
 import { API_FETCH, apiErrorKind, isAbort, type ApiErrorKind } from "~/composables/apiError";
 
 // Time-Team search and person pages. The server (server/api/time-team/*) does the merging; this
@@ -45,6 +46,19 @@ export function ordinalNl(n?: number): string {
   const ste = rest === 1 || rest === 8 || rest >= 20 || (rest === 0 && (n as number) >= 100);
   return `${n}${ste ? "ste" : "de"}`;
 }
+
+// /api/time-team/details does about 14 lookups per request when nothing is cached on the server
+// (the Workers limit of 50 calls, Cache API calls included), so a request never asks for more.
+const DETAILS_IDS = 14;
+const DETAILS_IN_FLIGHT = 2;
+const DETAILS_ATTEMPTS = 3; // per id, a failed request and an id sent back in `rest` both count
+const DETAILS_RETRY_MS = 1000; // pause after a failed request, so a struggling server gets air
+
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// "loading": a request for this entry's crew is in flight (the fill or loadCrew), so the other
+// does not ask too. "missing": Time-Team has no crew for it. "error": it could not be looked up.
+export type CrewState = "loading" | "missing" | "error";
 
 const CACHE_MS = 10 * 60 * 1000;
 const SEARCH_CACHE_MAX = 30;
@@ -132,7 +146,7 @@ export const useRowersStore = defineStore("rowers", () => {
   const personId = ref<string>(""); // the person personStatus is about
   const personStatus = ref<PersonStatus>("idle");
   const personError = ref<ApiErrorKind | null>(null); // why, when personStatus is "error"
-  const crewState = ref<Record<string, "loading" | "error">>({});
+  const crewState = ref<Record<string, CrewState>>({});
   const personCache = new Map<string, { at: number; value: TtProfile }>();
   let personController: AbortController | null = null;
   let personSeq = 0;
@@ -140,7 +154,11 @@ export const useRowersStore = defineStore("rowers", () => {
   async function getRower(id: string, { force = false } = {}) {
     if (!id) return;
     // Already shown, and complete. An incomplete one (a lookup failed) is asked for again.
-    if (!force && personId.value === id && personStatus.value === "done" && !rower.value?.partial) return;
+    if (!force && personId.value === id && personStatus.value === "done" && !rower.value?.partial) {
+      startFill(); // a no-op while it runs or once nothing is left
+      return;
+    }
+    stopFill();
     personController?.abort();
     personController = null;
     const seq = ++personSeq;
@@ -157,6 +175,7 @@ export const useRowersStore = defineStore("rowers", () => {
     if (cached) {
       rower.value = cached;
       personStatus.value = "done";
+      startFill();
       return;
     }
 
@@ -180,6 +199,7 @@ export const useRowersStore = defineStore("rowers", () => {
       if (!profile.partial) remember(personCache, id, profile, PERSON_CACHE_MAX);
       rower.value = profile;
       personStatus.value = "done";
+      startFill();
     } catch (e) {
       if (seq !== personSeq || isAbort(e)) return;
       const kind = apiErrorKind(e);
@@ -195,10 +215,154 @@ export const useRowersStore = defineStore("rowers", () => {
     }
   }
 
-  // A crew the server did not look up (long histories only): fetched when the visitor opens it.
+  function fetchDetails(id: string, entries: string[], regattas: string[], signal?: AbortSignal) {
+    return $fetch<TtDetailsResponse>("/api/time-team/details", {
+      ...API_FETCH,
+      params: {
+        id,
+        entries: entries.length ? entries.join(",") : undefined,
+        regattas: regattas.length ? regattas.join(",") : undefined,
+      },
+      signal,
+    });
+  }
+
+  const validDetails = (r: TtDetailsResponse | undefined): r is TtDetailsResponse =>
+    Array.isArray(r?.entries) && Array.isArray(r?.regattas) && Array.isArray(r?.rest?.entries) && Array.isArray(r?.rest?.regattas);
+
+  // --- Role fill ----------------------------------------------------------------------------
+  // The person route looks up only as many crews as its call budget allows, so on a long history
+  // most entries come without a role, and the totals in the header need one for every entry. As
+  // soon as a profile is shown, the entries without role and crew are looked up in the background,
+  // newest first, in chunks of DETAILS_IDS with at most DETAILS_IN_FLIGHT requests at once.
+  // Results go onto the store's own entry objects, so the list, the table and the cached profile
+  // all see them. Moving to another person stops the fill (requests aborted); coming back resumes
+  // it with whatever is still open. Regatta names are not part of it: those load when in view.
+  type Fill = {
+    profile: TtProfile; // raw, to tell "the same profile" apart from a new answer for the same person
+    personId: string;
+    byId: Map<string, TtEntry[]>; // reactive entry objects per id
+    queue: string[];
+    running: number;
+    controllers: Set<AbortController>;
+    stopped: boolean;
+  };
+  let fill: Fill | null = null;
+  const entryAttempts = new Map<string, number>(); // per session, so a resumed fill keeps counting
+
+  // Still waiting for a crew, and nobody is asking for it right now.
+  const fillable = (f: Fill, id: string) =>
+    !crewState.value[id] && (f.byId.get(id) ?? []).some((e) => !e.crew);
+
+  function stopFill() {
+    if (!fill) return;
+    fill.stopped = true;
+    for (const controller of fill.controllers) controller.abort();
+    fill = null;
+  }
+
+  function startFill() {
+    const profile = rower.value;
+    if (!profile || personStatus.value !== "done") return;
+    const raw = toRaw(profile);
+    if (fill && fill.profile === raw) return; // never two fills for one profile
+    stopFill();
+    const f: Fill = { profile: raw, personId: profile.person.id, byId: new Map(), queue: [], running: 0, controllers: new Set(), stopped: false };
+    for (const group of profile.events) {
+      for (const entry of group.entries) {
+        if (entry.role || entry.crew !== null) continue;
+        const list = f.byId.get(entry.id);
+        if (list) list.push(entry);
+        else {
+          f.byId.set(entry.id, [entry]);
+          f.queue.push(entry.id);
+        }
+      }
+    }
+    if (!f.queue.length) return;
+    fill = f;
+    pumpFill(f);
+  }
+
+  function pumpFill(f: Fill) {
+    while (!f.stopped && f.running < DETAILS_IN_FLIGHT) {
+      const ids: string[] = [];
+      while (ids.length < DETAILS_IDS && f.queue.length) {
+        const id = f.queue.shift() as string;
+        if (fillable(f, id) && !ids.includes(id)) ids.push(id);
+      }
+      if (!ids.length) break;
+      f.running += 1;
+      void sendFill(f, ids).finally(() => {
+        f.running -= 1;
+        pumpFill(f);
+      });
+    }
+    if (fill === f && !f.running && !f.queue.length) fill = null; // all settled
+  }
+
+  // Asked again, unless this was its last attempt.
+  function retryEntry(f: Fill, id: string) {
+    if ((entryAttempts.get(id) ?? 0) >= DETAILS_ATTEMPTS) {
+      crewState.value[id] = "error";
+      return;
+    }
+    delete crewState.value[id];
+    f.queue.push(id);
+  }
+
+  async function sendFill(f: Fill, ids: string[]) {
+    for (const id of ids) {
+      crewState.value[id] = "loading";
+      entryAttempts.set(id, (entryAttempts.get(id) ?? 0) + 1);
+    }
+    const controller = new AbortController();
+    f.controllers.add(controller);
+    try {
+      const response = await fetchDetails(f.personId, ids, [], controller.signal);
+      if (!validDetails(response)) throw new Error("details failed");
+      const settled = new Set<string>();
+      for (const details of response.entries) {
+        if (!ids.includes(details.id) || settled.has(details.id)) continue;
+        settled.add(details.id);
+        for (const entry of f.byId.get(details.id) ?? []) {
+          entry.crew = details.crew;
+          if (!entry.role && details.role) entry.role = details.role;
+          if (details.name) entry.name = details.name;
+        }
+        if (details.crew) delete crewState.value[details.id];
+        else crewState.value[details.id] = "missing";
+      }
+      for (const id of response.rest.entries) {
+        if (!ids.includes(id) || settled.has(id)) continue;
+        settled.add(id);
+        retryEntry(f, id);
+      }
+      // Not this person's, as far as the server knows: nothing more will come for it.
+      for (const id of ids) if (!settled.has(id)) crewState.value[id] = "missing";
+    } catch (e) {
+      if (f.stopped || isAbort(e)) {
+        // Stopped, not failed: no attempt lost, and the next fill for this profile asks again.
+        for (const id of ids) {
+          if (crewState.value[id] === "loading") delete crewState.value[id];
+          entryAttempts.set(id, Math.max(0, (entryAttempts.get(id) ?? 1) - 1));
+        }
+        return;
+      }
+      for (const id of ids) retryEntry(f, id);
+      await pause(DETAILS_RETRY_MS);
+    } finally {
+      f.controllers.delete(controller);
+    }
+  }
+
+  // A crew the person route did not look up and the fill does not either (an entry whose role is
+  // already known, the stroke): fetched when the visitor opens it. An entry the fill is asking
+  // for is "loading" and left to the fill.
   async function loadCrew(entry: TtEntry) {
     const person = rower.value;
-    if (!person || entry.crew || crewState.value[entry.id] === "loading") return;
+    const state = crewState.value[entry.id];
+    if (!person || entry.crew || state === "loading" || state === "missing") return;
     crewState.value[entry.id] = "loading";
     try {
       const response = await $fetch<TtEntryResponse>("/api/time-team/entry", {
@@ -216,20 +380,28 @@ export const useRowersStore = defineStore("rowers", () => {
 
   // Per role: how many entries, and how many of them were won. Whether an entry was won is decided
   // on the server (entry.won, see decide() in server/api/time-team/person.js); the table, the
-  // "Alleen winsten" filter and the list's count all use it. An entry whose role is not known
-  // (its crew could not be looked up) is counted under "unknown", so no entry or win is dropped.
+  // "Alleen winsten" filter and the list's count all use it. An entry without a role whose crew is
+  // still to come (from the role fill) is counted under "pending"; one settled without a role (no
+  // crew at Time-Team, or the lookup gave up) under "unknown". So no entry or win is dropped.
+  type RoleBucket = TtRole | "pending" | "unknown";
+  function bucket(entry: TtEntry): RoleBucket {
+    if (entry.role) return entry.role;
+    const state = crewState.value[entry.id];
+    return entry.crew === null && state !== "error" && state !== "missing" ? "pending" : "unknown";
+  }
+
   const roleCounts = computed(() => {
-    const counts: Record<TtRole | "unknown", number> = { Rower: 0, Cox: 0, Coach: 0, unknown: 0 };
+    const counts: Record<RoleBucket, number> = { Rower: 0, Cox: 0, Coach: 0, pending: 0, unknown: 0 };
     for (const group of rower.value?.events ?? []) {
-      for (const entry of group.entries) counts[entry.role ?? "unknown"] += 1;
+      for (const entry of group.entries) counts[bucket(entry)] += 1;
     }
     return counts;
   });
 
   const totalWins = computed(() => {
-    const wins: Record<TtRole | "unknown", number> = { Rower: 0, Cox: 0, Coach: 0, unknown: 0 };
+    const wins: Record<RoleBucket, number> = { Rower: 0, Cox: 0, Coach: 0, pending: 0, unknown: 0 };
     for (const group of rower.value?.events ?? []) {
-      for (const entry of group.entries) if (entry.won) wins[entry.role ?? "unknown"] += 1;
+      for (const entry of group.entries) if (entry.won) wins[bucket(entry)] += 1;
     }
     return wins;
   });
