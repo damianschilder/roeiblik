@@ -66,8 +66,49 @@ export function upstreamFailure(event, error) {
 // headers. Roeiblik shows results after the fact, so a few minutes is fine: five for Time-Team,
 // ten for foys. Nothing is kept longer than ten minutes (the privacy page says so).
 // `opts.ttl` (seconds) overrides it; `ttl: 0` skips both caches but still shares requests in flight.
-// Every call returns its own copy: routes may reshape what they get.
+// `opts.budget` (see callBudget below) counts the calls this makes. Every call returns its own
+// copy: routes may reshape what they get.
 // ---------------------------------------------------------------------------------------------
+
+// The call budget. On the Workers Free plan one request may make 50 calls in all, and fetch() and
+// the Cache API's match() and put() share that quota
+// (https://developers.cloudflare.com/workers/platform/limits/). Past it every call throws. So a
+// route that looks many things up counts: callBudget() gives it a counter, upstream(url, { budget })
+// spends from it, and a lookup only starts when the calls it may need are still there
+// (budget.reserve). A cache call that does not fit is skipped, so the answer is only not cached.
+// A fetch that does not fit fails as a `BudgetError`, which is not an upstream failure.
+// Until November 2026 the person route planned 40 lookups of up to three calls each: past the
+// fiftieth call they all failed, so older entries never got their role or regatta.
+export const CALLS_PER_REQUEST = 45; // 50 on the Free plan, with room to spare
+export const CALLS_PER_LOOKUP = 3; // cache match, fetch, cache put
+
+export function callBudget(calls = CALLS_PER_REQUEST) {
+  let left = calls;
+  const budget = {
+    get left() {
+      return left;
+    },
+    take(n = 1) {
+      if (left < n) return false;
+      left -= n;
+      return true;
+    },
+    // Set n calls aside for one lookup. release() gives back what the lookup did not use (a
+    // memory hit uses none, an edge hit one).
+    reserve(n) {
+      if (!budget.take(n)) return null;
+      const part = callBudget(n);
+      part.release = () => {
+        left += part.left;
+        part.take(part.left);
+      };
+      return part;
+    },
+  };
+  return budget;
+}
+
+export const isBudgetError = (error) => error?.name === 'BudgetError';
 
 const TIMEOUT_MS = 10_000;
 const TTL_BY_HOST = {
@@ -97,11 +138,15 @@ export async function upstream(url, opts = {}) {
   }
   let pending = inflight.get(url);
   if (!pending) {
-    pending = load(url, ttl).finally(() => inflight.delete(url));
+    pending = load(url, ttl, opts.budget).finally(() => inflight.delete(url));
     inflight.set(url, pending);
   }
   return JSON.parse(await withTimeout(pending));
 }
+
+// Without a budget every call may go ahead. A cache lookup is only made when the fetch after it
+// still fits.
+const spend = (budget, keep = 0) => !budget || (budget.left > keep && budget.take(1));
 
 function ttlFor(url, requested) {
   if (requested !== undefined) return Math.min(MAX_TTL, Math.max(0, Math.floor(Number(requested) || 0)));
@@ -112,9 +157,9 @@ function ttlFor(url, requested) {
   }
 }
 
-async function load(url, ttl) {
+async function load(url, ttl, budget) {
   const edge = ttl > 0 ? edgeCache() : null;
-  if (edge) {
+  if (edge && spend(budget, 1)) {
     try {
       const cached = await edge.match(url);
       if (cached) {
@@ -131,11 +176,12 @@ async function load(url, ttl) {
     }
   }
 
+  if (!spend(budget)) throw httpError(503, 'BudgetError');
   const text = await fetchJsonText(url);
   if (ttl > 0) {
     const expires = Date.now() + ttl * 1000;
     keep(url, text, expires);
-    if (edge) {
+    if (edge && spend(budget)) {
       try {
         await edge.put(url, new Response(text, {
           headers: {

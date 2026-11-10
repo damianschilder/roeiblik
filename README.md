@@ -54,7 +54,7 @@ statistics page was removed.
 |---|---|
 | Compobeter (Time-Team) | `/time-team`, a person at `/time-team/persoon/<id>` |
 | KNRBeter | `/knrb`, a person at `/knrb/persoon/<id>` |
-| API | `/api/time-team/{search,person,entry}`, `/api/knrb/{search,person,round}` |
+| API | `/api/time-team/{search,person,details,entry}`, `/api/knrb/{search,person,round}` |
 
 Until November 2026 the sections were `/Time-Team` and `/KNRB`. Any casing of those (and of
 `/api/Time-Team`, `/api/KNRB`) is redirected to the lowercase address, keeping the rest of the

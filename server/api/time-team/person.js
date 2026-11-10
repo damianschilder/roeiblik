@@ -15,11 +15,12 @@
 
 const API = 'https://api.beta.regatta.time-team.nl/api/1';
 
-// Lookups per page view. A Cloudflare Worker on the free plan may make 50 subrequests per request:
-// the person itself plus at most 40 lookups stays well inside that. Whatever does not fit (only
-// people with a long history) is left out: the newest entries are complete, older ones may miss
-// their regatta name or crew, and a crew can still be loaded when the visitor opens it.
-const LOOKUP_BUDGET = 40;
+// Lookups per page view: as many as the request's call budget allows (see callBudget in
+// server/utils/upstream.js). The person costs up to three calls, each lookup up to three: about
+// fourteen lookups when nothing is cached, more when the edge cache has them. Newest entries go
+// first, so the top of the page is complete in one answer. The browser fills in the rest: the
+// roles the totals need right away, a regatta's name when its event scrolls into view (the
+// details route, ./details.js).
 const LOOKUP_CONCURRENCY = 8;
 // Do not let a slow upstream hold the page: after this long, answer with what has arrived.
 const LOOKUP_DEADLINE_MS = 4000;
@@ -167,7 +168,7 @@ function shapeRace(raceCrew, raw) {
 
 // The crew's name. A single sculler's entry can carry the sculler's own name: when that is a
 // hidden person, show the club instead.
-function entryName(entry, crewEntry, blocked) {
+export function entryName(entry, crewEntry, blocked) {
   const hidden = crewEntry
     ? [...(crewEntry.rowers || []), ...(crewEntry.coxes || []), ...(crewEntry.coaches || [])]
       .filter((m) => m && blocked(m.club_member?.person_id))
@@ -175,6 +176,27 @@ function entryName(entry, crewEntry, blocked) {
     : [];
   const options = [entry.name, entry.shortname, entry.club?.shortname, entry.club?.name].map(text).filter(Boolean);
   return options.find((name) => !hidden.includes(normalName(name))) ?? '';
+}
+
+// The role from the crew; without a crew, an entry the person stroked was rowed.
+function entryRole(entry, crewEntry, personId, displayname) {
+  const role = roleInCrew(crewEntry, personId, displayname);
+  if (!role && !crewEntry && normalName(entry?.stroke_fullname) === normalName(displayname)) return 'Rower';
+  return role;
+}
+
+// One entry as the details route (./details.js) sends it: the same name, role and crew that
+// buildProfile gives an entry whose crew it has. `crew: null` when Time-Team has no crew for it.
+export function buildCrewDetails(raw, personId, entryId, crewEntry, blocked = () => false) {
+  const entry = raw?.entry?.[entryId] ?? {};
+  const displayname = (raw?.person?.[personId] ?? Object.values(raw?.person ?? {})[0])?.displayname ?? '';
+  const role = entryRole(entry, crewEntry, personId, displayname);
+  return {
+    id: entryId,
+    name: entryName(entry, crewEntry, blocked),
+    ...(role ? { role } : {}),
+    crew: crewEntry ? shapeCrew(crewEntry, personId, blocked) : null,
+  };
 }
 
 const newestFirst = (a, b) => (b.start ?? b.date ?? '').localeCompare(a.start ?? a.date ?? '') || b.sort - a.sort;
@@ -215,8 +237,7 @@ export function buildProfile(raw, personId, { regattas = new Map(), entries = ne
       delete race._end;
     }
 
-    let role = roleInCrew(crewEntry, personId, displayname);
-    if (!role && !crewEntry && normalName(entry.stroke_fullname) === normalName(displayname)) role = 'Rower';
+    const role = entryRole(entry, crewEntry, personId, displayname);
 
     // The club the person started for: their own membership in the crew, else the entry's club
     // (a combination lists only its first club, so that one is not used for the header).
@@ -308,7 +329,7 @@ export function buildProfile(raw, personId, { regattas = new Map(), entries = ne
 
 // Which lookups to do, newest entry first: its regatta (once per regatta) and, when the role is
 // not already clear from the stroke's name, its crew. Crews of entries the person stroked follow
-// last; they only fill the crew list. Capped at the budget.
+// last; they only fill the crew list. All of them: runLookups() stops when the budget is spent.
 export function planLookups(raw, personId) {
   const displayname = raw?.person?.[personId]?.displayname ?? Object.values(raw?.person ?? {})[0]?.displayname;
   const newest = new Map();
@@ -333,44 +354,63 @@ export function planLookups(raw, personId) {
     const stroke = normalName(entry.stroke_fullname) === normalName(displayname);
     (stroke ? later : first).push({ kind: 'entry', regattaId, entryId: entry.id });
   }
-  const all = [...first, ...later];
-  return { lookups: all.slice(0, LOOKUP_BUDGET), skipped: Math.max(0, all.length - LOOKUP_BUDGET) };
+  return { lookups: [...first, ...later] };
 }
 
-async function runLookups(lookups) {
+// Runs lookups in order, as many as the budget and the deadline allow.
+//   regattas, entries: what was found, by id
+//   rest: the lookups not answered (not started for the budget, too late, or failed): the browser
+//         may ask for them again
+//   failed: a lookup failed or the deadline passed; one left out for the budget is not a failure
+// A regatta or entry Time-Team does not have (404) is answered: it stays missing.
+export async function runLookups(lookups, budget, { deadlineMs = LOOKUP_DEADLINE_MS } = {}) {
   const regattas = new Map();
   const entries = new Map();
+  const answered = new Set(); // indexes into lookups
   let next = 0;
-  let failed = 0;
+  let failed = false;
+  let late = false;
   const worker = async () => {
-    while (next < lookups.length) {
-      const lookup = lookups[next++];
+    while (!late && next < lookups.length) {
+      const calls = budget.reserve(CALLS_PER_LOOKUP);
+      if (!calls) return; // spent: what is left goes to the next request
+      const index = next++;
+      const lookup = lookups[index];
       try {
         if (lookup.kind === 'regatta') {
-          const answer = await upstream(`${API}/regatta/${encodeURIComponent(lookup.regattaId)}`);
+          const answer = await upstream(`${API}/regatta/${encodeURIComponent(lookup.regattaId)}`, { budget: calls });
           const regatta = answer?.regatta?.[lookup.regattaId] ?? Object.values(answer?.regatta ?? {})[0];
           if (regatta) regattas.set(lookup.regattaId, regatta);
         } else {
-          const answer = await upstream(`${API}/${encodeURIComponent(lookup.regattaId)}/entry/${encodeURIComponent(lookup.entryId)}`);
+          const answer = await upstream(`${API}/${encodeURIComponent(lookup.regattaId)}/entry/${encodeURIComponent(lookup.entryId)}`, { budget: calls });
           const entry = answer?.entry?.[lookup.entryId];
           if (entry) entries.set(lookup.entryId, entry);
         }
+        answered.add(index);
       } catch (error) {
-        // A regatta or entry Time-Team does not have stays missing; anything else may work later.
-        if (error?.statusCode !== 404) failed += 1;
+        if (error?.statusCode === 404) answered.add(index);
+        else if (!isBudgetError(error)) failed = true;
+      } finally {
+        calls.release();
       }
     }
   };
   let timer;
-  const deadline = new Promise((resolve) => { timer = setTimeout(() => resolve('late'), LOOKUP_DEADLINE_MS); });
+  const deadline = new Promise((resolve) => { timer = setTimeout(() => resolve('late'), deadlineMs); });
   const outcome = await Promise.race([
     Promise.all(Array.from({ length: Math.min(LOOKUP_CONCURRENCY, lookups.length) }, worker)),
     deadline,
   ]);
   clearTimeout(timer);
-  if (outcome === 'late') next = lookups.length; // start nothing new; late answers are ignored
+  if (outcome === 'late') late = true; // start nothing new; late answers are ignored
   // Copies: workers still running after the deadline must not change what is being returned.
-  return { regattas: new Map(regattas), entries: new Map(entries), incomplete: outcome === 'late' || failed > 0 };
+  const done = new Set(answered);
+  return {
+    regattas: new Map(regattas),
+    entries: new Map(entries),
+    rest: lookups.filter((_, index) => !done.has(index)),
+    failed: failed || late,
+  };
 }
 
 export default defineEventHandler(async (event) => {
@@ -384,9 +424,10 @@ export default defineEventHandler(async (event) => {
     return notFound(event);
   }
 
+  const budget = callBudget();
   let raw;
   try {
-    raw = await upstream(`${API}/person/${encodeURIComponent(id)}`);
+    raw = await upstream(`${API}/person/${encodeURIComponent(id)}`, { budget });
   } catch (error) {
     return error?.statusCode === 404 ? notFound(event) : upstreamFailure(event, error);
   }
@@ -394,19 +435,19 @@ export default defineEventHandler(async (event) => {
     return notFound(event);
   }
 
-  // Lookups left out for the budget are not `partial`: they would be left out next time as well,
-  // and the page loads such a crew when it is opened.
+  // Lookups left out for the budget are not `partial`: the page asks for them itself (the roles
+  // at once, a regatta when its event comes into view, a stroked crew when it is opened).
   const { lookups } = planLookups(raw, id);
-  const { regattas, entries, incomplete } = await runLookups(lookups);
+  const { regattas, entries, failed } = await runLookups(lookups, budget);
   const profile = buildProfile(raw, id, {
     regattas,
     entries,
     blocked: (personId) => Boolean(personId) && isBlocked(event, personId),
-    partial: incomplete,
+    partial: failed,
   });
 
   // The visitor's own browser may reuse a complete answer for a few minutes (Back, reload); shared
   // caches never. An incomplete one is not kept, so the next visit asks again.
-  setResponseHeader(event, 'Cache-Control', incomplete ? 'no-store' : 'private, max-age=300');
+  setResponseHeader(event, 'Cache-Control', failed ? 'no-store' : 'private, max-age=300');
   return profile;
 });
