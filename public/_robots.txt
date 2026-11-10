@@ -3,7 +3,9 @@
 # engines may fetch them, because a crawler that is kept out never sees that noindex and can keep
 # the bare address in its index (Google: "the page must not be blocked by a robots.txt file").
 # Their HTML holds no names: the page loads them from /api/, which no crawler may fetch.
-# AI crawlers are kept out of the person pages altogether.
+# AI crawlers are kept out of the person pages altogether, and so are the fetchers that AI
+# assistants send on a user's behalf (ChatGPT-User, Claude-User, Perplexity-User, MistralAI-User,
+# DuckAssistBot): those pages are about other people, not about the site.
 # @nuxtjs/robots turns this file into /robots.txt. (One group with "*" and the AI names together
 # would make the module add an empty "*" group of its own.)
 User-agent: *
@@ -20,6 +22,11 @@ User-agent: PerplexityBot
 User-agent: Google-Extended
 User-agent: Applebot-Extended
 User-agent: CCBot
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
+User-agent: Perplexity-User
+User-agent: Meta-ExternalAgent
+User-agent: Amazonbot
 Allow: /
 Disallow: /api/
 Disallow: /time-team/persoon/
