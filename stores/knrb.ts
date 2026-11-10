@@ -2,6 +2,7 @@ import type { Person, PersonResult, RaceResult, RaceTeam, Role, Round, SearchRes
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, shallowReactive, shallowRef } from "vue";
 import { API_FETCH, apiErrorKind, type ApiErrorKind } from "~/composables/apiError";
+import { recall, remember, roundNeedsLoad, type Stamped } from "~/composables/freshCache";
 
 // notfound: no such person, or someone who asked not to be shown (the server does not tell which).
 export type LoadStatus = "idle" | "loading" | "done" | "error" | "notfound";
@@ -10,19 +11,15 @@ export interface RoundEntry {
   // missing: foys has no such race (404); trying again would not help, so no button is offered.
   status: "loading" | "done" | "error" | "missing";
   data: Round | null;
+  at?: number; // when the answer (done or missing) arrived
 }
 
 // Client-side caches: going back to a search or a person shows it at once, without a new request.
-// Capped, oldest out first; a person or a round of a finished race does not change in a visit.
+// Capped, oldest out first, and kept five minutes from when the answer arrived (see
+// ~/composables/freshCache): after that a person or a race is asked again when it is needed.
 const SEARCH_CACHE_MAX = 30;
 const PERSON_CACHE_MAX = 20;
 const ROUND_CACHE_MAX = 400;
-
-function remember<K, V>(cache: Map<K, V>, key: K, value: V, max: number) {
-  cache.delete(key);
-  cache.set(key, value);
-  if (cache.size > max) cache.delete(cache.keys().next().value as K);
-}
 
 export const useKNRBStore = defineStore("KNRB", () => {
   // --- Search ---------------------------------------------------------------------------------
@@ -31,7 +28,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
   const searchStatus = ref<LoadStatus>("idle");
   const searchError = ref<ApiErrorKind | null>(null); // why, when searchStatus is "error"
   const currentPage = ref<number>(1);
-  const searchCache = new Map<string, PersonResult[]>();
+  const searchCache = new Map<string, Stamped<PersonResult[]>>();
   let searchController: AbortController | null = null;
   let searchSeq = 0;
 
@@ -48,7 +45,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
     searchController?.abort();
     searchController = null;
 
-    const cached = searchCache.get(key);
+    const cached = recall(searchCache, key);
     if (cached) {
       results.value = cached;
       searchStatus.value = "done";
@@ -85,11 +82,13 @@ export const useKNRBStore = defineStore("KNRB", () => {
   const person = shallowRef<Person | null>(null);
   const personStatus = ref<LoadStatus>("idle");
   const personError = ref<ApiErrorKind | null>(null); // why, when personStatus is "error"
-  const personCache = new Map<string, Person>();
+  const personCache = new Map<string, Stamped<Person>>();
   let personSeq = 0;
 
   async function loadPerson(id: string, { force = false } = {}) {
-    if (!force && personId.value === id && (personStatus.value === "done" || personStatus.value === "loading")) return;
+    // Already shown: nothing to do, unless it has expired (then recall() below misses too).
+    if (!force && personId.value === id && personStatus.value === "loading") return;
+    if (!force && personId.value === id && personStatus.value === "done" && recall(personCache, id)) return;
     const seq = ++personSeq;
     personId.value = id;
     personError.value = null;
@@ -101,7 +100,7 @@ export const useKNRBStore = defineStore("KNRB", () => {
       return;
     }
 
-    const cached = force ? undefined : personCache.get(id);
+    const cached = force ? undefined : recall(personCache, id);
     if (cached) {
       person.value = cached;
       personStatus.value = "done";
@@ -139,18 +138,21 @@ export const useKNRBStore = defineStore("KNRB", () => {
   async function loadRound(tournamentId: number, raceId: number, { retry = false } = {}) {
     const key = String(raceId);
     const entry = rounds[key];
-    // Loading, done or missing: nothing to do. Failed: only when the visitor asks again.
-    if (entry && (entry.status !== "error" || !retry)) return;
+    // Loading: nothing to do. Done or missing: only once it has expired. Failed: only when the
+    // visitor asks again.
+    if (!roundNeedsLoad(entry, retry)) return;
 
-    rounds[key] = { status: "loading", data: null };
+    // An expired round keeps its old details on screen while the new ones load.
+    rounds[key] = { status: "loading", data: entry?.status === "done" ? entry.data : null };
     if (!roundOrder.includes(key)) roundOrder.push(key);
     while (roundOrder.length > ROUND_CACHE_MAX) delete rounds[roundOrder.shift() as string];
     try {
       const response = await $fetch<Round>("/api/knrb/round", { ...API_FETCH, params: { tournamentId, raceId } });
       if (!Array.isArray(response?.teams)) throw new Error("round failed");
-      rounds[key] = { status: "done", data: response };
+      rounds[key] = { status: "done", data: response, at: Date.now() };
     } catch (e) {
-      rounds[key] = { status: apiErrorKind(e) === "notFound" ? "missing" : "error", data: null };
+      const missing = apiErrorKind(e) === "notFound";
+      rounds[key] = { status: missing ? "missing" : "error", data: null, ...(missing ? { at: Date.now() } : {}) };
     }
   }
 
