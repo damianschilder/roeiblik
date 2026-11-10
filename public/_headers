@@ -1,0 +1,4 @@
+# Headers for static assets (Cloudflare Workers static assets read this file).
+# llms.txt holds Dutch text with non-ASCII characters: say it is UTF-8.
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
