@@ -21,7 +21,7 @@
             .question
               h3 Er staan meerdere verenigingen bij mijn naam, ook als ik daar niet lid van ben.
               span Time-Team registreert niet van welke vereniging iemand lid is, maar alleen voor welke vereniging er wordt gestart.
-              span Om te verduidelijken of de juiste persoon is gevonden, worden deze verenigingen onder de naam weergegeven.
+              span Om te verduidelijken of je de juiste persoon hebt gevonden, staan deze verenigingen op de persoonspagina onder de naam.
         section.knrbeter(aria-labelledby="faq-knrbeter")
           h2.section-title#faq-knrbeter KNRBeter
           .questions
@@ -33,7 +33,7 @@
           .questions
             .question
               h3 Hoe actueel zijn de resultaten?
-              span Roeiblik haalt de resultaten op bij Time-Team en de KNRB op het moment dat je zoekt, en bewaart een opgevraagd resultaat een paar minuten. Een nieuwe uitslag staat daardoor na hooguit een kwartier ook op Roeiblik.
+              span Roeiblik haalt de resultaten op bij Time-Team en de KNRB op het moment dat je zoekt. De server en je browser gebruiken een opgevraagd resultaat elk hooguit een paar minuten. Een nieuwe uitslag staat daardoor na hooguit een kwartier ook op Roeiblik.
             .question
               h3 Wanneer telt een race als winst?
               span Een inschrijving telt als winst als de ploeg eerste werd in de race die het veld besliste: de A-finale, of zonder finale de laatste ronde waarna niets meer volgt, zoals een head of een tijdrace. Een eerste plaats in een voorwedstrijd, herkansing, halve finale of B-finale telt niet, net als een race zonder tijd (DNS, DNF, DSQ) of buiten mededinging; bij losse afstanden zonder eindklassement, zoals een vierkamp, alleen als de ploeg op elke afstand eerste werd.

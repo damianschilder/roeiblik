@@ -70,13 +70,14 @@ Cloudflare Workers with static assets.
 ## Security and privacy
 
 - **No database, no accounts, no cookies.** The server passes each search on to Time-Team or the
-  KNRB (via Foys). It keeps the raw answer for five minutes (Time-Team) or ten (KNRB), never
-  longer, in two places:
-  - an in-memory cache capped at 500 entries and 8 MB;
+  KNRB (via Foys). It serves the raw answer from a cache for at most five minutes, in two places:
+  - an in-memory cache capped at 500 entries and 8 MB, which drops expired entries on every call;
   - Cloudflare's cache in the same data centre.
 
-  Identical requests in flight share a single upstream call. Removal requests are applied after
-  the cache, on every request.
+  The browser may reuse a successful answer for five more minutes (`private, max-age=300`), and
+  the page keeps what it fetched for five minutes. So a new result shows on Roeiblik within a
+  quarter of an hour at most, which is what the FAQ promises. Identical requests in flight share
+  a single upstream call. Removal requests are applied after the cache, on every request.
 - **Every API route validates its input.** An id must match `[A-Za-z0-9_-]{1,64}`, a race id must
   be numeric, and a search term must be 2–100 characters. Values are URL-encoded before they reach
   an upstream URL, so the server cannot be used as a proxy to other paths on those APIs.
@@ -96,6 +97,23 @@ Cloudflare Workers with static assets.
 - **Cookieless analytics**, optional: Cloudflare Web Analytics, with no cookies and no personal
   data, so no consent banner is needed.
 - **No datasets are published.** Everything shown comes live from the two APIs.
+
+## Findability
+
+Roeiblik follows the findability guide of quiet functionalism, Damian's design language (a private
+repo, `guides/findability.md`): only tags and files a search engine or AI service documents reading (no `meta keywords`), titles
+and descriptions that say what each page does, `WebSite` structured data, a sitemap of the five
+public pages, `llms.txt`, and robots.txt open to the crawlers that cite while the named AI crawlers
+stay out of person pages. Every claim the site makes (freshness, caching, what is shown) is its
+worst case, checked against the code. Before a deploy, with a local build running
+(`npx wrangler --cwd .output dev --port 8787`), from a clone of quiet-functionalism:
+
+```sh
+node scripts/findability.mjs https://roeiblik.com --via http://127.0.0.1:8787 --gone /bestaat-niet \
+  --noindex /time-team/persoon/ceb460a0-c40f-4963-ba19-9dc564c11a29
+```
+
+After the deploy, the same without `--via`, plus `--alias https://www.roeiblik.com/`.
 
 ## Run it locally
 

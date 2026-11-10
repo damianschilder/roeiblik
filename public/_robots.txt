@@ -3,9 +3,12 @@
 # engines may fetch them, because a crawler that is kept out never sees that noindex and can keep
 # the bare address in its index (Google: "the page must not be blocked by a robots.txt file").
 # Their HTML holds no names: the page loads them from /api/, which no crawler may fetch.
-# AI crawlers are kept out of the person pages altogether, and so are the fetchers that AI
+# The AI crawlers named below are kept out of the person pages, and so are the fetchers that AI
 # assistants send on a user's behalf (ChatGPT-User, Claude-User, Perplexity-User, MistralAI-User,
-# DuckAssistBot): those pages are about other people, not about the site.
+# DuckAssistBot, Amzn-User, Meta-ExternalFetcher): those pages are about other people, not about the
+# site. The list is the table in quiet-functionalism's guides/findability.md, each name from its
+# operator's own documentation. Some fetchers may ignore robots.txt, which is why the HTML holds no
+# names.
 # @nuxtjs/robots turns this file into /robots.txt. (One group with "*" and the AI names together
 # would make the module add an empty "*" group of its own.)
 User-agent: *
@@ -26,7 +29,12 @@ User-agent: DuckAssistBot
 User-agent: MistralAI-User
 User-agent: Perplexity-User
 User-agent: Meta-ExternalAgent
+User-agent: Meta-ExternalFetcher
 User-agent: Amazonbot
+User-agent: Amzn-SearchBot
+User-agent: Amzn-User
+User-agent: MistralAI-Index
+User-agent: MistralAI-Training
 Allow: /
 Disallow: /api/
 Disallow: /time-team/persoon/
