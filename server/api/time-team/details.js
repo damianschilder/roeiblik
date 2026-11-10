@@ -9,6 +9,7 @@
 // without a name is one Time-Team does not have. Ids that are not the person's own appear in none
 // of the lists: this route only looks up what is on the person's page, so it cannot be used to
 // collect Time-Team's crews in bulk. Hidden people are left out of crews as everywhere else.
+import { callBudget } from '../../utils/upstream.js'; // by name: see the import in person.js
 import { buildCrewDetails, planLookups, runLookups } from './person.js';
 
 const API = 'https://api.beta.regatta.time-team.nl/api/1';

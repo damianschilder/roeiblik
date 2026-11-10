@@ -13,6 +13,10 @@
 // disagree. `partial` means a lookup failed or came too late: such an answer is not cached, so the
 // next visit tries again.
 
+// Imported by name, not left to Nitro's auto-import: its export scan of upstream.js missed these
+// (November 2026), and the route then threw a ReferenceError on every request (a 500).
+import { CALLS_PER_LOOKUP, callBudget, isBudgetError } from '../../utils/upstream.js';
+
 const API = 'https://api.beta.regatta.time-team.nl/api/1';
 
 // Lookups per page view: as many as the request's call budget allows (see callBudget in
