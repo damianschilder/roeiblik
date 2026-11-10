@@ -6,9 +6,9 @@
 
 <script setup lang="ts">
 useHead({
-  title: 'Doorzoek Time-Team',
+  title: 'Compobeter: Time-Team-uitslagen per persoon',
   meta: [
-    { name: 'description', content: 'Doorzoek de Time-Team op compo- en klasserende resultaten.' },
+    { name: 'description', content: "Zoek een roeier, stuur of coach op naam en zie de Time-Team-uitslagen van die persoon bij elkaar: compo's en wedstrijden, met tijden, ploeg en winsten." },
   ],
 });
 </script>

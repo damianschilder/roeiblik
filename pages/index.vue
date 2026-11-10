@@ -26,8 +26,13 @@
           nuxt-icon(name="info" aria-hidden="true")
           .info-text#uitleg-knrbeter
             | Doorzoek de #[span.bold KNRB] op klasserende wedstrijdresultaten van personen.
-//- No title of its own: the tab reads just "Roeiblik" (title and description from nuxt.config).
+//- The tab reads "Roeiblik: roeiuitslagen per persoon" (plugins/title.js leaves a title that starts
+//- with "Roeiblik" as it is). The description is the default one from nuxt.config.
 </template>
+
+<script setup lang="ts">
+useHead({ title: 'Roeiblik: roeiuitslagen per persoon' });
+</script>
 
 <style lang="scss" scoped>
 .page-wrapper {

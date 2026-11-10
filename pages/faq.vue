@@ -44,9 +44,9 @@
 
 <script setup lang="ts">
 useHead({
-  title: 'FAQ',
+  title: 'Vaak gestelde vragen',
   meta: [
-    { name: 'description', content: 'Vaak gestelde vragen over Roeiblik, Compobeter en KNRBeter.' },
+    { name: 'description', content: 'Welke uitslagen Compobeter en KNRBeter tonen, waarom iemand twee keer in Time-Team kan staan, hoe actueel de uitslagen zijn en wanneer een race als winst telt.' },
   ],
 });
 </script>

@@ -6,9 +6,9 @@
 
   <script setup lang="ts">
   useHead({
-    title: 'Doorzoek KNRB',
+    title: 'KNRBeter: KNRB-uitslagen per persoon',
     meta: [
-      { name: 'description', content: 'Doorzoek de KNRB op klasserende resultaten.' },
+      { name: 'description', content: 'Zoek een roeier, stuur of coach op naam in de klasserende uitslagen van de KNRB: per wedstrijd het veld, de ronden, de plaats, de tijd en de ploeg.' },
     ],
   });
   </script>

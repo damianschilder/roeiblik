@@ -32,7 +32,7 @@
 useHead({
   title: 'Privacy',
   meta: [
-    { name: 'description', content: 'Welke gegevens Roeiblik gebruikt en wat je rechten zijn.' },
+    { name: 'description', content: 'Welke gegevens Roeiblik toont en waarom dat mag, wat het over bezoekers vastlegt en hoe je je persoonspagina laat verbergen.' },
   ],
 });
 </script>
