@@ -14,7 +14,9 @@ import { API_FETCH, apiErrorKind, isAbort, type ApiErrorKind } from "~/composabl
 
 // Time-Team search and person pages. The server (server/api/time-team/*) does the merging; this
 // store only fetches, guards against stale answers and remembers what it fetched this session,
-// so Back from a person page shows the same list and a person seen before opens at once.
+// so Back from a person page shows the same list and a person seen before opens at once. What the
+// person route left out for its call budget (roles, regatta names) it fills in afterwards from
+// /api/time-team/details: roles in the background, regatta names when their group comes into view.
 
 export type SearchStatus = "idle" | "tooShort" | "loading" | "done" | "error";
 // notFound: no such person, or someone who asked not to be shown (the server does not tell which).
@@ -159,6 +161,7 @@ export const useRowersStore = defineStore("rowers", () => {
       return;
     }
     stopFill();
+    dropQueuedRegattas();
     personController?.abort();
     personController = null;
     const seq = ++personSeq;
@@ -264,6 +267,7 @@ export const useRowersStore = defineStore("rowers", () => {
   function startFill() {
     const profile = rower.value;
     if (!profile || personStatus.value !== "done") return;
+    applyKnownRegattas(); // names other people's pages already brought in
     const raw = toRaw(profile);
     if (fill && fill.profile === raw) return; // never two fills for one profile
     stopFill();
@@ -356,6 +360,112 @@ export const useRowersStore = defineStore("rowers", () => {
     }
   }
 
+  // --- Regatta names -----------------------------------------------------------------------
+  // Groups the person route reached no regatta name for ("Locatie niet aanwezig") ask for it when
+  // they come into view (Races.vue calls requestRegatta). Ids arriving within REGATTA_BATCH_MS go
+  // out together, DETAILS_IDS per request, at most DETAILS_IN_FLIGHT at once. What came back is
+  // kept for the session, so each regatta is asked once (plus retries for `rest`), and a name
+  // known from another person shows at once.
+  const REGATTA_BATCH_MS = 100;
+  // null: asked, and there is no name to show (Time-Team has none, or we gave up).
+  const regattaInfo = new Map<string, { name: string; city?: string } | null>();
+  const regattaAttempts = new Map<string, number>();
+  const regattaWaiting = new Set<string>(); // queued or in flight
+  let regattaQueue: string[] = [];
+  let regattaTimer: ReturnType<typeof setTimeout> | null = null;
+  let regattaRunning = 0;
+
+  const groupsOf = (regattaId: string) =>
+    (rower.value?.events ?? []).filter((group) => group.entries[0]?.regattaId === regattaId);
+
+  function applyRegatta(regattaId: string) {
+    const info = regattaInfo.get(regattaId);
+    if (!info) return;
+    for (const group of groupsOf(regattaId)) {
+      if (group.regatta) continue;
+      group.regatta = info.name;
+      if (info.city) group.city = info.city;
+    }
+  }
+
+  function applyKnownRegattas() {
+    for (const group of rower.value?.events ?? []) {
+      const regattaId = group.entries[0]?.regattaId;
+      if (!group.regatta && regattaId) applyRegatta(regattaId);
+    }
+  }
+
+  function requestRegatta(regattaId: string) {
+    if (!regattaId || !PERSON_ID.test(regattaId) || personStatus.value !== "done") return;
+    if (regattaInfo.has(regattaId)) {
+      applyRegatta(regattaId);
+      return;
+    }
+    if (regattaWaiting.has(regattaId)) return;
+    regattaWaiting.add(regattaId);
+    regattaQueue.push(regattaId);
+    regattaTimer ??= setTimeout(() => {
+      regattaTimer = null;
+      pumpRegattas();
+    }, REGATTA_BATCH_MS);
+  }
+
+  // Another person: what was only queued is for the old one's groups. Requests in flight finish
+  // (their answers are true for that regatta wherever it shows up).
+  function dropQueuedRegattas() {
+    for (const regattaId of regattaQueue) regattaWaiting.delete(regattaId);
+    regattaQueue = [];
+  }
+
+  function pumpRegattas() {
+    const id = rower.value?.person.id;
+    if (!id) return;
+    while (regattaRunning < DETAILS_IN_FLIGHT && regattaQueue.length) {
+      const ids = regattaQueue.splice(0, DETAILS_IDS);
+      regattaRunning += 1;
+      void sendRegattas(id, ids).finally(() => {
+        regattaRunning -= 1;
+        pumpRegattas();
+      });
+    }
+  }
+
+  function settleRegatta(regattaId: string, info: { name: string; city?: string } | null) {
+    regattaWaiting.delete(regattaId);
+    regattaInfo.set(regattaId, info);
+    applyRegatta(regattaId);
+  }
+
+  // Asked again while a group of the shown person still needs it, unless this was the last attempt.
+  function retryRegatta(regattaId: string) {
+    regattaWaiting.delete(regattaId);
+    if ((regattaAttempts.get(regattaId) ?? 0) >= DETAILS_ATTEMPTS) settleRegatta(regattaId, null);
+    else if (groupsOf(regattaId).some((group) => !group.regatta)) requestRegatta(regattaId);
+  }
+
+  async function sendRegattas(id: string, ids: string[]) {
+    for (const regattaId of ids) regattaAttempts.set(regattaId, (regattaAttempts.get(regattaId) ?? 0) + 1);
+    try {
+      const response = await fetchDetails(id, [], ids);
+      if (!validDetails(response)) throw new Error("details failed");
+      const settled = new Set<string>();
+      for (const regatta of response.regattas) {
+        if (!ids.includes(regatta.id) || settled.has(regatta.id)) continue;
+        settled.add(regatta.id);
+        settleRegatta(regatta.id, regatta.name ? { name: regatta.name, city: regatta.city } : null);
+      }
+      for (const regattaId of response.rest.regattas) {
+        if (!ids.includes(regattaId) || settled.has(regattaId)) continue;
+        settled.add(regattaId);
+        retryRegatta(regattaId);
+      }
+      for (const regattaId of ids) if (!settled.has(regattaId)) settleRegatta(regattaId, null);
+    } catch {
+      await pause(DETAILS_RETRY_MS);
+      for (const regattaId of ids) retryRegatta(regattaId);
+    }
+  }
+
   // A crew the person route did not look up and the fill does not either (an entry whose role is
   // already known, the stroke): fetched when the visitor opens it. An entry the fill is asking
   // for is "loading" and left to the fill.
@@ -423,6 +533,7 @@ export const useRowersStore = defineStore("rowers", () => {
     crewState,
     getRower,
     loadCrew,
+    requestRegatta,
     roleCounts,
     totalWins,
     anyWins,

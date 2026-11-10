@@ -14,7 +14,7 @@
               UiWon(v-if="rowerStore.anyWins" v-model="showOnlyWins")
           .header(aria-live="polite")
             span {{ countText }}
-          .race(v-for="item in shown" :key="item.group.id")
+          .race(v-for="item in shown" :key="item.group.id" :ref="(el) => watchRace(el, item.group)")
             .race-event(
               v-for="{ entry, races } in item.entries"
               :key="entry.id"
@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeUnmount, type ComponentPublicInstance } from 'vue';
 import { useRowersStore, formatRaceDate, ordinalNl, roleLabel, TT_ROLES } from '@/stores/rowers';
 import type { TtEntry, TtEvent, TtProfile, TtRace, TtRole, TtSplit } from '~/types/Timeteam';
 
@@ -138,6 +138,51 @@ const countText = computed(() => {
 });
 
 const isOpen = (entry: TtEntry) => expandedEntry.value === entry.id;
+
+// A group without a regatta name asks the store for it once it comes within REGATTA_MARGIN of the
+// viewport, so a long history does not look up regattas nobody scrolls to. One observer for the
+// whole list. Vue calls a function ref on every update (with null on unmount), so watchRace only
+// acts when the element for a group changes.
+const REGATTA_MARGIN = '400px 0px';
+let observer: IntersectionObserver | null = null;
+const watched = new Map<string, Element>(); // group id -> its .race element
+const groupOf = new WeakMap<Element, TtEvent>();
+
+function watchRace(el: Element | ComponentPublicInstance | null, group: TtEvent) {
+  const previous = watched.get(group.id);
+  if (el === (previous ?? null)) return;
+  if (previous) {
+    observer?.unobserve(previous);
+    watched.delete(group.id);
+  }
+  if (!(el instanceof Element)) return;
+  watched.set(group.id, el);
+  const regattaId = group.entries[0]?.regattaId;
+  if (group.regatta || !regattaId) return;
+  if (typeof IntersectionObserver === 'undefined') {
+    rowerStore.requestRegatta(regattaId);
+    return;
+  }
+  observer ??= new IntersectionObserver(onRaceVisible, { rootMargin: REGATTA_MARGIN });
+  groupOf.set(el, group);
+  observer.observe(el);
+}
+
+function onRaceVisible(records: IntersectionObserverEntry[]) {
+  for (const record of records) {
+    if (!record.isIntersecting) continue;
+    observer?.unobserve(record.target); // asked once, the store takes it from here
+    const group = groupOf.get(record.target);
+    const regattaId = group?.entries[0]?.regattaId;
+    if (group && !group.regatta && regattaId) rowerStore.requestRegatta(regattaId);
+  }
+}
+
+onBeforeUnmount(() => {
+  observer?.disconnect();
+  observer = null;
+  watched.clear();
+});
 
 // No crew to show: Time-Team has none ("missing"), or the lookup gave up ("error").
 function crewUnavailable(entry: TtEntry): boolean {
