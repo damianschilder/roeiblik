@@ -15,6 +15,7 @@ const WEBSITE = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'Roeiblik',
+  alternateName: 'roeiblik.com',
   url: `${SITE}/`,
   inLanguage: 'nl',
   description: 'Roeiuitslagen per persoon, van Time-Team en de KNRB.',
