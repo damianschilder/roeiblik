@@ -46,7 +46,6 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Zoek op naam de uitslagen van roeiers, stuurtjes en coaches: compo- en wedstrijdresultaten uit Time-Team en klasserende uitslagen van de KNRB.' },
-        { name: 'keywords', content: 'roeiblik, roei blik, taarten, roei taarten, roeien, uitslagen, time-team, time team, winsten, stuurtjes, roeiers, coaches, knrb' },
         // The browser bar on phones in the page's beige. Canonical, Open Graph and JSON-LD: plugins/seo.js.
         { name: 'theme-color', content: '#f1f0eb' },
       ],
