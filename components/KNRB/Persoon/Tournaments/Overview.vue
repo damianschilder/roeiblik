@@ -39,12 +39,12 @@
       .filter((tournament) => tournament.races.length > 0);
   });
 
+  // Counted per entry (one crew in one event), like the Time-Team page: with "Alleen winsten" the
+  // number is the wins. (It used to count tournaments: two wins at one regatta read as one.)
   const headerText = computed(() => {
-    const count = displayTournaments.value.length;
-    if (onlyWon.value) {
-      return `${count} ${count === 1 ? 'wedstrijd met overwinningen' : 'wedstrijden met overwinningen'}`;
-    }
-    return `${count} ${count === 1 ? 'wedstrijd' : 'wedstrijden'}`;
+    const count = displayTournaments.value.reduce((sum, tournament) => sum + tournament.races.length, 0);
+    if (onlyWon.value) return `${count} ${count === 1 ? 'winst' : 'winsten'}`;
+    return `${count} ${count === 1 ? 'vermelding' : 'vermeldingen'}`;
   });
 
   const noResultsText = computed(() => (onlyWon.value
