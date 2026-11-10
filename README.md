@@ -110,7 +110,7 @@ worst case, checked against the code. Before a deploy, with a local build runnin
 
 ```sh
 node scripts/findability.mjs https://roeiblik.com --via http://127.0.0.1:8787 --gone /bestaat-niet \
-  --noindex /time-team/persoon/ceb460a0-c40f-4963-ba19-9dc564c11a29
+  --noindex /time-team/persoon/ceb460a0-c40f-4963-ba19-9dc564c11a29 /knrb/persoon/8dba9910-c7fe-450f-870b-6c64f73de403
 ```
 
 After the deploy, the same without `--via`, plus `--alias https://www.roeiblik.com/`.
