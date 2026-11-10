@@ -62,7 +62,9 @@ const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 // does not ask too. "missing": Time-Team has no crew for it. "error": it could not be looked up.
 export type CrewState = "loading" | "missing" | "error";
 
-const CACHE_MS = 10 * 60 * 1000;
+// Five minutes in the store, on top of five on the server and five in the browser's HTTP cache:
+// a new result shows within a quarter of an hour.
+const CACHE_MS = 5 * 60 * 1000;
 const SEARCH_CACHE_MAX = 30;
 const PERSON_CACHE_MAX = 20;
 
