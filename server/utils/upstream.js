@@ -63,8 +63,10 @@ export function upstreamFailure(event, error) {
 // a route's filtered output instead.
 //
 // Freshness: Time-Team sends `max-age=30` (it serves live regattas); foys sends no caching
-// headers. Roeiblik shows results after the fact, so a few minutes is fine: five for Time-Team,
-// ten for foys. Nothing is kept longer than ten minutes (the privacy page says so).
+// headers. Roeiblik shows results after the fact, so a few minutes is fine: five for both.
+// Nothing is kept longer than five minutes, and expired entries are dropped from memory on every
+// call. With the browser's five minutes (`private, max-age=300`) and the stores' five on top, a
+// new result shows within a quarter of an hour.
 // `opts.ttl` (seconds) overrides it; `ttl: 0` skips both caches but still shares requests in flight.
 // `opts.budget` (see callBudget below) counts the calls this makes. Every call returns its own
 // copy: routes may reshape what they get.
@@ -113,10 +115,10 @@ export const isBudgetError = (error) => error?.name === 'BudgetError';
 const TIMEOUT_MS = 10_000;
 const TTL_BY_HOST = {
   'api.beta.regatta.time-team.nl': 5 * 60,
-  'api.foys.io': 10 * 60,
+  'api.foys.io': 5 * 60,
 };
 const DEFAULT_TTL = 5 * 60;
-const MAX_TTL = 10 * 60;
+const MAX_TTL = 5 * 60;
 
 const MEMORY_MAX_ENTRIES = 500;
 const MEMORY_MAX_CHARS = 8_000_000; // the cached JSON text, in characters
@@ -128,13 +130,11 @@ const inflight = new Map(); // url -> Promise<string>
 
 export async function upstream(url, opts = {}) {
   const ttl = ttlFor(url, opts.ttl);
+  sweep();
   const hit = ttl > 0 ? memory.get(url) : undefined;
   if (hit) {
-    forget(url);
-    if (hit.expires > Date.now()) {
-      keep(url, hit.text, hit.expires); // move to the most recently used end
-      return JSON.parse(hit.text);
-    }
+    keep(url, hit.text, hit.expires); // move to the most recently used end
+    return JSON.parse(hit.text);
   }
   let pending = inflight.get(url);
   if (!pending) {
@@ -234,6 +234,14 @@ function keep(url, text, expires) {
   for (const oldest of memory.keys()) {
     if (memory.size <= MEMORY_MAX_ENTRIES && memoryChars <= MEMORY_MAX_CHARS) break;
     forget(oldest);
+  }
+}
+
+// Drop every expired entry, so no answer lingers in memory past its TTL. At most
+// MEMORY_MAX_ENTRIES entries, so one pass per call is cheap.
+function sweep(now = Date.now()) {
+  for (const [url, entry] of memory) {
+    if (entry.expires <= now) forget(url);
   }
 }
 
