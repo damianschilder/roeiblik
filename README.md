@@ -94,15 +94,17 @@ Cloudflare Workers with static assets.
 - **Removal on request.** The ids in `NUXT_BLOCKED_PERSON_IDS` disappear from search results,
   crews and lineups, and their person pages answer as if they did not exist. See the
   [privacy page](https://roeiblik.com/privacy) (in Dutch).
-- **Cookieless analytics**, optional: Cloudflare Web Analytics, with no cookies and no personal
-  data, so no consent banner is needed.
+- **No visitor counting.** Cloudflare Web Analytics (cookieless) can be switched on with
+  `NUXT_PUBLIC_CF_BEACON_TOKEN`, but it is off on roeiblik.com, and /privacy and /bronnen say
+  "Roeiblik telt geen bezoekers". Switching it on means changing those sentences in the same
+  deploy.
 - **No datasets are published.** Everything shown comes live from the two APIs.
 
 ## Findability
 
 Roeiblik follows the findability guide of quiet functionalism, Damian's design language (a private
 repo, `guides/findability.md`): only tags and files a search engine or AI service documents reading (no `meta keywords`), titles
-and descriptions that say what each page does, `WebSite` structured data, a sitemap of the five
+and descriptions that say what each page does, `WebSite` structured data, a sitemap of the six
 public pages, `llms.txt`, and robots.txt open to the crawlers that cite while the named AI crawlers
 stay out of person pages. Every claim the site makes (freshness, caching, what is shown) is its
 worst case, checked against the code. Before a deploy, with a local build running
@@ -154,9 +156,21 @@ npm run deploy         # nuxt build, then wrangler deploy
 
 ## Data sources
 
-Results come from [Time-Team Regatta Systems](https://time-team.nl/) and the
-[KNRB](https://roeievenementen.knrb.nl/) (via Foys). Roeiblik is an independent hobby project and
-is not affiliated with either.
+The results are not Roeiblik's. They come from these sources, and they are about the rowers, coxes
+and coaches themselves:
+
+1. [Time-Team Regatta Systems](https://time-team.nl/): the results in Compobeter. Licence: none
+   stated.
+2. [KNRB](https://roeievenementen.knrb.nl/) (Koninklijke Nederlandsche Roeibond), via Foys: the
+   results in KNRBeter. Licence: none stated.
+
+Roeiblik is not affiliated with either, has no agreement with them and is not endorsed by them.
+It puts one person's results together, counts wins by its own rule and hides people who ask. The
+same list is on the site at [/bronnen](https://roeiblik.com/bronnen), linked from the navbar and the
+footer (the sources guide of quiet-functionalism).
+
+Roeiblik is a non-commercial, open-source project by Damian Schilder: no ads, no accounts, no paid
+features. It sells no data and counts no visitors.
 
 ## License
 

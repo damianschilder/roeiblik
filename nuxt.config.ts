@@ -65,10 +65,10 @@ export default defineNuxtConfig({
   // The sitemap names the public pages itself, in their one (lowercase) spelling, instead of
   // deriving them from the page files. Person pages never go in: they are noindex, and robots.txt
   // (public/_robots.txt) keeps crawlers out of them and out of /api/. plugins/seo.js gives the same
-  // five pages a canonical address.
+  // six pages a canonical address.
   sitemap: {
     excludeAppSources: true,
-    urls: ['/', '/time-team', '/knrb', '/faq', '/privacy'],
+    urls: ['/', '/time-team', '/knrb', '/faq', '/bronnen', '/privacy'],
   },
 
   routeRules: {
@@ -130,7 +130,8 @@ export default defineNuxtConfig({
     canonicalHost: '',
     public: {
       // NUXT_PUBLIC_CF_BEACON_TOKEN: Cloudflare Web Analytics (cookieless, no personal data).
-      // Empty means no analytics script at all.
+      // Empty means no analytics script at all. /privacy and /bronnen say "Roeiblik telt geen
+      // bezoekers": setting a token means changing those sentences in the same deploy.
       cfBeaconToken: '',
     },
   },

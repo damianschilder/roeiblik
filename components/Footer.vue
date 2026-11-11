@@ -4,14 +4,21 @@ footer.footer-wrapper
     .element-body
       .footer-content
         NuxtLink.title(to="/") Roeiblik
+        //- The project sentence and the sources: guides/sources.md in quiet-functionalism.
         .source
-          | Bron: Time-Team Regatta Systems #[a(href="https://time-team.nl/") https://time-team.nl/] en de KNRB. #[NuxtLink(to="/privacy") Privacy]
+          | Roeiblik is een niet-commercieel, open-source project. De uitslagen komen van Time-Team en de KNRB.
+          br
+          | #[NuxtLink(to="/bronnen") Bronnen] · #[NuxtLink(to="/privacy") Privacy]
 </template>
 
 <style lang="scss" scoped>
 .footer-wrapper {
   grid-area: 'footer';
-  height: 7rem;
+  min-height: 7rem; // grows when the sentence wraps on a phone
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1.5rem 0;
 }
 
 .title {

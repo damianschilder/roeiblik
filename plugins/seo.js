@@ -9,7 +9,7 @@ import { InferSeoMetaPlugin } from '@unhead/vue/plugins';
 
 const SITE = 'https://roeiblik.com';
 // The public pages, each in its one spelling. The sitemap lists the same pages (nuxt.config.ts).
-const PUBLIC = new Set(['/', '/time-team', '/knrb', '/faq', '/privacy']);
+const PUBLIC = new Set(['/', '/time-team', '/knrb', '/faq', '/bronnen', '/privacy']);
 
 const WEBSITE = JSON.stringify({
   '@context': 'https://schema.org',

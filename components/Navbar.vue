@@ -11,6 +11,7 @@ header.navbar-wrapper
           span KNRBeter
           nuxt-icon(name="person search" aria-hidden="true")
       .right
+        NuxtLink.small(to="/bronnen") Bronnen
         NuxtLink.small(to="/faq") FAQ
       //- Phones: the links above do not fit beside the logo, so a menu button opens them in a panel.
       //- A <details> element: it opens without JavaScript too, and tells screen readers whether it is open.
@@ -26,6 +27,7 @@ header.navbar-wrapper
           NuxtLink.big(to="/knrb")
             span KNRBeter
             nuxt-icon(name="person search" aria-hidden="true")
+          NuxtLink.big(to="/bronnen") Bronnen
           NuxtLink.big(to="/faq") FAQ
 </template>
 
@@ -95,7 +97,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onTapOutside));
 .right {
   display: flex;
   justify-content: end;
-  column-gap: 0.5rem;
+  column-gap: 1rem;
   width: 7.625rem;
   span {
     color: $black50;
